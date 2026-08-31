@@ -6,6 +6,8 @@ This document defines the compatibility boundary for an Archive-oriented FMG for
 
 The first implementation must be an additive export service. It must not change the `.map` format, regeneration behavior, or the meaning of existing FMG fields.
 
+The current fork implements the pure export plan, a full-JSON command-line writer, and an in-application `Archive package (.zip)` download. The application prompts for a stable world ID, stores it locally by map ID, and packages the manifest and generated Markdown beneath one world directory. Direct vault writes, managed-block updates, and reverse synchronization remain unimplemented.
+
 ## Goals
 
 - Export one FMG world as deterministic Markdown and machine-readable metadata.

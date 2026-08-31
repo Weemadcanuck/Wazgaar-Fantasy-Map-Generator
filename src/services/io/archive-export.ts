@@ -45,14 +45,17 @@ type Culture = NativeEntity & {
 
 type Religion = NativeEntity & {
   culture?: number;
-  deity?: string;
+  deity?: string | null;
   form?: string;
   type?: string;
 };
 
-type PackedCells = {
-  province?: number[];
+type PackedCell = {
+  i: number;
+  province?: number;
 };
+
+type PackedCells = PackedCell[] | { province?: ArrayLike<number> };
 
 export type ArchiveWorldSnapshot = {
   info: {
@@ -251,8 +254,14 @@ const renderProvince = (province: Province, lookup: Map<string, EntityDescriptor
   )
 ];
 
+const getProvinceId = (cells: PackedCells | undefined, cellId: number | undefined) => {
+  if (!cells || cellId === undefined) return undefined;
+  if (Array.isArray(cells)) return cells[cellId]?.province ?? cells.find(cell => cell.i === cellId)?.province;
+  return cells.province?.[cellId];
+};
+
 const renderBurg = (burg: Burg, snapshot: ArchiveWorldSnapshot, lookup: Map<string, EntityDescriptor>) => {
-  const provinceId = burg.cell === undefined ? undefined : snapshot.pack.cells?.province?.[burg.cell];
+  const provinceId = getProvinceId(snapshot.pack.cells, burg.cell);
   return [
     renderList("State", [makeLink(lookup, "state", burg.state)]),
     renderList("Province", [makeLink(lookup, "province", provinceId)]),

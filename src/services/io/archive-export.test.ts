@@ -23,6 +23,13 @@ describe("Archive export", () => {
     expect(plan.manifest.entities["jotun-test:culture:14"]?.path).toBe("Cultures/Azar (Azgaar Culture).md");
   });
 
+  it("resolves burg provinces from full JSON cell rows", () => {
+    const plan = buildArchiveExportPlan(loadJotun(), { worldId: "jotun-test" });
+    const drelgard = plan.files.find(file => file.entityKey === "jotun-test:burg:1");
+
+    expect(drelgard?.content.includes("[[Eld (Azgaar Province)|Eld]]")).toBe(true);
+  });
+
   it("is byte-deterministic for the same snapshot and profile", () => {
     const snapshot = loadJotun();
     const first = buildArchiveExportPlan(snapshot, { worldId: "jotun-test" });

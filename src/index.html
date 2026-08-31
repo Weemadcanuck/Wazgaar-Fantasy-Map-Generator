@@ -2437,6 +2437,18 @@
           </button>
         </div>
         <p>Export in JSON format can be used as an API replacement.</p>
+        <div style="margin: 1em 0 0.3em; font-weight: bold">Archive / Obsidian</div>
+        <div>
+          <button
+            onclick="window.Services.ArchiveExport.downloadArchive()"
+            data-tip="Download deterministic Markdown reference notes and a sync manifest"
+          >
+            Archive package (.zip)
+          </button>
+        </div>
+        <p>
+          Exports generated reference data for Obsidian. The package is not automatic canon and does not modify a vault.
+        </p>
       </div>
       <div id="saveMapData" style="display: none" class="dialog">
         <div style="margin-top: 0.3em">
