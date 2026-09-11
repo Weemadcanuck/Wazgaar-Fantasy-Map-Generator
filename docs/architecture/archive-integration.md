@@ -6,7 +6,9 @@ This document defines the compatibility boundary for an Archive-oriented FMG for
 
 The first implementation must be an additive export service. It must not change the `.map` format, regeneration behavior, or the meaning of existing FMG fields.
 
-The current fork implements the pure export plan, a full-JSON command-line writer, and an in-application `Archive package (.zip)` download. The application prompts for a stable world ID, stores it locally by map ID, and packages the manifest and generated Markdown beneath one world directory. Direct vault writes, managed-block updates, and reverse synchronization remain unimplemented.
+The current fork implements the pure export plan, a full-JSON command-line writer, an in-application `Archive package (.zip)` download, and guarded desktop-folder export. The application prompts for a stable world ID and stores it locally by map ID. Desktop-folder export uses a native directory picker, shows a dry-run summary, blocks unmanaged or author-edited targets, asks for confirmation, and writes the manifest last. Managed-block updates and reverse synchronization remain unimplemented.
+
+For a first desktop export, select or create an empty directory intended only for generated reference notes, such as `30_Assets/Azgaar Sync/Jotun`. On later exports, select that same managed directory. Files removed from FMG are retained for manual review rather than deleted.
 
 ## Goals
 

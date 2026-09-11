@@ -5,6 +5,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { MenuItemConstructorOptions } from "electron";
 import { app, BrowserWindow, dialog, Menu, nativeImage, net, protocol, screen, shell } from "electron";
+import { registerArchiveExportHandlers } from "./archive-export-ipc";
 import { initUpdater } from "./updater";
 
 const SCHEME = "app";
@@ -302,6 +303,7 @@ if (!app.requestSingleInstanceLock()) {
     if (!app.isPackaged) app.dock?.setIcon(nativeImage.createFromPath(ICON_PATH));
     serveRenderer();
     buildMenu();
+    registerArchiveExportHandlers();
     createWindow();
     initUpdater(allowClose); // app-wide, so re-opening a window on macOS does not start a second updater
     app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());

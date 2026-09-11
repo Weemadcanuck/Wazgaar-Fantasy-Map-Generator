@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["main.ts", "preload.ts", "updater.ts"]
+  "include": ["archive-export-ipc.ts", "archive-export-writer.ts", "main.ts", "preload.ts", "updater.ts"]
 }

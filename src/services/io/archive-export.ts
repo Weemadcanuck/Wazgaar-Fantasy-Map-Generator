@@ -329,7 +329,7 @@ const renderEntity = (
   ].join("\n");
 };
 
-const hashContent = (content: string) => {
+export const hashArchiveContent = (content: string) => {
   let hash = 0x811c9dc5;
   for (let index = 0; index < content.length; index++) {
     hash ^= content.charCodeAt(index);
@@ -362,7 +362,7 @@ export const buildArchiveExportPlan = (
     const descriptor = descriptors.find(candidate => candidate.key === file.entityKey);
     if (!descriptor) continue;
     entities[file.entityKey] = {
-      contentHash: hashContent(file.content),
+      contentHash: hashArchiveContent(file.content),
       name: displayName(descriptor.entity, descriptor.type),
       path: file.path
     };

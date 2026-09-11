@@ -109,4 +109,38 @@ async function downloadArchive(): Promise<void> {
   }
 }
 
-export const ArchiveExportDownload = { downloadArchive };
+async function exportToDirectory(): Promise<void> {
+  if (customization) {
+    tip("Archive data cannot be exported when edit mode is active. Exit the mode and retry", false, "error");
+    return;
+  }
+  if (!window.electron?.archiveExport) {
+    tip("Direct folder export is available in the desktop app", true, "error", 7000);
+    return;
+  }
+
+  const worldId = requestWorldId();
+  if (!worldId) return;
+
+  TIME && console.time("exportArchiveToDirectory");
+  try {
+    const plan = buildArchiveExportPlan(getCurrentArchiveSnapshot(), { worldId });
+    const result = await window.electron.archiveExport.writeDirectory({ files: plan.files, worldId });
+    if (result.status === "written") {
+      tip("Archive reference directory was updated", true, "success", 7000);
+    } else if (result.status === "unchanged") {
+      tip("Archive reference directory is already current", true, "success", 7000);
+    } else if (result.status === "blocked") {
+      tip("Archive export was blocked by conflicts; no files were written", true, "error", 7000);
+    } else if (result.status === "failed") {
+      tip(`Archive export failed: ${result.message || "Unknown error"}`, true, "error", 7000);
+    }
+  } catch (error) {
+    ERROR && console.error(error);
+    tip(`Archive export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 7000);
+  } finally {
+    TIME && console.timeEnd("exportArchiveToDirectory");
+  }
+}
+
+export const ArchiveExportDownload = { downloadArchive, exportToDirectory };

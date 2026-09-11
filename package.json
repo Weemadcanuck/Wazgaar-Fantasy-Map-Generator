@@ -21,6 +21,7 @@
     "electron": "node scripts/electron.mjs",
     "export:archive": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/export-archive.mjs",
     "test": "vitest",
+    "test:electron": "vitest --config vitest.electron.config.ts",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
     "sync-version": "node scripts/sync-version.js",

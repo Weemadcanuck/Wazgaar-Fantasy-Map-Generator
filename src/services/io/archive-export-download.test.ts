@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ArchiveDirectoryRequest, ArchiveDirectoryResult } from "@/types/archive-export-ipc";
 import { ArchiveExportDownload } from "./archive-export-download";
 
 const archivedFiles = new Map<string, string>();
@@ -40,6 +41,7 @@ beforeEach(() => {
   } as unknown as typeof pack;
 
   window.JSZip = FakeZip as unknown as typeof window.JSZip;
+  window.electron = undefined;
   window.prompt = vi.fn(() => "jotun-live");
   window.URL.createObjectURL = vi.fn(() => "blob:archive");
   window.URL.revokeObjectURL = vi.fn();
@@ -55,5 +57,27 @@ describe("in-application Archive export", () => {
     expect(archivedFiles.has("Jotun (Azgaar Archive)/Burgs/Drelgard (Azgaar Burg).md")).toBe(true);
     expect(localStorage.getItem("archive-export-world-id:1788160068282")).toBe("jotun-live");
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
+  });
+
+  it("sends the same export plan through the desktop bridge", async () => {
+    const writeDirectory = vi.fn(
+      async (_request: ArchiveDirectoryRequest): Promise<ArchiveDirectoryResult> => ({ status: "written" })
+    );
+    window.electron = {
+      isElectron: true,
+      platform: "win32",
+      versions: { electron: "test", chrome: "test", node: "test" },
+      archiveExport: { writeDirectory }
+    };
+
+    await ArchiveExportDownload.exportToDirectory();
+
+    expect(writeDirectory).toHaveBeenCalledOnce();
+    const request = writeDirectory.mock.calls[0]?.[0];
+    expect(request).toBeDefined();
+    if (!request) throw new Error("Desktop bridge did not receive an export request");
+    expect(request.worldId).toBe("jotun-live");
+    expect(request.files).toHaveLength(7);
+    expect(request.files.some(file => file.path === "azgaar-archive-manifest.json")).toBe(true);
   });
 });
