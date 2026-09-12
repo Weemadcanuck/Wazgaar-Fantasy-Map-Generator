@@ -41,8 +41,26 @@ function open(initial: string, callback: (value: string) => void): void {
     urlInput.value = "";
   };
 
+  const fileInput = ensureEl<HTMLInputElement>("iconFileInput");
+  ensureEl("importIconFile").onclick = () => fileInput.click();
+  fileInput.onchange = async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return tip("Select an image file", false, "error", 4000);
+    if (file.size > 1024 * 1024) return tip("Keep embedded icons under 1 MB", false, "error", 5000);
+
+    try {
+      const url = await readImageFile(file);
+      addImage(url, callback);
+      callback(url);
+    } catch {
+      tip("Could not read the selected image", false, "error", 5000);
+    }
+  };
+
   for (const image of Array.from(ensureEl("addedIcons").querySelectorAll<HTMLElement>("div"))) {
-    image.onclick = () => callback(image.style.backgroundImage.slice(5, -2));
+    image.onclick = () => image.dataset.icon && callback(image.dataset.icon);
   }
 
   $(dialog).dialog({
@@ -84,6 +102,11 @@ function renderDialog(): HTMLElement {
         <input id="imageInput" style="width: 20em" />
         <button id="addImage" type="button">Add</button>
       </div>
+      <div style="font-style: italic; margin-top: .35em">
+        <button id="importIconFile" type="button">Import local image…</button>
+        <input id="iconFileInput" type="file" accept="image/*" hidden />
+        <span>Embeds the selected image in this map (maximum 1 MB).</span>
+      </div>
       <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
     </div>`;
 
@@ -105,8 +128,12 @@ function getUsedImages(): Set<string> {
   const images = new Set<string>();
 
   for (const unit of options.military) if (isExternal(unit.icon)) images.add(unit.icon);
-  for (const state of pack.states) {
+  for (const state of pack.states ?? []) {
     for (const regiment of state?.military || []) if (isExternal(regiment.icon)) images.add(regiment.icon);
+  }
+  for (const layer of pack.customLayers ?? []) {
+    if (isExternal(layer.icon)) images.add(layer.icon);
+    for (const entity of layer.entities) if (entity.icon && isExternal(entity.icon)) images.add(entity.icon);
   }
 
   return images;
@@ -114,9 +141,21 @@ function getUsedImages(): Set<string> {
 
 function addImage(url: string, callback: (value: string) => void): void {
   const image = document.createElement("div");
-  image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
+  image.dataset.icon = url;
+  image.style.cssText =
+    "width: 2.2em; height: 2.2em; background-size: contain; background-repeat: no-repeat; background-position: center";
+  image.style.backgroundImage = `url("${url}")`;
   image.onclick = () => callback(url);
   ensureEl("addedIcons").appendChild(image);
+}
+
+function readImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 export const IconSelector = { open };

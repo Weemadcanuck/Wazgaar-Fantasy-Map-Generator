@@ -13,6 +13,45 @@ import { ensureEl, rn } from "@/utils";
 
 let selectedLayerId: string | undefined;
 const safeColor = (value: string | undefined) => (value && /^#[\da-f]{6}$/i.test(value) ? value : "#7c4d8b");
+const authorityLabels: Record<CustomEntityAuthority, string> = {
+  authored: "Azgaar authored",
+  generated: "FMG generated",
+  archive: "Archive sourced"
+};
+const fieldTemplates: Record<string, string[]> = {
+  artifact: [
+    "Holder | text",
+    "Condition | text",
+    "Status | text",
+    "Origin | text",
+    "Danger | text",
+    "Active | boolean"
+  ],
+  mind: [
+    "Classification | text",
+    "Disposition | text",
+    "Domain | text",
+    "Manifestation | text",
+    "Known agents | text",
+    "Contained | boolean",
+    "Confidence | text"
+  ],
+  site: [
+    "Category | text",
+    "Status | text",
+    "Parent polity | text",
+    "Strategic role | text",
+    "Access | text",
+    "Active | boolean"
+  ],
+  tracking: ["Last verified | text", "Source | text", "Confidence | text", "Needs review | boolean"]
+};
+
+const isImageIcon = (value: string) => /^(https?:\/\/|data:image\/)/i.test(value);
+const renderIconPreview = (value: string) =>
+  isImageIcon(value)
+    ? `<img src="${escapeHtml(value)}" alt="" style="width:1.4em;height:1.4em;object-fit:contain">`
+    : escapeHtml(value);
 
 function open(layerId?: string): void {
   if (customization) return;
@@ -46,9 +85,9 @@ function renderManager(): void {
     selected?.entities
       .map(
         entity => /* html */ `<div class="custom-point-row" data-entity-id="${entity.id}">
-          <span class="custom-point-icon">${escapeHtml(entity.icon || selected.icon)}</span>
+          <span class="custom-point-icon">${renderIconPreview(entity.icon || selected.icon)}</span>
           <span class="custom-point-name">${escapeHtml(entity.name)}</span>
-          <span class="custom-point-authority">${entity.authority}</span>
+          <span class="custom-point-authority">${authorityLabels[entity.authority]}</span>
           <button data-action="edit-point">Edit</button>
           <button data-action="remove-point" class="icon-trash-empty" data-tip="Remove this item"></button>
         </div>`
@@ -66,7 +105,7 @@ function renderManager(): void {
     ${
       selected
         ? `<div class="custom-layer-summary">
-            <span class="custom-layer-swatch" style="color:${safeColor(selected.color)}">${escapeHtml(selected.icon)}</span>
+            <span class="custom-layer-swatch" style="color:${safeColor(selected.color)}">${renderIconPreview(selected.icon)}</span>
             <span>${selected.entities.length} ${escapeHtml(selected.entities.length === 1 ? selected.name : selected.pluralName)}</span>
             <label><input id="customLayerVisible" type="checkbox" ${selected.visible ? "checked" : ""}> Visible</label>
             <label><input id="customLayerArchiveExport" type="checkbox" ${selected.archiveExport ? "checked" : ""}> Archive export</label>
@@ -126,14 +165,44 @@ function openLayerDefinition(layer?: CustomPointLayer): void {
   const html = /* html */ `<div id="customLayerDefinition" class="dialog archive-export-dialog">
     <p><label>Singular name <input id="customLayerName" value="${escapeHtml(layer?.name || "")}" placeholder="Artifact"></label></p>
     <p><label>Plural name <input id="customLayerPlural" value="${escapeHtml(layer?.pluralName || "")}" placeholder="Artifacts"></label></p>
-    <p><label>Icon <input id="customLayerIcon" value="${escapeHtml(layer?.icon || "◆")}" style="width:4em"></label>
+    <p><label>Icon <input id="customLayerIcon" value="${escapeHtml(layer?.icon || "◆")}" style="width:6em"></label>
+      <button id="customLayerChooseIcon" type="button">Choose…</button>
       <label> Colour <input id="customLayerColor" type="color" value="${safeColor(layer?.color)}"></label></p>
+    <p><label>Base size <input id="customLayerSize" type="number" min="8" max="100" value="${layer?.size ?? 30}" style="width:4em"></label>
+      <label><input id="customLayerResize" type="checkbox" ${layer?.resizeOnZoom === false ? "" : "checked"}> Resize smoothly with map zoom</label></p>
     <p><label><input id="customLayerExport" type="checkbox" ${layer?.archiveExport === false ? "" : "checked"}> Include in Archive exports</label></p>
-    <label>Custom fields, one per line as <code>Name | text</code>, <code>Name | number</code>, or <code>Name | boolean</code>
-      <textarea id="customLayerFields" rows="6" style="width:100%">${escapeHtml(fields)}</textarea>
+    <p><label>Field starter
+      <select id="customLayerFieldTemplate">
+        <option value="">Choose a starter…</option>
+        <option value="artifact">Artifact</option>
+        <option value="mind">Mind or godhead</option>
+        <option value="site">Colony or point of interest</option>
+        <option value="tracking">Archive tracking</option>
+      </select>
+    </label> <button id="customLayerApplyTemplate" type="button">Add fields</button></p>
+    <label>Structured fields <span style="font-style:italic">(one per line: <code>Name | text</code>, <code>Name | number</code>, or <code>Name | boolean</code>)</span>
+      <textarea id="customLayerFields" rows="8" style="width:100%" placeholder="Status | text&#10;Power | number&#10;Active | boolean">${escapeHtml(fields)}</textarea>
     </label>
+    <p style="font-style:italic">Use fields for facts you may sort, export, or synchronize later. Use each item's Notes box for prose.</p>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  ensureEl("customLayerChooseIcon").addEventListener("click", () => {
+    const input = ensureEl<HTMLInputElement>("customLayerIcon");
+    Controllers.IconSelector.open(input.value || "◆", value => (input.value = value));
+  });
+  ensureEl("customLayerApplyTemplate").addEventListener("click", () => {
+    const key = ensureEl<HTMLSelectElement>("customLayerFieldTemplate").value;
+    if (!key) return;
+    const textarea = ensureEl<HTMLTextAreaElement>("customLayerFields");
+    const existing = textarea.value
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+    const names = new Set(existing.map(line => line.split("|")[0].trim().toLocaleLowerCase()));
+    const additions = fieldTemplates[key].filter(line => !names.has(line.split("|")[0].trim().toLocaleLowerCase()));
+    textarea.value = [...existing, ...additions].join("\n");
+  });
 
   $("#customLayerDefinition").dialog({
     title: layer ? `Edit ${layer.name} layer` : "Create Custom Point Layer",
@@ -146,10 +215,32 @@ function openLayerDefinition(layer?: CustomPointLayer): void {
         const pluralName = ensureEl<HTMLInputElement>("customLayerPlural").value.trim() || `${name}s`;
         const icon = ensureEl<HTMLInputElement>("customLayerIcon").value.trim() || "◆";
         const color = ensureEl<HTMLInputElement>("customLayerColor").value;
+        const size = Math.min(100, Math.max(8, ensureEl<HTMLInputElement>("customLayerSize").valueAsNumber || 30));
+        const resizeOnZoom = ensureEl<HTMLInputElement>("customLayerResize").checked;
         const archiveExport = ensureEl<HTMLInputElement>("customLayerExport").checked;
         const fields = parseFields(ensureEl<HTMLTextAreaElement>("customLayerFields").value, layer?.fields ?? []);
-        if (layer) CustomLayers.updateLayer(layer.id, { name, pluralName, icon, color, archiveExport, fields });
-        else selectedLayerId = CustomLayers.createLayer({ name, pluralName, icon, color, archiveExport, fields }).id;
+        if (layer)
+          CustomLayers.updateLayer(layer.id, {
+            name,
+            pluralName,
+            icon,
+            color,
+            size,
+            resizeOnZoom,
+            archiveExport,
+            fields
+          });
+        else
+          selectedLayerId = CustomLayers.createLayer({
+            name,
+            pluralName,
+            icon,
+            color,
+            size,
+            resizeOnZoom,
+            archiveExport,
+            fields
+          }).id;
         $(this).dialog("close");
         if (document.getElementById("customLayersEditor")) reopen();
         else open(selectedLayerId);
@@ -233,10 +324,14 @@ function openPoint(layerId: string, entityId: string): void {
     <p><label>Name <input id="customPointName" value="${escapeHtml(entity.name)}" style="width:22em"></label></p>
     <p><label>Authority <select id="customPointAuthority">
       ${(["authored", "generated", "archive"] as CustomEntityAuthority[])
-        .map(value => `<option value="${value}" ${entity.authority === value ? "selected" : ""}>${value}</option>`)
+        .map(
+          value =>
+            `<option value="${value}" ${entity.authority === value ? "selected" : ""}>${authorityLabels[value]}</option>`
+        )
         .join("")}
-    </select></label></p>
-    <p><label>Icon override <input id="customPointIcon" value="${escapeHtml(entity.icon || "")}" placeholder="${escapeHtml(layer.icon)}" style="width:5em"></label>
+    </select></label> <span style="font-style:italic">Archive sourced records provenance only; it is not live synchronization.</span></p>
+    <p><label>Icon override <input id="customPointIcon" value="${escapeHtml(entity.icon || "")}" placeholder="${escapeHtml(layer.icon)}" style="width:6em"></label>
+      <button id="customPointChooseIcon" type="button">Choose…</button>
       <label> Colour override <input id="customPointColor" type="color" value="${safeColor(entity.color || layer.color)}"></label>
       <label><input id="customPointUseLayerColor" type="checkbox" ${entity.color ? "" : "checked"}> Use layer colour</label></p>
     <div class="custom-point-fields">${fields}</div>
@@ -244,6 +339,14 @@ function openPoint(layerId: string, entityId: string): void {
     <p class="custom-point-id">Stable ID: <code>${entity.id}</code></p>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  ensureEl("customPointChooseIcon").addEventListener("click", () => {
+    const input = ensureEl<HTMLInputElement>("customPointIcon");
+    Controllers.IconSelector.open(
+      input.value || layer.icon,
+      value => (input.value = value === layer.icon ? "" : value)
+    );
+  });
 
   $("#customPointEditor").dialog({
     title: `Edit ${layer.name}`,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { drawCustomPoints } from "./draw-custom-points";
+import { drawCustomPoints, resizeCustomPoints } from "./draw-custom-points";
 
 describe("drawCustomPoints", () => {
   beforeEach(() => {
@@ -15,6 +15,8 @@ describe("drawCustomPoints", () => {
           geometry: "point",
           icon: "◆",
           color: "#7c4d8b",
+          size: 30,
+          resizeOnZoom: true,
           visible: true,
           archiveExport: true,
           fields: [],
@@ -38,6 +40,8 @@ describe("drawCustomPoints", () => {
           geometry: "point",
           icon: "?",
           color: "#000000",
+          size: 30,
+          resizeOnZoom: false,
           visible: false,
           archiveExport: false,
           fields: [],
@@ -54,5 +58,24 @@ describe("drawCustomPoints", () => {
     expect(entity?.dataset.customLayerId).toBe("artifacts");
     expect(entity?.getAttribute("aria-label")).toBe("The Crown");
     expect(document.querySelector<SVGGElement>('[data-custom-layer-id="hidden"]')?.style.display).toBe("none");
+  });
+
+  it("resizes zoom-aware points after the scale settles", () => {
+    drawCustomPoints();
+    globalThis.scale = 2;
+    resizeCustomPoints();
+
+    const entity = document.querySelector<SVGElement>('[data-custom-point-id="crown"]');
+    expect(entity?.getAttribute("width")).toBe("18");
+    expect(entity?.getAttribute("x")).toBe("31");
+    expect(entity?.getAttribute("y")).toBe("12");
+  });
+
+  it("renders embedded image icons inside the point pin", () => {
+    pack.customLayers![0].entities[0].icon = "data:image/png;base64,AAAA";
+    drawCustomPoints();
+
+    const image = document.querySelector<SVGImageElement>('[data-custom-point-id="crown"] image');
+    expect(image?.getAttribute("href")).toBe("data:image/png;base64,AAAA");
   });
 });

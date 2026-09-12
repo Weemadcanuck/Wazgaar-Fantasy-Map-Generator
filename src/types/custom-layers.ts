@@ -27,6 +27,8 @@ export interface CustomPointLayer {
   geometry: "point";
   icon: string;
   color: string;
+  size?: number;
+  resizeOnZoom?: boolean;
   visible: boolean;
   archiveExport: boolean;
   fields: CustomFieldDefinition[];

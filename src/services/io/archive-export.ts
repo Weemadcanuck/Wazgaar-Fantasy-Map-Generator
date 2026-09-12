@@ -516,6 +516,12 @@ const renderEntity = (
   ].join("\n");
 };
 
+const customAuthorityLabel = (authority: CustomPointEntity["authority"]): string => {
+  if (authority === "generated") return "FMG generated";
+  if (authority === "archive") return "Archive sourced (not synchronized)";
+  return "Azgaar authored";
+};
+
 const renderCustomPoint = (layer: CustomPointLayer, entity: CustomPointEntity, key: string): string => {
   const fields = layer.fields.flatMap(field => {
     const value = entity.values[field.id];
@@ -542,7 +548,7 @@ const renderCustomPoint = (layer: CustomPointLayer, entity: CustomPointEntity, k
     "## Map reference",
     "",
     `- **Layer:** ${layer.name}`,
-    `- **Authority:** ${entity.authority}`,
+    `- **Authority:** ${customAuthorityLabel(entity.authority)}`,
     `- **Map coordinates:** ${entity.x}, ${entity.y}`,
     ...fields,
     ...(entity.notes.trim() ? ["", "## Notes", "", entity.notes.trim()] : []),

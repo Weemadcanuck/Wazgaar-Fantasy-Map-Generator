@@ -20,6 +20,7 @@ describe("CustomLayers", () => {
     const entity = CustomLayers.addPoint(layer.id, { x: 12.5, y: 30, cell: 7, name: "The Crown" });
 
     expect(layer.id).toBe("00000000-0000-4000-8000-000000000001");
+    expect(layer).toMatchObject({ size: 30, resizeOnZoom: true });
     expect(entity).toMatchObject({
       id: "00000000-0000-4000-8000-000000000002",
       name: "The Crown",

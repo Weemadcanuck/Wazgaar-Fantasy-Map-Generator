@@ -25,6 +25,8 @@ function createLayer(input: {
   pluralName?: string;
   icon?: string;
   color?: string;
+  size?: number;
+  resizeOnZoom?: boolean;
   archiveExport?: boolean;
   fields?: CustomFieldDefinition[];
 }): CustomPointLayer {
@@ -36,6 +38,8 @@ function createLayer(input: {
     geometry: "point",
     icon: input.icon?.trim() || "◆",
     color: input.color || "#7c4d8b",
+    size: input.size ?? 30,
+    resizeOnZoom: input.resizeOnZoom ?? true,
     visible: true,
     archiveExport: input.archiveExport ?? true,
     fields: input.fields ?? [],
