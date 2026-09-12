@@ -113,7 +113,7 @@ $("#mapLayers").sortable({
 });
 
 Layers.subscribe(render);
-Layers.subscribe(() => ViewportLayers.renderNow());
+Layers.subscribe(() => ViewportLayers.renderNow("layer change"));
 CustomLayers.subscribe(render);
 CustomLayers.subscribe(() => {
   if (findEl("customPoints")) Layers.draw("customPoints");

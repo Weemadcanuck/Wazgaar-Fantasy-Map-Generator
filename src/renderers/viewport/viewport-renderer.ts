@@ -1,3 +1,5 @@
+import { PerformanceMetrics } from "./performance-metrics";
+
 interface ViewportLayerHandle {
   render: () => void;
   unregister: () => void;
@@ -6,6 +8,7 @@ interface ViewportLayerHandle {
 export interface ViewportRenderContext {
   bounds: ViewportBounds;
   root: ParentNode;
+  reason?: string;
 }
 
 interface ViewportLayer {
@@ -76,7 +79,8 @@ export class ViewportRenderer {
     this.layers.set(layer.id, layer);
     return {
       render: () => {
-        if (this.layers.get(layer.id) === layer) layer.render(this.getLiveContext());
+        if (this.layers.get(layer.id) === layer)
+          this.renderLayer(layer, { ...this.getLiveContext(), reason: "direct draw" });
       },
       unregister: () => {
         if (this.layers.get(layer.id) === layer) this.layers.delete(layer.id);
@@ -88,19 +92,19 @@ export class ViewportRenderer {
     if (!this.shouldReconcile()) return;
     const context = this.getLiveContext();
     this.materializedBounds = context.bounds;
-    this.scheduleContext(context);
+    this.scheduleContext({ ...context, reason: "pan or zoom guard" });
   }
 
-  renderNow(): void {
+  renderNow(reason = "zoom end"): void {
     const context = this.getLiveContext();
     this.materializedBounds = context.bounds;
     this.cancelScheduledRender();
-    this.renderLayers(context);
+    this.renderLayers({ ...context, reason });
   }
 
   renderTo(root: ParentNode): void {
     const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
-    this.renderLayers({ root, bounds });
+    this.renderLayers({ root, bounds, reason: "export" });
   }
 
   getContext(): ViewportRenderContext {
@@ -159,7 +163,26 @@ export class ViewportRenderer {
 
   private renderLayers(context: ViewportRenderContext): void {
     for (const layer of this.layers.values()) {
+      this.renderLayer(layer, context);
+    }
+  }
+
+  private renderLayer(layer: ViewportLayer, context: ViewportRenderContext): void {
+    if (!PerformanceMetrics.active) {
       layer.render(context);
+      return;
+    }
+    const start = performance.now();
+    try {
+      layer.render(context);
+    } finally {
+      PerformanceMetrics.record({
+        layer: layer.id,
+        reason: context.reason ?? "unknown",
+        phase: "reconcile",
+        start,
+        duration: performance.now() - start
+      });
     }
   }
 }

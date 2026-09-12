@@ -1,0 +1,359 @@
+# Relief Performance Implementation Plan
+
+Status: Phase 0 built and locally verified; awaiting target-machine baseline captures  
+Parent: [Archive Fork 2.0 Worklist](./archive-fork-2.0-worklist.md)  
+Updated: 2026-09-12
+
+## Objective
+
+Make the relief layer responsive on the supplied Jotun map without disabling GPU acceleration, changing serialized
+`pack.relief` data, reducing SVG export detail, or breaking individual relief editing.
+
+The initial repair must remain SVG-based. A rasterized runtime representation is a conditional fallback only if the
+measured SVG repairs do not meet the acceptance gate.
+
+## Approved review amendments (2026-09-12)
+
+These amendments govern the implementation where the original phases below differ.
+
+1. Implement diagnostics, independent scheduling, stable identity plus keyed DOM, then the spatial index. Keep the
+   original phase numbers as reference labels. Reverse the last two only if capture evidence shows scanning dominates.
+2. Mutation handling is mandatory. Audit editor geometry, appearance, order and bulk operations; generator replacement,
+   global style resize/set changes, loading/migration and heightmap customization. Measure scene preparation/index
+   rebuilding separately. Single-icon drag/resize must not rebuild the full scene/index on every frame.
+3. Scheduler bounds describe completed rendering, not queued work. Flush against the latest viewport; a direct render
+   consumes only its own pending work. Account explicitly for scale-dependent labels/emblems and viewport resize.
+   Test interleaved direct/queued work, multiple viewport changes, zoom thresholds in both directions, resize, hide,
+   replacement and unregister while pending.
+4. Distinguish intentionally empty relief from data awaiting initial generation, including old-map compatibility.
+   Cancel relief-specific pending redraws on hide/reset. Test delete-all/redraw/save/reload, hide/show within one frame,
+   and map replacement with a pending redraw.
+5. Capture initial/final viewport, viewport size, display scale, app/build identity, layer settings, relief count and
+   timed movement samples. Compare several runs with alternating on/off conditions after warm-up. Keep diagnostics
+   opt-in and bounded. Treat rAF intervals as a responsiveness proxy; nested timing phases must not be summed.
+6. CPU ratios and private-memory deltas below are investigation triggers rather than standalone failure gates. Prioritize
+   frame-time percentiles/long frames, reconciliation costs, DOM churn and repeated-cycle growth. Stable process memory
+   is not proof of Chromium residency. Require a browser trace separating scripting from paint/raster/compositor work
+   before selecting Phase 5; application timers alone cannot establish that attribution.
+7. Exports that include relief must use all relevant source icons independently of the live viewport while preserving
+   existing layer visibility. Test export immediately after an edit before its queued redraw, full-map and viewport
+   raster outputs, and export-clone isolation. Do not silently enable hidden relief.
+8. Any raster fallback must cancel obsolete tile work, dispose resources, cap cache memory and define entry into the
+   individual SVG editor from a rasterized distant view. It remains conditional.
+
+The target deployment is the installed Azgaar Archival Fork 1.153.0. Keep a separately identified instrumented baseline
+package before changing rendering behavior; record the actual tested stage in each capture.
+
+### Current checkpoint
+
+- Instrumented desktop baseline: `release/relief-baseline/azgaar-archival-fork-1.153.0-relief-baseline.exe`.
+- Capture instructions: [Relief baseline capture](./relief-performance-capture.md).
+- Local validation: 25 targeted tests passed (capture metrics, capture dialog lifecycle, existing emblem renderer),
+  renderer and Electron type checks, desktop build, source lint, whitespace check and packaged archive inspection.
+- Electron 43.4.1 runtime verified from the existing release and reused for the baseline package. The installer was
+  built without publishing. The original 1.153.0 installer remains available.
+- Target-PC interaction, packaged UI smoke check and performance comparison remain pending. No rendering optimization
+  or raster fallback has been applied at this checkpoint.
+
+## Evidence and working diagnosis
+
+The A/B traces are stored at the workspace root under `work/performance/`.
+
+| Trace | Relief | Active-process mean CPU | Large-process private-memory change | Peak working sets |
+| --- | --- | ---: | ---: | ---: |
+| `interaction-sample-20260912.csv` | On | 5.07% of one core | +42.14 MB and about +42 MB | 664 MB and 1.11 GB |
+| `interaction-relief-off-20260912.csv` | Off | 0.94% of one core | -0.05 MB and -2.80 MB | 252 MB and 555 MB |
+
+The user also reported an immediate qualitative improvement when relief was disabled. Relief is therefore a
+confirmed dominant contributor in the tested layer combination.
+
+Current code has four likely costs:
+
+1. `reconcileRelief` scans every scene item for each relief reconciliation.
+2. It replaces all visible terrain markup through `terrain.innerHTML`, recreating unchanged `<use>` elements.
+3. `ViewportRenderer` has one materialized-bounds value and reconciles every registered viewport layer together.
+4. Layer activation can draw its own viewport layer and then trigger a second all-layer reconciliation through the
+   layer subscription.
+
+The OS traces cannot distinguish JavaScript, DOM mutation, SVG symbol rasterization and Chromium compositor/GPU
+caching. Instrument those boundaries before selecting the final repair.
+
+## Invariants
+
+- `pack.relief` remains the serialized source of truth and keeps its current schema.
+- Runtime indexes, keys, node caches and metrics are transient and never enter the `.map` file.
+- Relief order remains the `pack.relief` array order; front/back editing must behave identically.
+- Clicking a visible icon must still resolve to the correct `ReliefIcon` object.
+- Full-map SVG and tiled/raster exports must materialize every relief icon, not the viewport subset or a reduced LOD.
+- Hiding relief releases its live nodes and runtime scene/index state.
+- No new production dependency is required.
+- Existing map files load without a migration.
+
+## Phase 0: reproducible instrumentation
+
+### Files
+
+- Modify `src/renderers/viewport/viewport-renderer.ts`.
+- Modify `src/renderers/draw-relief-icons.ts`.
+- Add `src/controllers/performance-diagnostics.ts` only if the packaged app needs a user-visible capture surface.
+- Add the smallest required Tools action/UI hook; avoid restructuring `src/index.html`.
+
+### Metrics
+
+For each viewport reconciliation, record:
+
+- layer id;
+- reason: direct draw, pan guard crossed, zoom end, layer change, export, or explicit invalidation;
+- start time and duration;
+- total items scanned;
+- candidate items returned by an index;
+- visible items emitted;
+- nodes created, updated, moved, removed and retained;
+- live child count after reconciliation.
+
+Record gesture-level frame count, frames over 16.7 ms, frames over 33.3 ms, longest frame and total reconciliations.
+When Chromium exposes `performance.memory`, report it as optional supporting evidence, never as the sole memory test.
+
+### Capture workflow
+
+1. Load the supplied Jotun map and use the user's normal working layer combination.
+2. Warm up with one pan and zoom before recording.
+3. Record the same 22-second movement with relief on and off.
+4. Record relief alone.
+5. Copy or save one compact JSON/CSV report that includes the app version and relief count.
+
+### Gate
+
+Do not start Phase 5 from OS telemetry alone. Phases 1-3 are justified by known redundant work; runtime
+rasterization requires evidence that SVG raster/compositing remains dominant afterward.
+
+## Phase 1: independent viewport-layer scheduling
+
+### Files
+
+- Modify `src/renderers/viewport/viewport-renderer.ts`.
+- Modify `src/components/layers-tab.ts` only where its broad `ViewportLayers.renderNow()` subscription is involved.
+- Modify `src/components/zoom.ts` only if the scheduler needs an explicit gesture/end reason.
+- Add `src/renderers/viewport/viewport-renderer.test.ts`.
+
+### Design
+
+Replace the renderer-wide `materializedBounds` with runtime state per registered layer:
+
+```ts
+interface ViewportLayerState {
+  layer: ViewportLayer;
+  materializedBounds: ViewportBounds | null;
+  dirty: boolean;
+}
+```
+
+The scheduler should:
+
+- determine reconciliation independently for each layer;
+- coalesce repeated requests into one animation frame;
+- reconcile only dirty layers or layers whose own guard has been crossed;
+- mark a direct layer render as materialized so the following global notification cannot repeat it;
+- preserve `renderTo(root)` as an unconditional all-layer render for export clones;
+- provide explicit `invalidate(id)` and `invalidateAll()` operations rather than using bounds as hidden invalidation.
+
+Do not remove the layer-registry subscription blindly. Labels can depend on another layer's visibility. Either pass
+the changed layer ids through the registry notification or explicitly invalidate the small dependency set. Avoid
+reconciling unrelated viewport layers merely to update a dependent label group.
+
+### Tests
+
+- Crossing one layer's guard reconciles that layer without reconciling another whose bounds remain valid.
+- Multiple schedule calls in one frame reconcile each selected layer once.
+- A direct draw followed by a layer notification does not redraw the same layer.
+- Dirty invalidation redraws within unchanged bounds.
+- `renderTo` renders every registered layer with infinite full-map bounds.
+- Unregistering a layer drops its scheduler state and pending work.
+
+### Gate
+
+Repeat the instrumented Jotun trace. Retain this phase even if relief is still expensive, provided it reduces
+unrelated reconciliations and passes all visual behavior checks.
+
+## Phase 2: relief spatial index and stable runtime identity
+
+### Files
+
+- Add `src/renderers/relief/relief-spatial-index.ts`.
+- Add `src/renderers/relief/relief-spatial-index.test.ts`.
+- Modify `src/renderers/draw-relief-icons.ts`.
+- Modify `src/controllers/relief-editor.ts` for explicit mutation invalidation, and audit every mutation source listed above.
+
+### Runtime identity
+
+Array positions currently become `data-id` values. Deleting or reordering an entry can therefore change many ids.
+Introduce session-stable runtime ids without changing `ReliefIcon`:
+
+- keep a `WeakMap<ReliefIcon, string>` plus a monotonic id counter;
+- preserve the same id while an object remains in the session;
+- rebuild ids naturally after map load;
+- continue resolving a clicked id to the exact object used by the editor.
+
+### Spatial index
+
+Use a small relief-specific uniform bucket index; do not add a general framework or dependency.
+
+- Build it when relief is generated, loaded, replaced or bulk-mutated.
+- Index each icon by its bounding box, accounting for `x`, `y` and `s`.
+- Query only buckets intersecting the overscanned viewport.
+- Deduplicate icons spanning multiple buckets.
+- Return candidates in `pack.relief` order, preserving visual depth.
+- Treat infinite export bounds as a direct all-items path.
+
+Choose bucket dimensions from the map size and measured density, then lock the choice behind tests. Avoid a bucket
+size so fine that index overhead exceeds a linear scan on small maps.
+
+### Mutation handling
+
+Start with correctness-first invalidation:
+
+- generation, load, set change and bulk operations may rebuild the index;
+- moving or resizing one icon should update only that icon if the API remains simple;
+- front/back order changes update order metadata without changing runtime identity;
+- style-only changes must not rebuild spatial membership.
+
+### Tests
+
+- Bounds queries include icons intersecting an edge even when their origin lies outside it.
+- Multi-bucket icons are returned once.
+- Results preserve source order.
+- Moving and resizing updates membership correctly.
+- Removing and adding icons updates both lookup and identity.
+- Infinite bounds return every icon.
+- Empty and very small scenes avoid errors and unnecessary indexing.
+
+### Gate
+
+For zoomed-in Jotun views, `itemsScanned` should approach the candidate count rather than total relief count. Query
+and ordering time should remain below the DOM reconciliation time.
+
+## Phase 3: keyed live-DOM reconciliation
+
+### Files
+
+- Modify `src/renderers/draw-relief-icons.ts`.
+- Add `src/renderers/draw-relief-icons.test.ts`.
+
+### Design
+
+For the live document, reconcile `<use>` nodes by stable runtime id:
+
+- remove nodes no longer in the overscanned set;
+- create only newly visible nodes;
+- update `href`, `x`, `y`, `width` and `height` only when values changed;
+- retain unchanged nodes;
+- insert entering nodes at the correct source-order position;
+- perform a deliberate reorder only after a front/back edit changes source order.
+
+Do not cache DOM nodes across map replacement. Clear the node cache from `removeRelief` and every scene reset.
+
+Export roots require a separate stateless path. When `context.root` is an export clone, create complete ordered
+markup in that clone and do not read or move cached nodes from the live document.
+
+### Tests
+
+- A small pan retains overlapping nodes by object identity.
+- Entering and leaving icons produce only the expected creates/removes.
+- A moved or resized icon updates attributes without recreating unrelated nodes.
+- Front/back operations preserve exact source order.
+- Hiding relief clears live nodes and caches.
+- Re-enabling relief restores correct icons and editor lookup.
+- Export-clone rendering includes every icon and leaves the live layer untouched.
+
+### Gate
+
+Repeat all three traces. The relief-on interaction should no longer show wholesale child replacement or allocation
+growth proportional to every viewport update.
+
+## Phase 4: interaction cadence, only if needed
+
+### Changes
+
+- Give relief its own measured overscan and guard values.
+- During an active gesture, allow the existing relief group to move with the parent transform.
+- Reconcile at most at the chosen cadence when the larger relief guard is crossed.
+- Always perform one exact reconciliation when the gesture ends.
+
+Do not permanently lower relief density. A briefly unpopulated edge during an unusually fast drag is preferable to
+blocking input, but first choose overscan large enough that it is rare on the target PC.
+
+### Gate
+
+Keep this phase only if it improves long frames without visibly distracting edge pop-in.
+
+## Phase 5: conditional runtime raster cache
+
+Implement this only if Phases 1-4 show that SVG symbol rasterization/compositing remains the dominant cost.
+
+### Required behavior
+
+- Use raster relief only for ordinary distant map viewing.
+- Switch to individual SVG nodes for close views and whenever the relief editor is open.
+- Invalidate cached tiles after any relief data or relief style change.
+- Generate tiles sequentially and cap cache memory.
+- Keep vector `pack.relief` as source data.
+- Force complete vector materialization for SVG export.
+- Make the fallback reversible behind one internal feature flag during testing.
+
+### Rejection conditions
+
+Reject this approach if it introduces persistent blur at normal scale, visible seams, stale edits, excessive cache
+warm-up, or another GPU rendering artifact.
+
+## Validation matrix
+
+### Automated
+
+Run targeted tests after each phase, then the standard checks:
+
+```powershell
+npm test -- --run renderers/viewport/performance-metrics.test.ts renderers/viewport/viewport-renderer.test.ts --maxWorkers=1
+npm test -- --run renderers/relief/relief-spatial-index.test.ts renderers/draw-relief-icons.test.ts --maxWorkers=1
+npm run build
+npm run lint
+```
+
+Do not automatically run Playwright. Run the relevant E2E set only as an explicit release-gate action.
+
+### Manual Jotun checks
+
+- Pan and zoom with the normal working layer combination.
+- Toggle relief repeatedly and confirm no stale or duplicated icons.
+- Open the relief editor; select, move, resize, add, bulk-remove and reorder icons.
+- Save, reload and compare relief order and appearance.
+- Export SVG and verify the full map contains relief outside the current viewport.
+- Export PNG/JPEG and confirm no viewport-culling omissions.
+- Repeat the relief-on/off telemetry after a warm-up gesture.
+
+## Acceptance targets
+
+All functional invariants must pass. Performance targets on the target PC and Jotun map are:
+
+- relief-on movement is subjectively as responsive as the relief-off control;
+- active-process mean CPU is no more than twice the relief-off trace under the same gesture;
+- no repeated full-scene scan occurs for an ordinary pan inside materialized bounds;
+- a small pan retains the majority of already-visible relief nodes;
+- after warm-up, a 22-second interaction does not add more than 10 MB retained private memory per large process;
+- any transient allocation substantially returns within 30 seconds idle;
+- no continuing handle, thread, listener or DOM-node growth across twenty toggle/zoom cycles;
+- full-map exports remain complete and visually equivalent.
+
+If OS process memory remains high but stable while frame time, DOM churn and repeat-cycle growth pass, record its
+cause as unconfirmed unless a profiler establishes attribution. Do not block 2.0 solely on an absolute memory number.
+
+## Suggested commit boundaries
+
+1. `Add relief performance diagnostics`
+2. `Schedule viewport layers independently`
+3. `Reconcile relief icons by stable key`
+4. `Index relief icons by viewport`
+5. `Tune relief interaction cadence` if Phase 4 is needed
+6. `Cache distant relief rendering` only if Phase 5 passes its decision gate
+
+Each commit must build and pass its targeted tests. Do not combine the scheduler, spatial index and DOM reconciliation
+into one commit; the measured effect and rollback point of each repair should remain visible.

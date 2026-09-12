@@ -1,6 +1,7 @@
 import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
 import { Layers } from "@/components/layers";
 import { resizeCustomPoints } from "@/renderers/draw-custom-points";
+import { PerformanceMetrics } from "@/renderers/viewport/performance-metrics";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -28,6 +29,7 @@ function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   scale = k;
   viewX = x;
   viewY = y;
+  PerformanceMetrics.view(k, x, y);
 
   pendingScaleChange = pendingScaleChange || isScaleChanged;
   pendingPositionChange = pendingPositionChange || isPositionChanged;
