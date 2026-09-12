@@ -10,6 +10,7 @@ import { savedMessage } from "@/services/platform";
 
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
+import { serializeReliefData } from "./relief-data";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
 
@@ -123,7 +124,7 @@ function prepareMapData(): string {
   const religions = JSON.stringify(pack.religions);
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);
-  const relief = JSON.stringify(pack.relief || []);
+  const relief = serializeReliefData(pack.relief);
   const markers = JSON.stringify(pack.markers);
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);

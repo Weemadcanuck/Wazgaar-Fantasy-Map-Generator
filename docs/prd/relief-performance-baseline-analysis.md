@@ -52,3 +52,28 @@ The expensive `innerHTML` replacement remains until the keyed DOM stage; do not 
 
 A raster fallback remains gated on measurements after the SVG stages and a browser performance trace establishing
 the remaining rendering cost. No density reduction, GPU-acceleration change or save-format change is justified here.
+
+## Scheduler checkpoint received
+
+The three hyphenated `relief-performance-Jotun-...` files are version 1.153.1, stage `independent-viewport-layers`.
+Their internal labels and layer state agree. All have 11,991 source icons, no dropped samples, no background interval,
+and unchanged layer state during the recording. The user reports remarkable improvement and no failed behavior.
+
+| Condition | Median interval (ms) | p95 (ms) | Longest (ms) | Relief reconciles | SVG nodes created |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Relief on | 78.7 | 212.2 | 345.5 | 43 | 468,925 |
+| Relief off | 6.2 | 109.0 | 206.0 | 0 | 0 |
+| Relief only | 30.3 | 163.7 | 224.3 | 67 | 606,851 |
+
+The usual layer mix differs from the baseline (for example borders are now enabled), and starting viewport/gestures
+also differ. The results support retaining Phase 1 together with the user's functional check, but do not establish an
+exact speedup. Relief-off p95 is worse than the earlier control despite a lower median, so do not claim every metric
+improved. The hidden relief callback now runs zero times, as intended.
+
+DOM replacement remains roughly 96% of measured relief reconciliation time: 1,527.0 of 1,597.5 ms in the relief-on
+capture and 2,004.1 of 2,089.4 ms with relief alone. More work can execute in a more responsive recording; the higher
+node creation count does not contradict the perceived improvement. It establishes substantial remaining churn.
+
+Proceed with keyed DOM before indexing. The next build identifies `keyed-relief-dom`; compare its created/removed,
+retained/updated/moved counters as well as frame intervals. Retained means an existing node object was reused, even
+if one of its attributes was updated. Spatial indexing and raster caching remain separate, unimplemented stages.

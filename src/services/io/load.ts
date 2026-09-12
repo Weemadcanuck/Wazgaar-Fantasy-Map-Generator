@@ -11,6 +11,7 @@ import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { applyOption, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { restoreReliefData } from "./relief-data";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -406,7 +407,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
-    pack.relief = data[49] ? JSON.parse(data[49]) : [];
+    restoreReliefData(pack, data[49]);
     CustomLayers.restore(data[52] ? JSON.parse(data[52]) : []);
     pack.archiveWorldId = data[53] || undefined;
 

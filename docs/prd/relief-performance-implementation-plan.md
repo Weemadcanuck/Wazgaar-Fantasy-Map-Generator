@@ -1,6 +1,6 @@
 # Relief Performance Implementation Plan
 
-Status: baseline captured; Phase 1 scheduler implemented, target-PC comparison pending
+Status: scheduler retained after target-PC capture; keyed DOM implemented, target-PC comparison pending
 
 Parent: [Archive Fork 2.0 Worklist](./archive-fork-2.0-worklist.md)
 Updated: 2026-09-12
@@ -58,10 +58,35 @@ package before changing rendering behavior; record the actual tested stage in ea
   uses the JSON's recorded layer state.
 - Phase 1 implements independent coverage, explicit invalidation, targeted label dependencies, hidden-layer skipping,
   latest-viewport flushing and scale-sensitive label/emblem updates. Twelve scheduler tests cover these contracts.
-- The scheduler candidate is version 1.153.1, capture stage `independent-viewport-layers`. Capture filenames now include
-  the user label. Its target-PC comparison is pending; keyed DOM reconciliation is next, followed by the spatial index.
+- The scheduler is version 1.153.1, capture stage `independent-viewport-layers`. Capture filenames now include the user
+  label. Its target-PC captures and user functional check support retaining this phase; see baseline analysis.
 - Phase 1 local validation: 76 targeted tests across seven files passed, including scheduler, layer registry, zoom,
   label data, emblems and diagnostics. Desktop TypeScript checks/build and source lint passed.
+- The keyed DOM candidate is 1.153.2, capture stage `keyed-relief-dom`. Runtime identities use a WeakMap; visible-node
+  caches preserve SVG order and attribute snapshots. The renderer reads current source objects and uses the shared
+  scheduler for edits, eliminating the separate queued scene rebuild. Hide and root/map replacement clear caches.
+- Local keyed-DOM checks: 108 tests across 11 files, including node retention, ordering, mutation handling, twenty
+  toggles, old/missing versus intentionally empty relief, pending-edit exports and existing IO/rendering regressions.
+- Next: target-PC capture and manual editor/save/export check for keyed DOM, then Phase 2 spatial indexing.
+
+### Relief mutation and persistence audit
+
+| Source | Handling in keyed DOM checkpoint |
+| --- | --- |
+| Individual drag/resize | Explicit geometry invalidation; current objects read at flush; no parallel scene rebuild |
+| Individual icon change | Explicit appearance invalidation; only changed SVG attributes written |
+| Front/back | Explicit order invalidation; array order preserved and existing nodes reordered |
+| Copy, bulk add/remove, delete | Structural invalidation; source array read directly; surviving objects retain identity |
+| Generator and global style set/size | Existing direct draw path reads current objects; new generated objects replace old nodes |
+| Load/legacy migration | Existing data objects or migrated SVG icons remain authoritative; new pack/root clears live caches |
+| Heightmap erase/regraph | Relief marked absent for lazy generation, rather than deliberately empty |
+| Save/reload empty relief | Existing optional relief line stores `[]` for intentional emptiness and blank for uninitialized data |
+| Full-map SVG/tiles | Stateless clone path reads every source icon when relief is enabled |
+| Viewport PNG/JPEG | Stateless clone path reads source icons intersecting the viewport, including pending edits |
+
+No ReliefIcon fields or file sections are added. Populated relief JSON and intentional empty arrays keep their existing
+encoding. Missing legacy relief sections still request generation. Older files containing an explicit empty array are
+treated as intentionally empty; the Regenerate Relief tool remains available when generation is wanted.
 
 ## Evidence and working diagnosis
 

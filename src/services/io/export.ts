@@ -3,6 +3,7 @@ import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
+import { renderReliefForExport } from "@/renderers/draw-relief-icons";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
@@ -271,6 +272,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     ViewportLayers.renderTo(cloneEl);
 
     if (!noScaleBar) drawScaleBar(cloneEl, 1, graphWidth, graphHeight);
+  } else {
+    renderReliefForExport(cloneEl);
   }
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;

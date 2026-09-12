@@ -1,6 +1,19 @@
 # Relief baseline capture
 
-## Current comparison: scheduler checkpoint
+## Current comparison: keyed DOM checkpoint
+
+The scheduler comparison passed the user functional check with a reported improvement. Install 1.153.2 from
+`release/relief-keyed-dom/azgaar-archival-fork-1.153.2-win-x64.exe` next. Its report stage is `keyed-relief-dom`.
+
+Record `keyed relief on`, `keyed relief off`, and `keyed relief only` using the workflow below and save them alongside
+the previous reports. Keep viewport size, starting zoom and movement as consistent as practical.
+
+On a disposable copy of the map, select/move/resize/copy an icon, move it front/back, and bulk add/remove relief. Toggle
+the layer and check that selection still resolves correctly. Save/reload the copy, and export a full-map SVG plus a
+viewport PNG/JPEG to check appearance. Deleting all relief should remain empty after redraw and reload. The normal
+Regenerate Relief action can create it again. These checks are pending on the target app; automated coverage has passed.
+
+## Previous comparison: scheduler checkpoint
 
 The baseline has been received and analyzed. Install the 1.153.1 candidate from
 `release/relief-scheduler/azgaar-archival-fork-1.153.1-win-x64.exe` for the next comparison. Its reports identify

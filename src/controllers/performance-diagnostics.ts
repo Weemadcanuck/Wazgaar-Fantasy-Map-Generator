@@ -67,7 +67,7 @@ function beginCapture(label: string): void {
       document.removeEventListener("visibilitychange", onVisibility);
       const report = {
         schemaVersion: 1,
-        stage: "independent-viewport-layers",
+        stage: "keyed-relief-dom",
         version: VERSION,
         capturedAt: new Date().toISOString(),
         label,
