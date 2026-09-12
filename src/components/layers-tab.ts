@@ -113,7 +113,15 @@ $("#mapLayers").sortable({
 });
 
 Layers.subscribe(render);
-Layers.subscribe(() => ViewportLayers.renderNow("layer change"));
+let previousActiveLayers = new Set<string>(Layers.state.active);
+Layers.subscribe(() => {
+  const active = new Set<string>(Layers.state.active);
+  const changed = [...new Set([...active, ...previousActiveLayers])].filter(
+    id => active.has(id) !== previousActiveLayers.has(id)
+  );
+  previousActiveLayers = active;
+  ViewportLayers.visibilityChanged(changed);
+});
 CustomLayers.subscribe(render);
 CustomLayers.subscribe(() => {
   if (findEl("customPoints")) Layers.draw("customPoints");

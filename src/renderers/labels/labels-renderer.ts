@@ -7,7 +7,13 @@ import { renderLabelGroups } from "./label-groups";
 import { createLabelElements } from "./label-markup";
 
 const scene = new Scene<LabelData>();
-const layer = ViewportLayers.register({ id: "labels", render: reconcileLabels });
+const layer = ViewportLayers.register({
+  id: "labels",
+  render: reconcileLabels,
+  isActive: () => Layers.isOn("labels"),
+  scaleSensitive: true,
+  dependencies: () => options.labels.groups.flatMap(group => (group.layerDependency ? [group.layerDependency] : []))
+});
 const labelsByGroup = new Map<string, LabelData[]>();
 
 export function drawLabels(): void {

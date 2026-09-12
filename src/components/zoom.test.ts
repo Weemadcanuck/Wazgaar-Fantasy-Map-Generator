@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/renderers/viewport/viewport-renderer", () => ({
-  ViewportLayers: { schedule: vi.fn(), renderNow: vi.fn() }
+  ViewportLayers: { schedule: vi.fn(), flush: vi.fn() }
 }));
 
+import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { applyZoomBehavior, setMapZoom } from "./zoom";
 
 beforeEach(() => {
@@ -51,5 +52,6 @@ describe("programmatic zoom", () => {
 
     expect(scale).toBe(4);
     expect(document.getElementById("viewbox")!.getAttribute("transform")).toBe("translate(-1500 -900) scale(4)");
+    expect(ViewportLayers.flush).toHaveBeenCalledWith("zoom end");
   });
 });

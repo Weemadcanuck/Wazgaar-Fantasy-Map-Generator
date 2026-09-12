@@ -1,5 +1,21 @@
 # Relief baseline capture
 
+## Current comparison: scheduler checkpoint
+
+The baseline has been received and analyzed. Install the 1.153.1 candidate from
+`release/relief-scheduler/azgaar-archival-fork-1.153.1-win-x64.exe` for the next comparison. Its reports identify
+`independent-viewport-layers`, and downloaded filenames include the label.
+
+Use the same recording workflow below for three initial captures: `scheduler relief on`, `scheduler relief off`,
+and `scheduler relief only`. Keep the same starting view/window size and similar gestures. Save the reports alongside
+the baseline files. Repeat paired runs if this comparison is ambiguous. Also check that toggling dependent layers
+still updates labels and that zooming out/in shows labels and emblems at their expected scales.
+
+This checkpoint removes redundant scheduling. Keyed DOM reconciliation has not yet been applied; severe relief
+rendering cost may remain. The measured results determine this phase's effect before the next implementation stage.
+
+## Original baseline
+
 This checkpoint instruments the existing 1.153.0 renderer before scheduling, DOM or spatial-index repairs.
 The report identifies it as `baseline-instrumented`. It is not a performance-fix release.
 

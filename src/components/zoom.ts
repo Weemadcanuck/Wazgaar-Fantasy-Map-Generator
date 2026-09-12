@@ -99,7 +99,7 @@ function redrawTracedImage(): void {
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
-  ViewportLayers.renderNow();
+  ViewportLayers.flush("zoom end");
   resizeCustomPoints();
 
   if (!customization && !isOptimized) {

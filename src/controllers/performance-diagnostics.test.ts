@@ -65,6 +65,9 @@ it("starts after the countdown, downloads after 22 seconds and permits another c
   vi.advanceTimersByTime(22000);
   expect(PerformanceMetrics.active).toBe(false);
   expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
+  const downloadLink = vi.mocked(HTMLAnchorElement.prototype.click).mock.contexts[0];
+  if (!(downloadLink instanceof HTMLAnchorElement)) throw new Error("Expected a download link");
+  expect(downloadLink.download).toMatch(/^relief-performance-Jotun-relief-on-run-1-\d+\.json$/);
   expect(URL.createObjectURL).toHaveBeenCalledOnce();
   vi.advanceTimersByTime(1000);
   expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:test");

@@ -14,14 +14,27 @@ export interface ViewportRenderContext {
 interface ViewportLayer {
   id: string;
   render: (context: ViewportRenderContext) => void;
+  isActive?: () => boolean;
+  scaleSensitive?: boolean;
+  dependencies?: () => readonly string[];
+  overscanPixels?: number;
+  guardPixels?: number;
 }
 
-interface ViewportBounds {
+export interface ViewportBounds {
   scale: number;
   x0: number;
   y0: number;
   x1: number;
   y1: number;
+}
+
+interface ViewportLayerState {
+  layer: ViewportLayer;
+  materializedBounds: ViewportBounds | null;
+  dirty: boolean;
+  revision: number;
+  reason: string;
 }
 
 export class Scene<T extends { id: string }> {
@@ -56,10 +69,8 @@ export class Scene<T extends { id: string }> {
 }
 
 export class ViewportRenderer {
-  private layers = new Map<string, ViewportLayer>();
+  private layers = new Map<string, ViewportLayerState>();
   private frameId: number | null = null;
-  private pending: ViewportRenderContext | null = null;
-  private materializedBounds: ViewportBounds | null = null;
 
   constructor(
     private readonly options: {
@@ -76,35 +87,78 @@ export class ViewportRenderer {
   ) {}
 
   register(layer: ViewportLayer): ViewportLayerHandle {
-    this.layers.set(layer.id, layer);
+    const overscan = layer.overscanPixels ?? this.options.overscanPixels;
+    const guard = layer.guardPixels ?? this.options.guardPixels;
+    if (guard < 0 || overscan <= guard) throw new Error("Viewport overscan must exceed its non-negative guard");
+    const state: ViewportLayerState = {
+      layer,
+      materializedBounds: null,
+      dirty: true,
+      revision: 0,
+      reason: "initial render"
+    };
+    this.layers.set(layer.id, state);
     return {
       render: () => {
-        if (this.layers.get(layer.id) === layer)
-          this.renderLayer(layer, { ...this.getLiveContext(), reason: "direct draw" });
+        if (this.layers.get(layer.id) === state) this.renderLive(state, "direct draw");
       },
       unregister: () => {
-        if (this.layers.get(layer.id) === layer) this.layers.delete(layer.id);
+        if (this.layers.get(layer.id) !== state) return;
+        this.layers.delete(layer.id);
+        if (!this.layers.size) this.cancelScheduledRender();
       }
     };
   }
 
   schedule(): void {
-    if (!this.shouldReconcile()) return;
-    const context = this.getLiveContext();
-    this.materializedBounds = context.bounds;
-    this.scheduleContext({ ...context, reason: "pan or zoom guard" });
+    if (this.frameId !== null) return;
+    if (![...this.layers.values()].some(state => this.shouldReconcile(state))) return;
+    this.frameId = requestAnimationFrame(() => {
+      this.frameId = null;
+      this.flush("pan or zoom guard");
+    });
   }
 
-  renderNow(reason = "zoom end"): void {
-    const context = this.getLiveContext();
-    this.materializedBounds = context.bounds;
+  /** Reconcile necessary layers using the latest viewport, including settled zoom changes. */
+  flush(reason = "zoom end"): void {
     this.cancelScheduledRender();
-    this.renderLayers({ ...context, reason });
+    for (const state of this.layers.values()) {
+      if (this.shouldReconcile(state)) this.renderLive(state, state.dirty ? state.reason : reason);
+    }
+  }
+
+  invalidate(id: string, reason = "explicit invalidation"): void {
+    const state = this.layers.get(id);
+    if (!state) return;
+    state.dirty = true;
+    state.revision++;
+    state.reason = reason;
+    this.schedule();
+  }
+
+  invalidateAll(): void {
+    for (const id of this.layers.keys()) this.invalidate(id);
+  }
+
+  /** Direct draws already covered the toggled layers; only their dependants need invalidation. */
+  visibilityChanged(changedIds: readonly string[]): void {
+    for (const { layer } of this.layers.values()) {
+      if (layer.dependencies?.().some(id => id !== layer.id && changedIds.includes(id))) {
+        this.invalidate(layer.id, "layer dependency");
+      }
+    }
+    this.schedule();
+  }
+
+  /** Explicit force-render retained for callers that require it. Gestures use flush. */
+  renderNow(reason = "zoom end"): void {
+    this.cancelScheduledRender();
+    for (const state of this.layers.values()) this.renderLive(state, reason);
   }
 
   renderTo(root: ParentNode): void {
     const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
-    this.renderLayers({ root, bounds, reason: "export" });
+    for (const { layer } of this.layers.values()) this.renderLayer(layer, { root, bounds, reason: "export" });
   }
 
   getContext(): ViewportRenderContext {
@@ -127,28 +181,34 @@ export class ViewportRenderer {
     };
   }
 
-  private shouldReconcile(): boolean {
-    if (!this.materializedBounds) return true;
+  private shouldReconcile(state: ViewportLayerState): boolean {
+    if (state.layer.isActive?.() === false) {
+      state.materializedBounds = null;
+      return false;
+    }
+    const previous = state.materializedBounds;
+    if (state.dirty || !previous) return true;
     const bounds = this.getBounds(0);
-    const guard = this.options.guardPixels / bounds.scale;
+    const guard = (state.layer.guardPixels ?? this.options.guardPixels) / bounds.scale;
     return (
-      bounds.scale - this.materializedBounds.scale > 1 ||
-      bounds.x0 < this.materializedBounds.x0 + guard ||
-      bounds.y0 < this.materializedBounds.y0 + guard ||
-      bounds.x1 > this.materializedBounds.x1 - guard ||
-      bounds.y1 > this.materializedBounds.y1 - guard
+      (state.layer.scaleSensitive === true && bounds.scale !== previous.scale) ||
+      bounds.x0 < previous.x0 + guard ||
+      bounds.y0 < previous.y0 + guard ||
+      bounds.x1 > previous.x1 - guard ||
+      bounds.y1 > previous.y1 - guard
     );
   }
 
-  private scheduleContext(context: ViewportRenderContext): void {
-    this.pending = context;
-    if (this.frameId !== null) return;
-    this.frameId = requestAnimationFrame(() => {
-      this.frameId = null;
-      const pending = this.pending;
-      this.pending = null;
-      if (pending) this.renderLayers(pending);
-    });
+  private renderLive(state: ViewportLayerState, reason: string): void {
+    if (state.layer.isActive?.() === false) {
+      state.materializedBounds = null;
+      return;
+    }
+    const bounds = this.getBounds(state.layer.overscanPixels ?? this.options.overscanPixels);
+    const revision = state.revision;
+    this.renderLayer(state.layer, { root: document, bounds, reason });
+    state.materializedBounds = bounds;
+    if (state.revision === revision) state.dirty = false;
   }
 
   private getLiveContext(): ViewportRenderContext {
@@ -158,13 +218,6 @@ export class ViewportRenderer {
   private cancelScheduledRender(): void {
     if (this.frameId !== null) cancelAnimationFrame(this.frameId);
     this.frameId = null;
-    this.pending = null;
-  }
-
-  private renderLayers(context: ViewportRenderContext): void {
-    for (const layer of this.layers.values()) {
-      this.renderLayer(layer, context);
-    }
   }
 
   private renderLayer(layer: ViewportLayer, context: ViewportRenderContext): void {

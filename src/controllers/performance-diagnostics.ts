@@ -67,7 +67,7 @@ function beginCapture(label: string): void {
       document.removeEventListener("visibilitychange", onVisibility);
       const report = {
         schemaVersion: 1,
-        stage: "baseline-instrumented",
+        stage: "independent-viewport-layers",
         version: VERSION,
         capturedAt: new Date().toISOString(),
         label,
@@ -83,7 +83,12 @@ function beginCapture(label: string): void {
       const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: "application/json" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = `relief-performance-${Date.now()}.json`;
+      const filenameLabel =
+        label
+          .trim()
+          .replace(/[^a-z0-9_-]+/gi, "-")
+          .slice(0, 80) || "capture";
+      link.download = `relief-performance-${filenameLabel}-${Date.now()}.json`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       tip("Performance capture finished. JSON report downloaded.", true, "success", 6000);

@@ -1,7 +1,8 @@
 # Relief Performance Implementation Plan
 
-Status: Phase 0 built and locally verified; awaiting target-machine baseline captures  
-Parent: [Archive Fork 2.0 Worklist](./archive-fork-2.0-worklist.md)  
+Status: baseline captured; Phase 1 scheduler implemented, target-PC comparison pending
+
+Parent: [Archive Fork 2.0 Worklist](./archive-fork-2.0-worklist.md)
 Updated: 2026-09-12
 
 ## Objective
@@ -52,8 +53,15 @@ package before changing rendering behavior; record the actual tested stage in ea
   renderer and Electron type checks, desktop build, source lint, whitespace check and packaged archive inspection.
 - Electron 43.4.1 runtime verified from the existing release and reused for the baseline package. The installer was
   built without publishing. The original 1.153.0 installer remains available.
-- Target-PC interaction, packaged UI smoke check and performance comparison remain pending. No rendering optimization
-  or raster fallback has been applied at this checkpoint.
+- Target-PC baseline captures and packaged UI/download smoke checks are complete. See the
+  [baseline analysis](./relief-performance-baseline-analysis.md). The first on/off filenames are reversed; classification
+  uses the JSON's recorded layer state.
+- Phase 1 implements independent coverage, explicit invalidation, targeted label dependencies, hidden-layer skipping,
+  latest-viewport flushing and scale-sensitive label/emblem updates. Twelve scheduler tests cover these contracts.
+- The scheduler candidate is version 1.153.1, capture stage `independent-viewport-layers`. Capture filenames now include
+  the user label. Its target-PC comparison is pending; keyed DOM reconciliation is next, followed by the spatial index.
+- Phase 1 local validation: 76 targeted tests across seven files passed, including scheduler, layer registry, zoom,
+  label data, emblems and diagnostics. Desktop TypeScript checks/build and source lint passed.
 
 ## Evidence and working diagnosis
 
