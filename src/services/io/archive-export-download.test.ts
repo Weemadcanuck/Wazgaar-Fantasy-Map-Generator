@@ -118,6 +118,7 @@ describe("in-application Archive export", () => {
     expect(document.querySelectorAll<HTMLInputElement>("#archiveExportProfile input:checked")).toHaveLength(0);
     expect(document.querySelectorAll<HTMLInputElement>("#archiveExportProfile input.checkbox")).toHaveLength(4);
     expect(document.querySelectorAll<HTMLLabelElement>("#archiveExportProfile label.checkbox-label")).toHaveLength(4);
+    expect(document.querySelector("#archiveExportProfile")?.classList).toContain("archive-export-dialog");
     expect(document.querySelector<HTMLButtonElement>("#archiveExportDirectory")?.disabled).toBe(true);
     expect(document.querySelector("#archiveExportProfileStatus")?.textContent).toContain("Reference-safe profile");
 
@@ -139,6 +140,7 @@ describe("in-application Archive export", () => {
     expect(diagnostics).toContain("2 polities, 1 territories, 1 settlements, 2 cultures");
     expect(diagnostics).toContain("Authored Archive prose and canon fields");
     expect(diagnostics).toContain("downloaded");
+    expect(document.querySelector("#archiveExportDiagnostics")?.classList).toContain("archive-export-dialog");
     expect(document.querySelectorAll("#archiveExportDiagnostics details")).toHaveLength(1);
   });
 });

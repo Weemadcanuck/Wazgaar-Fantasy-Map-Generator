@@ -249,7 +249,7 @@ function openDiagnostics(): void {
 
   closeDialogs(`#${DIAGNOSTICS_DIALOG_ID}`);
   destroyDialog(DIAGNOSTICS_DIALOG_ID);
-  const html = /* html */ `<div id="${DIAGNOSTICS_DIALOG_ID}" class="dialog stable">
+  const html = /* html */ `<div id="${DIAGNOSTICS_DIALOG_ID}" class="dialog stable archive-export-dialog">
     <h3>Current map and profile</h3>
     <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.25em 0.8em">
       <dt>World</dt><dd>${escapeHtml(plan.manifest.worldName)}</dd>
@@ -281,6 +281,7 @@ function openDiagnostics(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   ensureEl("archiveDiagnosticsConfigure").addEventListener("click", openConfiguration);
   $(`#${DIAGNOSTICS_DIALOG_ID}`).dialog({
+    classes: { "ui-dialog": "archive-export-window" },
     title: "Archive Export Diagnostics",
     width: Math.min(innerWidth * 0.9, 820),
     maxHeight: Math.min(innerHeight * 0.9, 760),
@@ -327,7 +328,7 @@ function openConfiguration(): void {
   closeDialogs(`#${PROFILE_DIALOG_ID}`);
   destroyDialog(PROFILE_DIALOG_ID);
   const folderDisabled = window.electron?.archiveExport ? "" : "disabled";
-  const html = /* html */ `<div id="${PROFILE_DIALOG_ID}" class="dialog stable">
+  const html = /* html */ `<div id="${PROFILE_DIALOG_ID}" class="dialog stable archive-export-dialog">
     <p style="max-width: 42em">
       Generated files remain reference-only. Optional simulation values never become Archive canon and their freshness is not tracked.
       If a category is later disabled, its old generated snapshot is retained on disk for manual review rather than deleted.
@@ -389,6 +390,7 @@ function openConfiguration(): void {
   ensureEl("archiveExportDirectory").addEventListener("click", () => void runConfiguredExport("directory"));
 
   $(`#${PROFILE_DIALOG_ID}`).dialog({
+    classes: { "ui-dialog": "archive-export-window" },
     title: "Archive Export Profile",
     resizable: false,
     width: "fit-content",
