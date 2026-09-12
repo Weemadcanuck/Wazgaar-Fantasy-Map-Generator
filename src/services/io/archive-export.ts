@@ -1,4 +1,10 @@
-export const ARCHIVE_SCHEMA_VERSION = 1;
+import {
+  ARCHIVE_REFERENCE_SAFE_OPTIONS,
+  type ArchiveSimulationOptions,
+  normalizeArchiveSimulationOptions
+} from "./archive-export-profile";
+
+export const ARCHIVE_SCHEMA_VERSION = 2;
 
 export type ArchiveEntityType = "state" | "province" | "burg" | "culture" | "religion";
 
@@ -9,14 +15,22 @@ type NativeEntity = {
 };
 
 type State = NativeEntity & {
+  alert?: number;
   capital?: number;
   culture?: number;
+  diplomacy?: string[];
   form?: string;
   formName?: string;
   fullName?: string;
+  military?: Regiment[];
   neighbors?: number[];
+  pollTax?: number;
   provinces?: number[];
+  rural?: number;
+  salesTax?: number;
+  treasury?: number;
   type?: string;
+  urban?: number;
 };
 
 type Province = NativeEntity & {
@@ -24,7 +38,9 @@ type Province = NativeEntity & {
   burgs?: number[];
   formName?: string;
   fullName?: string;
+  rural?: number;
   state?: number;
+  urban?: number;
 };
 
 type Burg = NativeEntity & {
@@ -32,12 +48,16 @@ type Burg = NativeEntity & {
   cell?: number;
   citadel?: number;
   culture?: number;
+  market?: number;
   plaza?: number;
   population?: number;
   port?: number;
+  product?: number;
+  production?: Array<Record<string, unknown>>;
   shanty?: number;
   state?: number;
   temple?: number;
+  treasury?: number;
   type?: string;
   walls?: number;
   x?: number;
@@ -63,16 +83,56 @@ type PackedCell = {
 
 type PackedCells = PackedCell[] | { province?: ArrayLike<number> };
 
+type Regiment = {
+  i: number;
+  name?: string;
+  t?: number;
+  type?: string;
+  u?: Record<string, number>;
+};
+
+type Good = {
+  i: number;
+  name?: string;
+  tags?: string[];
+  unit?: string;
+  value?: number;
+};
+
+type Market = {
+  i: number;
+  centerBurgId?: number;
+  goods?: Record<number, { price?: number; stock?: number }>;
+  name?: string;
+};
+
+type Deal = {
+  i: number;
+  buyer?: number;
+  buyerType?: "burg" | "market";
+  good?: number;
+  price?: number;
+  seller?: number;
+  sellerType?: "burg" | "market";
+  tax?: number;
+  units?: number;
+};
+
 export type ArchiveWorldSnapshot = {
   info: {
     mapId?: number | string;
     mapName?: string;
+    populationRate?: number;
+    urbanization?: number;
     version?: string;
   };
   pack: {
     burgs: Burg[];
     cells?: PackedCells;
     cultures: Culture[];
+    deals?: Deal[];
+    goods?: Good[];
+    markets?: Market[];
     provinces: Province[];
     religions: Religion[];
     states: State[];
@@ -84,14 +144,21 @@ export type ArchiveExportProfile = {
   includeNeutralCulture: boolean;
   includeNeutralState: boolean;
   includeNoReligion: boolean;
+  simulation: ArchiveSimulationOptions;
 };
 
 export const ARCHIVE_REFERENCE_PROFILE: ArchiveExportProfile = {
-  id: "archive-reference-v1",
+  id: "archive-reference-v2",
   includeNeutralCulture: true,
   includeNeutralState: true,
-  includeNoReligion: false
+  includeNoReligion: false,
+  simulation: ARCHIVE_REFERENCE_SAFE_OPTIONS
 };
+
+export const createArchiveExportProfile = (simulation: ArchiveSimulationOptions): ArchiveExportProfile => ({
+  ...ARCHIVE_REFERENCE_PROFILE,
+  simulation: normalizeArchiveSimulationOptions(simulation)
+});
 
 export type ArchiveExportOptions = {
   profile?: ArchiveExportProfile;
@@ -119,6 +186,10 @@ export type ArchiveExportManifest = {
     mapId: number | string | null;
   };
   profile: string;
+  simulation: {
+    categories: string[];
+    freshness: "not-tracked";
+  };
   entities: Record<string, ArchiveManifestEntity>;
 };
 
@@ -299,6 +370,93 @@ const renderReligion = (religion: Religion, lookup: Map<string, EntityDescriptor
   renderList("Culture", [makeLink(lookup, "culture", religion.culture)])
 ];
 
+const formatNumber = (value: number | undefined) =>
+  Number.isFinite(value) ? String(Math.round(value! * 100) / 100) : null;
+
+const estimatePopulation = (points: number | undefined, snapshot: ArchiveWorldSnapshot, urban: boolean) => {
+  if (!Number.isFinite(points)) return null;
+  const populationRate = snapshot.info.populationRate ?? 1000;
+  const urbanization = urban ? (snapshot.info.urbanization ?? 1) : 1;
+  return String(Math.round(points! * populationRate * urbanization));
+};
+
+const renderPopulation = (descriptor: EntityDescriptor, snapshot: ArchiveWorldSnapshot) => {
+  if (descriptor.type === "burg") {
+    const population = estimatePopulation((descriptor.entity as Burg).population, snapshot, true);
+    return population ? [`- **Estimated population:** ${population} people`] : [];
+  }
+  if (descriptor.type !== "state" && descriptor.type !== "province") return [];
+  const entity = descriptor.entity as State | Province;
+  const rural = estimatePopulation(entity.rural, snapshot, false);
+  const urban = estimatePopulation(entity.urban, snapshot, true);
+  return [
+    rural ? `- **Estimated rural population:** ${rural} people` : null,
+    urban ? `- **Estimated urban population:** ${urban} people` : null
+  ].filter((line): line is string => Boolean(line));
+};
+
+const renderEconomy = (descriptor: EntityDescriptor) => {
+  if (descriptor.type === "state") {
+    const state = descriptor.entity as State;
+    return [
+      Number.isFinite(state.salesTax) ? `- **Sales tax:** ${formatNumber(state.salesTax! * 100)}%` : null,
+      Number.isFinite(state.pollTax) ? `- **Poll tax per population point:** ${formatNumber(state.pollTax)}` : null,
+      Number.isFinite(state.treasury) ? `- **Treasury:** ${formatNumber(state.treasury)}` : null
+    ].filter((line): line is string => Boolean(line));
+  }
+  if (descriptor.type === "burg") {
+    const burg = descriptor.entity as Burg;
+    return [
+      burg.market ? `- **Market ID:** ${burg.market}` : null,
+      Number.isFinite(burg.product) ? `- **Gross product:** ${formatNumber(burg.product)}` : null,
+      Number.isFinite(burg.treasury) ? `- **Treasury:** ${formatNumber(burg.treasury)}` : null
+    ].filter((line): line is string => Boolean(line));
+  }
+  return [];
+};
+
+const renderMilitary = (descriptor: EntityDescriptor) => {
+  if (descriptor.type !== "state") return [];
+  const state = descriptor.entity as State;
+  const lines = [Number.isFinite(state.alert) ? `- **War alert:** ${formatNumber(state.alert)}` : null].filter(
+    (line): line is string => Boolean(line)
+  );
+  for (const regiment of state.military ?? []) {
+    const units = Object.entries(regiment.u ?? {})
+      .filter(([, count]) => count)
+      .map(([unit, count]) => `${unit}: ${count}`)
+      .join(", ");
+    lines.push(
+      `- **Formation ${regiment.i}:** ${regiment.name || "Unnamed"}${regiment.type ? ` (${regiment.type})` : ""}${Number.isFinite(regiment.t) ? `; personnel: ${formatNumber(regiment.t)}` : ""}${units ? `; units: ${units}` : ""}`
+    );
+  }
+  return lines;
+};
+
+const renderDiplomacy = (descriptor: EntityDescriptor, lookup: Map<string, EntityDescriptor>) => {
+  if (descriptor.type !== "state") return [];
+  const state = descriptor.entity as State;
+  return (state.diplomacy ?? [])
+    .map((relation, stateId) => {
+      if (!stateId || stateId === state.i || !relation || relation === "x") return null;
+      const polity = makeLink(lookup, "state", stateId);
+      return polity ? `- **${relation}:** ${polity}` : null;
+    })
+    .filter((line): line is string => Boolean(line));
+};
+
+const renderSimulationBody = (
+  descriptor: EntityDescriptor,
+  snapshot: ArchiveWorldSnapshot,
+  lookup: Map<string, EntityDescriptor>,
+  profile: ArchiveExportProfile
+) => [
+  ...(profile.simulation.population ? renderPopulation(descriptor, snapshot) : []),
+  ...(profile.simulation.economy ? renderEconomy(descriptor) : []),
+  ...(profile.simulation.military ? renderMilitary(descriptor) : []),
+  ...(profile.simulation.diplomacy ? renderDiplomacy(descriptor, lookup) : [])
+];
+
 const renderEntityBody = (
   descriptor: EntityDescriptor,
   snapshot: ArchiveWorldSnapshot,
@@ -321,10 +479,12 @@ const renderEntityBody = (
 const renderEntity = (
   descriptor: EntityDescriptor,
   snapshot: ArchiveWorldSnapshot,
-  lookup: Map<string, EntityDescriptor>
+  lookup: Map<string, EntityDescriptor>,
+  profile: ArchiveExportProfile
 ) => {
   const name = displayName(descriptor.entity, descriptor.type);
   const details = renderEntityBody(descriptor, snapshot, lookup).filter((line): line is string => Boolean(line));
+  const simulation = renderSimulationBody(descriptor, snapshot, lookup, profile);
   return [
     "---",
     `Source_type: ${quoteYaml("Azgaar-generated-reference")}`,
@@ -339,8 +499,98 @@ const renderEntity = (
     "> [!warning] Generated reference data",
     "> This note is an FMG projection, not automatic Archive canon.",
     ...(details.length ? ["", "## FMG reference", "", ...details] : []),
+    ...(simulation.length
+      ? [
+          "",
+          "## Generated simulation snapshot",
+          "",
+          "> [!caution] Unapproved generated simulation",
+          "> These values are reference-only. Freshness is not tracked; regenerate the relevant FMG systems before relying on them.",
+          "",
+          ...simulation
+        ]
+      : []),
     ""
   ].join("\n");
+};
+
+const escapeTableCell = (value: unknown) =>
+  String(value ?? "")
+    .replaceAll("|", "\\|")
+    .replaceAll(/\r?\n/g, " ");
+
+const renderEconomySnapshot = (
+  snapshot: ArchiveWorldSnapshot,
+  lookup: Map<string, EntityDescriptor>,
+  worldId: string
+): ArchiveExportFile => {
+  const goods = [...(snapshot.pack.goods ?? [])].filter(good => good && good.i >= 0).sort((a, b) => a.i - b.i);
+  const markets = [...(snapshot.pack.markets ?? [])].filter(Boolean).sort((a, b) => a.i - b.i);
+  const deals = [...(snapshot.pack.deals ?? [])].filter(Boolean).sort((a, b) => a.i - b.i);
+  const goodNames = new Map(goods.map(good => [good.i, good.name || `Good ${good.i}`]));
+  const marketNames = new Map(markets.map(market => [market.i, market.name || `Market ${market.i}`]));
+  const endpoint = (type: "burg" | "market" | undefined, id: number | undefined) => {
+    if (id === undefined) return "Unknown";
+    if (type === "burg") return makeLink(lookup, "burg", id) || `Settlement ${id}`;
+    return marketNames.get(id) || `Market ${id}`;
+  };
+  const goodsRows = goods.map(
+    good =>
+      `| ${good.i} | ${escapeTableCell(good.name || `Good ${good.i}`)} | ${escapeTableCell(good.unit)} | ${formatNumber(good.value) || ""} | ${escapeTableCell((good.tags ?? []).join(", "))} |`
+  );
+  const marketRows = markets.map(market => {
+    const center = makeLink(lookup, "burg", market.centerBurgId) || market.centerBurgId || "";
+    return `| ${market.i} | ${escapeTableCell(market.name || `Market ${market.i}`)} | ${center} |`;
+  });
+  const inventoryRows = markets.flatMap(market =>
+    Object.entries(market.goods ?? {})
+      .sort(([left], [right]) => Number(left) - Number(right))
+      .map(
+        ([goodId, record]) =>
+          `| ${market.i} | ${escapeTableCell(goodNames.get(Number(goodId)) || `Good ${goodId}`)} | ${formatNumber(record.stock) || ""} | ${formatNumber(record.price) || ""} |`
+      )
+  );
+  const dealRows = deals.map(
+    deal =>
+      `| ${deal.i} | ${endpoint(deal.sellerType, deal.seller)} | ${endpoint(deal.buyerType, deal.buyer)} | ${escapeTableCell(goodNames.get(deal.good ?? -1) || `Good ${deal.good ?? "?"}`)} | ${formatNumber(deal.units) || ""} | ${formatNumber(deal.price) || ""} | ${formatNumber(deal.tax) || ""} |`
+  );
+  const section = (title: string, header: string[], rows: string[]) => [
+    `## ${title}`,
+    "",
+    ...header,
+    ...(rows.length ? rows : ["_No generated records are currently available._"]),
+    ""
+  ];
+  const key = `${worldId}:snapshot:economy`;
+  const content = [
+    "---",
+    `Source_type: ${quoteYaml("Azgaar-generated-simulation-reference")}`,
+    `Azgaar_key: ${quoteYaml(key)}`,
+    `Azgaar_schema: ${ARCHIVE_SCHEMA_VERSION}`,
+    `Azgaar_entity_type: ${quoteYaml("simulation-snapshot")}`,
+    `Azgaar_simulation_category: ${quoteYaml("economy")}`,
+    `Azgaar_simulation_freshness: ${quoteYaml("not-tracked")}`,
+    "---",
+    "",
+    "# Economy Simulation Snapshot",
+    "",
+    "> [!caution] Unapproved generated simulation",
+    "> Goods, markets, inventories, and trade deals are reference-only. Regenerate Production before relying on them.",
+    "",
+    ...section("Goods", ["| ID | Good | Unit | Base value | Tags |", "| ---: | --- | --- | ---: | --- |"], goodsRows),
+    ...section("Markets", ["| ID | Market | Center settlement |", "| ---: | --- | --- |"], marketRows),
+    ...section(
+      "Market inventory",
+      ["| Market ID | Good | Stock | Price |", "| ---: | --- | ---: | ---: |"],
+      inventoryRows
+    ),
+    ...section(
+      "Trade deals",
+      ["| ID | Seller | Buyer | Good | Units | Price | Tax |", "| ---: | --- | --- | --- | ---: | ---: | ---: |"],
+      dealRows
+    )
+  ].join("\n");
+  return { content, entityKey: key, path: "Simulation/Economy Snapshot.md" };
 };
 
 export const hashArchiveContent = (content: string) => {
@@ -364,11 +614,13 @@ export const buildArchiveExportPlan = (
   const lookup = makeLookup(descriptors);
   const entityFiles = descriptors
     .map(descriptor => ({
-      content: renderEntity(descriptor, snapshot, lookup),
+      content: renderEntity(descriptor, snapshot, lookup, profile),
       entityKey: descriptor.key,
       path: descriptor.path
     }))
     .sort((left, right) => compareText(left.path, right.path));
+  const snapshotFiles = profile.simulation.economy ? [renderEconomySnapshot(snapshot, lookup, worldId)] : [];
+  const generatedFiles = [...entityFiles, ...snapshotFiles].sort((left, right) => compareText(left.path, right.path));
 
   const entities: Record<string, ArchiveManifestEntity> = {};
   for (const file of entityFiles) {
@@ -381,6 +633,17 @@ export const buildArchiveExportPlan = (
       path: file.path
     };
   }
+  for (const file of snapshotFiles) {
+    entities[file.entityKey!] = {
+      contentHash: hashArchiveContent(file.content),
+      name: "Economy Simulation Snapshot",
+      path: file.path
+    };
+  }
+
+  const simulationCategories = (Object.keys(profile.simulation) as Array<keyof ArchiveSimulationOptions>).filter(
+    category => profile.simulation[category]
+  );
 
   const manifest: ArchiveExportManifest = {
     schemaVersion: ARCHIVE_SCHEMA_VERSION,
@@ -391,12 +654,16 @@ export const buildArchiveExportPlan = (
       mapId: snapshot.info.mapId ?? null
     },
     profile: profile.id,
+    simulation: {
+      categories: simulationCategories,
+      freshness: "not-tracked"
+    },
     entities
   };
   const manifestContent = `${JSON.stringify(manifest, null, 2)}\n`;
 
   return {
-    files: [...entityFiles, { content: manifestContent, path: "azgaar-archive-manifest.json" }],
+    files: [...generatedFiles, { content: manifestContent, path: "azgaar-archive-manifest.json" }],
     manifest
   };
 };

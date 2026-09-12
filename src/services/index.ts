@@ -12,6 +12,7 @@ export const Services = createRegistry({
   ExportMap: () => import("@/services/io/export").then(m => m.ExportMap),
   Load: () => import("@/services/io/load").then(m => m.Load),
   Save: () => import("@/services/io/save").then(m => m.Save),
+  ToolActions: () => import("@/services/tool-actions").then(m => m.ToolActions),
   UiTour: () => import("@/services/ui-tour").then(m => m.UiTour)
 });
 

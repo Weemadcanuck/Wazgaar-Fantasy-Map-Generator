@@ -1940,6 +1940,16 @@
             <button id="openSubmapTool" data-tip="Click to generate a submap from the current viewport">Submap</button>
             <button id="openTransformTool" data-tip="Click to transform the map">Transform</button>
           </div>
+          <div class="separator">Export and Sync</div>
+          <select
+            aria-label="Export and Sync actions"
+            data-tip="Run an export or synchronization action"
+            onchange="if (this.value) window.Services.ToolActions.run(this.value); this.selectedIndex = 0"
+            style="width: 100%"
+          >
+            <option value="">Choose an action…</option>
+            <option value="archive-export">Archive Export Profile…</option>
+          </select>
         </div>
         <div id="customizationMenu" class="tabcontent">
           <p>Heightmap customization tools:</p>
@@ -2448,20 +2458,15 @@
         <div style="margin: 1em 0 0.3em; font-weight: bold">Archive / Obsidian</div>
         <div>
           <button
-            onclick="window.Services.ArchiveExport.downloadArchive()"
-            data-tip="Download deterministic Markdown reference notes and a sync manifest"
+            onclick="window.Services.ToolActions.run('archive-export')"
+            data-tip="Configure a deterministic Archive reference export"
           >
-            Archive package (.zip)
-          </button>
-          <button
-            onclick="window.Services.ArchiveExport.exportToDirectory()"
-            data-tip="Desktop app: preview changes and write a managed Archive reference directory"
-          >
-            Archive folder (desktop)
+            Configure Archive export…
           </button>
         </div>
         <p>
-          Exports generated reference data for Obsidian. The package is not automatic canon and does not modify a vault.
+          Exports generated reference data for Obsidian; it is never automatic canon. Desktop folder export writes only
+          to the selected managed directory after a dry run and confirmation.
         </p>
       </div>
       <div id="saveMapData" style="display: none" class="dialog">

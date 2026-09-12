@@ -6,7 +6,7 @@ This document defines the compatibility boundary for an Archive-oriented FMG for
 
 The first implementation must be an additive export service. It must not change the `.map` format, regeneration behavior, or the meaning of existing FMG fields.
 
-The current fork implements the pure export plan, a full-JSON command-line writer, an in-application `Archive package (.zip)` download, and guarded desktop-folder export. The application prompts for a stable world ID and stores it locally by map ID. Desktop-folder export uses a native directory picker, shows a dry-run summary, blocks unmanaged or author-edited targets, asks for confirmation, and writes the manifest last. Managed-block updates and reverse synchronization remain unimplemented.
+The current fork implements the pure export plan, a full-JSON command-line writer, an in-application Archive export profile, a `.zip` download, and guarded desktop-folder export. The application creates a stable world ID and stores it locally by map ID. Export profiles are also stored per map and default to reference-safe geography. Optional generated population, economy, military, and diplomacy snapshots must be explicitly selected. Desktop-folder export uses a native directory picker, shows a file-level dry-run summary, blocks unmanaged or author-edited targets, asks for confirmation, and writes the manifest last. Managed-block updates and reverse synchronization remain unimplemented.
 
 For a first desktop export, select or create an empty directory intended only for generated reference notes, such as `30_Assets/Azgaar Sync/Jotun`. On later exports, select that same managed directory. Files removed from FMG are retained for manual review rather than deleted.
 
@@ -65,14 +65,18 @@ Each export root contains `azgaar-archive-manifest.json` with at least:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "worldId": "user-created-stable-id",
   "worldName": "Jotun",
   "source": {
     "fmGeneratorVersion": "1.149.2",
     "mapId": 123456789
   },
-  "profile": "archive-reference-v1",
+  "profile": "archive-reference-v2",
+  "simulation": {
+    "categories": [],
+    "freshness": "not-tracked"
+  },
   "entities": {
     "user-created-stable-id:state:8": {
       "name": "Azar",
@@ -111,9 +115,10 @@ The default Archive profile exports generated data into a reference-data root su
 | Geometry, area calculations, adjacency | FMG | Machine-readable; concise visible summary |
 | Port, capital, settlement features | FMG | Visible reference data |
 | Heraldry | FMG | Export or link as generated asset |
-| Generated population and demographics | Neither | Suppressed by default or explicitly labelled unapproved |
-| Military, alert, expansionism | Neither | Suppressed by the Archive profile |
-| Generated diplomacy | Neither | Suppressed by default; never overrides lore |
+| Generated population and demographics | Neither | Suppressed by default; optional reference-only snapshot |
+| Military and alert | Neither | Suppressed by default; optional reference-only snapshot |
+| Generated economy, goods, markets, and trade | Neither | Suppressed by default; optional reference-only snapshot |
+| Generated diplomacy | Neither | Suppressed by default; optional snapshot that never overrides lore |
 | Canon prose, aliases, motives, disputes | Archive | Never overwritten by reference export |
 | Author-only truth and open development | Archive | Never exported to FMG by default |
 
@@ -122,10 +127,23 @@ The Markdown header must mark provenance explicitly. It must not use `Canon_stat
 ```yaml
 Source_type: Azgaar-generated-reference
 Azgaar_key: <worldId>:<entityType>:<nativeId>
-Azgaar_schema: 1
+Azgaar_schema: 2
 ```
 
 Archive core properties may be added only where their meaning is exact. All property names must follow the Archive's capitalized-key convention.
+
+### Configurable simulation snapshots
+
+The reference-safe profile includes geography, stable identity, FMG relationships, and settlement features. Four optional categories can be stored independently for each map:
+
+- population and rural/urban demographic estimates;
+- goods, markets, inventories, trade deals, and treasuries;
+- military alert and generated formations;
+- generated diplomacy.
+
+Every enabled category is labelled as unapproved generated simulation. The manifest records the selected categories and `freshness: not-tracked`; the exporter must not invent a timestamp because wall-clock output would break deterministic repeated exports. The interface therefore tells the user to regenerate the relevant FMG system before relying on a snapshot. Disabling an exported category follows the normal safe-removal rule: previously generated files are retained for manual review rather than deleted.
+
+The Tools interface begins moving toward a typed action registry. New Archive and Jord actions should register stable IDs and categories there instead of adding unrelated inline handlers to the monolithic interface.
 
 ## Safe repeated export
 

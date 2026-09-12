@@ -1,11 +1,26 @@
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
+import { ensureEl } from "@/utils";
 import { downloadFile, getFileName } from "@/utils/fileUtils";
-import { type ArchiveWorldSnapshot, buildArchiveExportPlan, sanitizeArchiveFilename } from "./archive-export";
+import {
+  type ArchiveWorldSnapshot,
+  buildArchiveExportPlan,
+  createArchiveExportProfile,
+  sanitizeArchiveFilename
+} from "./archive-export";
+import {
+  ARCHIVE_FULL_SNAPSHOT_OPTIONS,
+  ARCHIVE_REFERENCE_SAFE_OPTIONS,
+  type ArchiveSimulationOptions,
+  loadArchiveSimulationOptions,
+  saveArchiveSimulationOptions
+} from "./archive-export-profile";
 
 const JSZIP_SOURCE = "libs/jszip.min.js";
 const WORLD_ID_PREFIX = "archive-export-world-id";
+const PROFILE_DIALOG_ID = "archiveExportProfile";
 
 let jsZipLoading: Promise<void> | undefined;
 
@@ -49,7 +64,9 @@ export const getCurrentArchiveSnapshot = (): ArchiveWorldSnapshot => ({
   info: {
     version: VERSION,
     mapName: mapName.value,
-    mapId
+    mapId,
+    populationRate: typeof populationRate === "number" ? populationRate : 1000,
+    urbanization: typeof urbanization === "number" ? urbanization : 1
   },
   pack: {
     states: pack.states,
@@ -57,9 +74,14 @@ export const getCurrentArchiveSnapshot = (): ArchiveWorldSnapshot => ({
     burgs: pack.burgs,
     cultures: pack.cultures,
     religions: pack.religions,
+    goods: pack.goods,
+    markets: pack.markets,
+    deals: pack.deals,
     cells: { province: pack.cells.province }
   }
 });
+
+const getCurrentProfile = () => createArchiveExportProfile(loadArchiveSimulationOptions(localStorage, mapId));
 
 async function downloadArchive(): Promise<void> {
   if (customization) {
@@ -72,7 +94,7 @@ async function downloadArchive(): Promise<void> {
   TIME && console.time("downloadArchive");
   try {
     const snapshot = getCurrentArchiveSnapshot();
-    const plan = buildArchiveExportPlan(snapshot, { worldId });
+    const plan = buildArchiveExportPlan(snapshot, { worldId, profile: getCurrentProfile() });
     await loadJsZip();
 
     const zip = new window.JSZip();
@@ -109,7 +131,7 @@ async function exportToDirectory(): Promise<void> {
 
   TIME && console.time("exportArchiveToDirectory");
   try {
-    const plan = buildArchiveExportPlan(getCurrentArchiveSnapshot(), { worldId });
+    const plan = buildArchiveExportPlan(getCurrentArchiveSnapshot(), { worldId, profile: getCurrentProfile() });
     const result = await window.electron.archiveExport.writeDirectory({ files: plan.files, worldId });
     if (result.status === "written") {
       tip("Archive reference directory was updated", true, "success", 7000);
@@ -128,4 +150,96 @@ async function exportToDirectory(): Promise<void> {
   }
 }
 
-export const ArchiveExportDownload = { downloadArchive, exportToDirectory };
+const getProfileFormOptions = (): ArchiveSimulationOptions => ({
+  population: ensureEl<HTMLInputElement>("archiveExportPopulation").checked,
+  economy: ensureEl<HTMLInputElement>("archiveExportEconomy").checked,
+  military: ensureEl<HTMLInputElement>("archiveExportMilitary").checked,
+  diplomacy: ensureEl<HTMLInputElement>("archiveExportDiplomacy").checked
+});
+
+const setProfileFormOptions = (options: ArchiveSimulationOptions) => {
+  ensureEl<HTMLInputElement>("archiveExportPopulation").checked = options.population;
+  ensureEl<HTMLInputElement>("archiveExportEconomy").checked = options.economy;
+  ensureEl<HTMLInputElement>("archiveExportMilitary").checked = options.military;
+  ensureEl<HTMLInputElement>("archiveExportDiplomacy").checked = options.diplomacy;
+};
+
+const saveProfileForm = () => {
+  const options = getProfileFormOptions();
+  saveArchiveSimulationOptions(localStorage, mapId, options);
+  const count = Object.values(options).filter(Boolean).length;
+  ensureEl("archiveExportProfileStatus").textContent = count
+    ? `${count} optional simulation ${count === 1 ? "category" : "categories"} selected. All are reference-only.`
+    : "Reference-safe profile: geography, identity, relationships, and settlement features only.";
+};
+
+const runConfiguredExport = async (target: "download" | "directory") => {
+  saveProfileForm();
+  $(`#${PROFILE_DIALOG_ID}`).dialog("close");
+  if (target === "download") await downloadArchive();
+  else await exportToDirectory();
+};
+
+function openConfiguration(): void {
+  if (customization) {
+    tip("Archive data cannot be exported when edit mode is active. Exit the mode and retry", false, "error");
+    return;
+  }
+
+  closeDialogs(`#${PROFILE_DIALOG_ID}`);
+  destroyDialog(PROFILE_DIALOG_ID);
+  const folderDisabled = window.electron?.archiveExport ? "" : "disabled";
+  const html = /* html */ `<div id="${PROFILE_DIALOG_ID}" class="dialog stable">
+    <p style="max-width: 42em">
+      Generated files remain reference-only. Optional simulation values never become Archive canon and their freshness is not tracked.
+      If a category is later disabled, its old generated snapshot is retained on disk for manual review rather than deleted.
+    </p>
+    <div style="display: flex; gap: 0.5em; margin-bottom: 0.8em">
+      <button type="button" id="archiveExportSafePreset">Reference-safe defaults</button>
+      <button type="button" id="archiveExportFullPreset">Full simulation snapshot</button>
+    </div>
+    <fieldset style="display: grid; gap: 0.65em; max-width: 44em">
+      <legend>Optional generated simulation</legend>
+      <label><input id="archiveExportPopulation" type="checkbox"> <b>Population and demographics</b><br><small>Estimated people, split into rural and urban values where available.</small></label>
+      <label><input id="archiveExportEconomy" type="checkbox"> <b>Goods, markets, trade, and treasuries</b><br><small>Adds entity figures and a complete economy snapshot note.</small></label>
+      <label><input id="archiveExportMilitary" type="checkbox"> <b>Military</b><br><small>War alert and generated formations attached to each polity reference.</small></label>
+      <label><input id="archiveExportDiplomacy" type="checkbox"> <b>Diplomacy</b><br><small>Generated diplomatic relationships attached to each polity reference.</small></label>
+    </fieldset>
+    <p id="archiveExportProfileStatus" style="max-width: 42em"></p>
+    <div style="display: flex; justify-content: flex-end; gap: 0.6em">
+      <button type="button" id="archiveExportDownload">Download package (.zip)</button>
+      <button type="button" id="archiveExportDirectory" ${folderDisabled}>Export folder</button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  setProfileFormOptions(loadArchiveSimulationOptions(localStorage, mapId));
+  saveProfileForm();
+
+  ensureEl("archiveExportSafePreset").addEventListener("click", () => {
+    setProfileFormOptions(ARCHIVE_REFERENCE_SAFE_OPTIONS);
+    saveProfileForm();
+  });
+  ensureEl("archiveExportFullPreset").addEventListener("click", () => {
+    setProfileFormOptions(ARCHIVE_FULL_SNAPSHOT_OPTIONS);
+    saveProfileForm();
+  });
+  for (const id of [
+    "archiveExportPopulation",
+    "archiveExportEconomy",
+    "archiveExportMilitary",
+    "archiveExportDiplomacy"
+  ]) {
+    ensureEl(id).addEventListener("change", saveProfileForm);
+  }
+  ensureEl("archiveExportDownload").addEventListener("click", () => void runConfiguredExport("download"));
+  ensureEl("archiveExportDirectory").addEventListener("click", () => void runConfiguredExport("directory"));
+
+  $(`#${PROFILE_DIALOG_ID}`).dialog({
+    title: "Archive Export Profile",
+    resizable: false,
+    width: "fit-content",
+    position: { my: "center", at: "center", of: "svg", collision: "fit" }
+  });
+}
+
+export const ArchiveExportDownload = { downloadArchive, exportToDirectory, openConfiguration };

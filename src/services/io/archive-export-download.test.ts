@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ArchiveDirectoryRequest, ArchiveDirectoryResult } from "@/types/archive-export-ipc";
 import { ArchiveExportDownload } from "./archive-export-download";
+import { saveArchiveSimulationOptions } from "./archive-export-profile";
 
 const archivedFiles = new Map<string, string>();
 
@@ -17,7 +18,7 @@ class FakeZip {
 }
 
 beforeEach(() => {
-  document.body.innerHTML = '<div id="tooltip"></div><input id="mapName" value="Jotun">';
+  document.body.innerHTML = '<div id="tooltip"></div><div id="dialogs"></div><input id="mapName" value="Jotun">';
   archivedFiles.clear();
   localStorage.clear();
   vi.restoreAllMocks();
@@ -37,6 +38,9 @@ beforeEach(() => {
       { i: 2, name: "Gorgorothi Gestalt" }
     ],
     religions: [{ i: 0, name: "No religion" }],
+    goods: [{ i: 0, name: "Wood", unit: "pile", value: 1, tags: ["construction"] }],
+    markets: [{ i: 1, name: "Drelgard Market", centerBurgId: 1, goods: {} }],
+    deals: [],
     cells: { province: new Uint16Array([0, 3]) }
   } as unknown as typeof pack;
 
@@ -45,6 +49,10 @@ beforeEach(() => {
   window.URL.createObjectURL = vi.fn(() => "blob:archive");
   window.URL.revokeObjectURL = vi.fn();
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  const dialog = vi.fn();
+  globalThis.$ = vi.fn((selector: unknown) =>
+    selector === ".dialog:visible" ? { not: () => ({ each: () => undefined }) } : { dialog }
+  );
 });
 
 describe("in-application Archive export", () => {
@@ -80,5 +88,29 @@ describe("in-application Archive export", () => {
     expect(request.worldId).toBe("jotun-live");
     expect(request.files).toHaveLength(7);
     expect(request.files.some(file => file.path === "azgaar-archive-manifest.json")).toBe(true);
+  });
+
+  it("uses the simulation profile saved for the current map", async () => {
+    saveArchiveSimulationOptions(localStorage, 1788160068282, {
+      population: false,
+      economy: true,
+      military: false,
+      diplomacy: false
+    });
+
+    await ArchiveExportDownload.downloadArchive();
+
+    const economy = archivedFiles.get("Jotun (Azgaar Archive)/Simulation/Economy Snapshot.md");
+    expect(economy?.includes("Drelgard Market")).toBe(true);
+    const manifest = archivedFiles.get("Jotun (Azgaar Archive)/azgaar-archive-manifest.json");
+    expect(manifest && JSON.parse(manifest).simulation.categories).toEqual(["economy"]);
+  });
+
+  it("opens with a reference-safe profile and disables direct folder export on the web", () => {
+    ArchiveExportDownload.openConfiguration();
+
+    expect(document.querySelectorAll<HTMLInputElement>("#archiveExportProfile input:checked")).toHaveLength(0);
+    expect(document.querySelector<HTMLButtonElement>("#archiveExportDirectory")?.disabled).toBe(true);
+    expect(document.querySelector("#archiveExportProfileStatus")?.textContent).toContain("Reference-safe profile");
   });
 });
