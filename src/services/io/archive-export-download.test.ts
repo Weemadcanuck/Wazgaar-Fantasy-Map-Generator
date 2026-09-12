@@ -110,7 +110,16 @@ describe("in-application Archive export", () => {
     ArchiveExportDownload.openConfiguration();
 
     expect(document.querySelectorAll<HTMLInputElement>("#archiveExportProfile input:checked")).toHaveLength(0);
+    expect(document.querySelectorAll<HTMLInputElement>("#archiveExportProfile input.checkbox")).toHaveLength(4);
+    expect(document.querySelectorAll<HTMLLabelElement>("#archiveExportProfile label.checkbox-label")).toHaveLength(4);
     expect(document.querySelector<HTMLButtonElement>("#archiveExportDirectory")?.disabled).toBe(true);
     expect(document.querySelector("#archiveExportProfileStatus")?.textContent).toContain("Reference-safe profile");
+
+    document.querySelector<HTMLButtonElement>("#archiveExportFullPreset")?.click();
+
+    expect(document.querySelectorAll<HTMLInputElement>("#archiveExportProfile input:checked")).toHaveLength(4);
+    expect(document.querySelector("#archiveExportProfileStatus")?.textContent).toContain(
+      "4 optional simulation categories"
+    );
   });
 });

@@ -200,10 +200,26 @@ function openConfiguration(): void {
     </div>
     <fieldset style="display: grid; gap: 0.65em; max-width: 44em">
       <legend>Optional generated simulation</legend>
-      <label><input id="archiveExportPopulation" type="checkbox"> <b>Population and demographics</b><br><small>Estimated people, split into rural and urban values where available.</small></label>
-      <label><input id="archiveExportEconomy" type="checkbox"> <b>Goods, markets, trade, and treasuries</b><br><small>Adds entity figures and a complete economy snapshot note.</small></label>
-      <label><input id="archiveExportMilitary" type="checkbox"> <b>Military</b><br><small>War alert and generated formations attached to each polity reference.</small></label>
-      <label><input id="archiveExportDiplomacy" type="checkbox"> <b>Diplomacy</b><br><small>Generated diplomatic relationships attached to each polity reference.</small></label>
+      <div>
+        <input id="archiveExportPopulation" class="checkbox" type="checkbox">
+        <label for="archiveExportPopulation" class="checkbox-label"><b>Population and demographics</b></label>
+        <small style="display: block; margin-left: 1.45em">Estimated people, split into rural and urban values where available.</small>
+      </div>
+      <div>
+        <input id="archiveExportEconomy" class="checkbox" type="checkbox">
+        <label for="archiveExportEconomy" class="checkbox-label"><b>Goods, markets, trade, and treasuries</b></label>
+        <small style="display: block; margin-left: 1.45em">Adds entity figures and a complete economy snapshot note.</small>
+      </div>
+      <div>
+        <input id="archiveExportMilitary" class="checkbox" type="checkbox">
+        <label for="archiveExportMilitary" class="checkbox-label"><b>Military</b></label>
+        <small style="display: block; margin-left: 1.45em">War alert and generated formations attached to each polity reference.</small>
+      </div>
+      <div>
+        <input id="archiveExportDiplomacy" class="checkbox" type="checkbox">
+        <label for="archiveExportDiplomacy" class="checkbox-label"><b>Diplomacy</b></label>
+        <small style="display: block; margin-left: 1.45em">Generated diplomatic relationships attached to each polity reference.</small>
+      </div>
     </fieldset>
     <p id="archiveExportProfileStatus" style="max-width: 42em"></p>
     <div style="display: flex; justify-content: flex-end; gap: 0.6em">
