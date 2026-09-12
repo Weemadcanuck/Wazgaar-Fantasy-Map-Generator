@@ -8,6 +8,7 @@ import "./hotkeys";
 import "./layers";
 import "./layers-presets";
 import "./layers-tab";
+import "@/generators/custom-layers";
 import "./dialog/dialog-helpers";
 import "./dialog/sorting";
 import "./fill-box";

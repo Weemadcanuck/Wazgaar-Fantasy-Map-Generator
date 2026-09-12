@@ -1,4 +1,6 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
+
+import { CustomLayers } from "@/generators/custom-layers";
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import { Population } from "@/generators/population-generator";
 import type { GridGraph } from "@/types/GridGraph";
@@ -43,6 +45,7 @@ const generationPipelineSteps = [
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
+  { id: "customLayers", run: () => CustomLayers.initiate() },
   { id: "mapName", run: () => Names.getMapName(false) }
 ] as const satisfies PipelineStep<string, GenerationContext>[];
 

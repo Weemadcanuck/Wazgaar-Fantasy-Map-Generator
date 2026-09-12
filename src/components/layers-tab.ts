@@ -1,5 +1,6 @@
 // Layers tab: a projection of the Layers registry. Holds the only mapping between a layer and its button.
 import { type LayerId, Layers } from "@/components/layers";
+import { CustomLayers } from "@/generators/custom-layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -50,6 +51,16 @@ export const getLayerByShortcut = (code: string): LayerId | undefined =>
   [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];
 
 function render(): void {
+  const customLayers = (typeof pack === "undefined" ? [] : CustomLayers.ensure()).map(layer => {
+    const item = document.createElement("li");
+    item.dataset.customLayer = layer.id;
+    item.dataset.tip = `${layer.pluralName}: click to toggle, Ctrl + click to manage custom layers`;
+    item.classList.add("solid", "custom-map-layer");
+    item.classList.toggle("buttonoff", !layer.visible);
+    item.textContent = layer.pluralName;
+    return item;
+  });
+
   ensureEl("mapLayers").replaceChildren(
     ...Layers.all.flatMap(layer => {
       const button = LAYER_TOGGLES.get(layer.id);
@@ -63,12 +74,22 @@ function render(): void {
       item.classList.toggle("buttonoff", !Layers.isOn(layer.id));
       item.classList.toggle("solid", layer.params.parent !== "viewbox"); // layers outside the viewbox cannot be reordered
       return [item];
-    })
+    }),
+    ...customLayers
   );
 }
 
 ensureEl("mapLayers").addEventListener("click", event => {
-  const id = (event.target as HTMLElement).closest("li")?.dataset.layer;
+  const item = (event.target as HTMLElement).closest<HTMLLIElement>("li");
+  const customLayerId = item?.dataset.customLayer;
+  if (customLayerId) {
+    if (isCtrlClick(event)) return void Controllers.CustomLayersEditor.open(customLayerId);
+    const layer = CustomLayers.getLayer(customLayerId);
+    if (layer) CustomLayers.updateLayer(customLayerId, { visible: !layer.visible });
+    return;
+  }
+
+  const id = item?.dataset.layer;
   if (!id || !Layers.has(id)) return;
 
   if (isCtrlClick(event)) return void editStyle(Layers.get(id).elementId);
@@ -91,6 +112,12 @@ $("#mapLayers").sortable({
 
 Layers.subscribe(render);
 Layers.subscribe(() => ViewportLayers.renderNow());
+CustomLayers.subscribe(render);
+CustomLayers.subscribe(() => {
+  if (findEl("customPoints")) Layers.draw("customPoints");
+});
+
+ensureEl("addCustomLayerButton").addEventListener("click", () => void Controllers.CustomLayersEditor.create());
 
 // the 3d view renders the map as a texture: refresh it on any layer change, once the batch has settled
 let view3dRefresh: number | undefined;

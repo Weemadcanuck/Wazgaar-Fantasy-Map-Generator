@@ -30,6 +30,71 @@ body .archive-export-window .ui-dialog-content {
   background: #fafafa;
 }
 
+.custom-map-layer::before {
+  content: "◆ ";
+}
+
+.custom-layers-toolbar,
+.custom-layer-summary,
+.custom-point-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+}
+
+.custom-layers-toolbar select {
+  flex: 1;
+}
+
+.custom-layer-summary {
+  padding: 0.6em 0;
+  border-bottom: 1px solid #bbb;
+}
+
+.custom-layer-summary > span:nth-child(2) {
+  flex: 1;
+}
+
+.custom-layer-swatch,
+.custom-point-icon {
+  font-size: 1.25em;
+  font-weight: bold;
+}
+
+#customPointsBody {
+  max-height: 24em;
+  overflow-y: auto;
+}
+
+.custom-point-row {
+  padding: 0.3em;
+  border-bottom: 1px solid #ddd;
+}
+
+.custom-point-row:hover {
+  background: #eee;
+}
+
+.custom-point-name {
+  flex: 1;
+}
+
+.custom-point-authority,
+.custom-point-id {
+  color: #666;
+  font-style: italic;
+}
+
+.custom-layers-empty {
+  padding: 1em;
+  text-align: center;
+  color: #666;
+}
+
+.custom-point-fields input:not([type="checkbox"]) {
+  width: 18em;
+}
+
 #toolsContent > .archive-tool-action-select {
   width: calc(100% - 0.24em);
   height: auto;

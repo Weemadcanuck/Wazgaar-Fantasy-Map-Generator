@@ -89,6 +89,7 @@ function prepareMapData(): string {
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
+  const customLayers = JSON.stringify(pack.customLayers ?? []);
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
@@ -205,7 +206,8 @@ function prepareMapData(): string {
     styleData,
     relief,
     layers,
-    graphOverride
+    graphOverride,
+    customLayers
   ].join("\r\n");
   return mapData;
 }

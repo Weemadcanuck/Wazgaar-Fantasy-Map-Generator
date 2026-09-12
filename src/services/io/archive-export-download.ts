@@ -81,6 +81,7 @@ export const getCurrentArchiveSnapshot = (): ArchiveWorldSnapshot => ({
     goods: pack.goods,
     markets: pack.markets,
     deals: pack.deals,
+    customLayers: pack.customLayers,
     cells: { province: pack.cells.province }
   }
 });
@@ -244,6 +245,11 @@ function openDiagnostics(): void {
       "Generated simulation reference"
     ],
     ["Polity relationship labels and targets", categories.includes("diplomacy"), "Generated simulation reference"],
+    [
+      "Custom point layers opted into Archive export",
+      (snapshot.pack.customLayers ?? []).some(layer => layer.archiveExport),
+      "Map-authored reference; never automatic Archive canon"
+    ],
     ["Authored Archive prose and canon fields", false, "Archive-owned; never imported or overwritten"]
   ] as const;
 
@@ -261,7 +267,7 @@ function openDiagnostics(): void {
       <dt>Optional categories</dt><dd>${categories.length ? categories.map(escapeHtml).join(", ") : "None (reference-safe)"}</dd>
     </dl>
     <h3>Planned package</h3>
-    <p>${plan.files.length} files: ${countFiles(plan, "States/")} polities, ${countFiles(plan, "Provinces/")} territories, ${countFiles(plan, "Burgs/")} settlements, ${countFiles(plan, "Cultures/")} cultures, ${countFiles(plan, "Religions/")} religions, and ${countFiles(plan, "Simulation/")} simulation snapshots, plus the manifest.</p>
+    <p>${plan.files.length} files: ${countFiles(plan, "States/")} polities, ${countFiles(plan, "Provinces/")} territories, ${countFiles(plan, "Burgs/")} settlements, ${countFiles(plan, "Cultures/")} cultures, ${countFiles(plan, "Religions/")} religions, ${countFiles(plan, "Custom Layers/")} custom points, and ${countFiles(plan, "Simulation/")} simulation snapshots, plus the manifest.</p>
     <details><summary>Show exact generated file paths</summary><ul style="max-height: 14em; overflow: auto">${plan.files
       .map(file => `<li><code>${escapeHtml(file.path)}</code></li>`)
       .join("")}</ul></details>

@@ -170,4 +170,51 @@ describe("Archive export", () => {
     expect(plan.manifest.entities["duplicates:state:1"]?.path.includes("(#1)")).toBe(true);
     expect(plan.manifest.entities["duplicates:state:2"]?.path.includes("(#2)")).toBe(true);
   });
+
+  it("exports opted-in custom point layers with stable ids and authored fields", () => {
+    const snapshot: ArchiveWorldSnapshot = {
+      info: { mapName: "Custom", version: "test" },
+      pack: {
+        states: [],
+        provinces: [],
+        burgs: [],
+        cultures: [],
+        religions: [],
+        customLayers: [
+          {
+            id: "artifacts",
+            name: "Artifact",
+            pluralName: "Artifacts",
+            geometry: "point",
+            icon: "◆",
+            color: "#7c4d8b",
+            visible: true,
+            archiveExport: true,
+            fields: [{ id: "holder", name: "Holder", type: "text" }],
+            entities: [
+              {
+                id: "crown",
+                name: "The Crown",
+                x: 10,
+                y: 20,
+                cell: 3,
+                authority: "authored",
+                notes: "Last seen in Jotun.",
+                values: { holder: "Unknown" }
+              }
+            ]
+          }
+        ]
+      }
+    };
+
+    const plan = buildArchiveExportPlan(snapshot, { worldId: "custom" });
+    const key = "custom:custom-point:artifacts:crown";
+    const note = plan.files.find(file => file.entityKey === key);
+
+    expect(note?.path).toBe("Custom Layers/Artifacts/The Crown (Azgaar Artifact).md");
+    expect(note?.content.includes("- **Holder:** Unknown")).toBe(true);
+    expect(note?.content.includes('Azgaar_authority: "authored"')).toBe(true);
+    expect(plan.manifest.entities[key]?.name).toBe("The Crown");
+  });
 });

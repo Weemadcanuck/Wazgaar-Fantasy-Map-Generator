@@ -121,7 +121,7 @@ describe("Archive directory writer", () => {
     const preview = await previewArchiveDirectoryWrite(outputRoot, request);
 
     expect(preview.canApply).toBe(true);
-    expect(preview.manifestBackup).toMatchObject({ fromSchema: 1, toSchema: 2 });
+    expect(preview.manifestBackup).toMatchObject({ fromSchema: 1, toSchema: 3 });
     const result = await applyArchiveDirectoryWrite(outputRoot, request);
     expect(result.applied).toBe(true);
     const backupPath = preview.manifestBackup?.path;

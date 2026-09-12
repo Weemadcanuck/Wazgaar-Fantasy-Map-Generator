@@ -414,6 +414,17 @@ class Resampler {
     });
   }
 
+  private restoreCustomLayers(parentMap: ParentMapDefinition, projection: (x: number, y: number) => [number, number]) {
+    pack.customLayers = (parentMap.pack.customLayers ?? []).map(layer => ({
+      ...layer,
+      entities: layer.entities.flatMap(entity => {
+        const [x, y] = projection(entity.x, entity.y);
+        if (!this.isInMap(x, y)) return [];
+        return [{ ...entity, x: rn(x, 2), y: rn(y, 2), cell: Pack.findCell(x, y, Infinity)! }];
+      })
+    }));
+  }
+
   process(options: ResamplerProcessOptions): void {
     const { projection, inverse, scale } = options;
     const parentMap = {
@@ -452,6 +463,7 @@ class Resampler {
     this.restoreFeatureDetails(parentMap, inverse);
     this.restoreMarkers(parentMap, projection);
     this.restoreZones(parentMap, projection, scale);
+    this.restoreCustomLayers(parentMap, projection);
     this.restoreEconomy(parentMap);
     for (const state of pack.states) {
       if (state.label) state.label.pathPoints = undefined;

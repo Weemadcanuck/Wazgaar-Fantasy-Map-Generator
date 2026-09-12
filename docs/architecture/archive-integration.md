@@ -65,7 +65,7 @@ Each export root contains `azgaar-archive-manifest.json` with at least:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "worldId": "user-created-stable-id",
   "worldName": "Jotun",
   "source": {
@@ -127,7 +127,7 @@ The Markdown header must mark provenance explicitly. It must not use `Canon_stat
 ```yaml
 Source_type: Azgaar-generated-reference
 Azgaar_key: <worldId>:<entityType>:<nativeId>
-Azgaar_schema: 2
+Azgaar_schema: 3
 ```
 
 Archive core properties may be added only where their meaning is exact. All property names must follow the Archive's capitalized-key convention.

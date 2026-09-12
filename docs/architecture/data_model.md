@@ -300,6 +300,26 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `px`: `number` - icon font-size in pixels. Optional, default is `12` (12px)
 - `lock`: `boolean` - `true` if marker is locked (not affected by regeneration). Optional
 
+## Custom point layers
+
+Archive-oriented custom point layers are stored in `pack.customLayers: CustomLayer[]` and serialized at map data index 52.
+They are independent from generated markers: regeneration cannot replace them, their UUID identities survive renames and
+reordering, and each layer can be included in or excluded from Archive export.
+
+Each point layer contains:
+
+- `id`: stable UUID
+- `name` and `pluralName`: user-facing singular and plural labels
+- `geometry`: currently `point`; region and line variants are reserved for later versions
+- `icon`, `color`, `visible`: default presentation and visibility
+- `archiveExport`: whether the layer is included in Archive reference exports
+- `fields`: user-defined field schemas with stable id, name, and `text`, `number`, or `boolean` type
+- `entities`: custom point entities belonging to the layer
+
+Each custom point entity contains a stable UUID, name, map coordinates and cell, `authored`, `generated`, or `archive`
+authority, optional icon and color overrides, notes, and a value map keyed by field UUID. Authority records provenance; it
+does not promote the entity to Archive canon.
+
 ## Labels
 
 Every label of every type is described by the same `Label` record. All fields are optional:

@@ -1,10 +1,11 @@
+import type { CustomLayer, CustomPointEntity, CustomPointLayer } from "../../types/custom-layers";
 import {
   ARCHIVE_REFERENCE_SAFE_OPTIONS,
   type ArchiveSimulationOptions,
   normalizeArchiveSimulationOptions
 } from "./archive-export-profile";
 
-export const ARCHIVE_SCHEMA_VERSION = 2;
+export const ARCHIVE_SCHEMA_VERSION = 3;
 
 export type ArchiveEntityType = "state" | "province" | "burg" | "culture" | "religion";
 
@@ -136,6 +137,7 @@ export type ArchiveWorldSnapshot = {
     provinces: Province[];
     religions: Religion[];
     states: State[];
+    customLayers?: CustomLayer[];
   };
 };
 
@@ -514,6 +516,63 @@ const renderEntity = (
   ].join("\n");
 };
 
+const renderCustomPoint = (layer: CustomPointLayer, entity: CustomPointEntity, key: string): string => {
+  const fields = layer.fields.flatMap(field => {
+    const value = entity.values[field.id];
+    if (value === undefined || value === "") return [];
+    return [`- **${field.name}:** ${String(value)}`];
+  });
+  return [
+    "---",
+    `Source_type: ${quoteYaml("Azgaar-map-reference")}`,
+    `Azgaar_key: ${quoteYaml(key)}`,
+    `Azgaar_schema: ${ARCHIVE_SCHEMA_VERSION}`,
+    `Azgaar_native_id: ${quoteYaml(entity.id)}`,
+    `Azgaar_entity_type: ${quoteYaml("custom-point")}`,
+    `Azgaar_layer_id: ${quoteYaml(layer.id)}`,
+    `Azgaar_layer: ${quoteYaml(layer.name)}`,
+    `Azgaar_authority: ${quoteYaml(entity.authority)}`,
+    "---",
+    "",
+    `# ${entity.name}`,
+    "",
+    "> [!warning] Map reference data",
+    "> This item is maintained in the map and is not automatically promoted to Archive canon.",
+    "",
+    "## Map reference",
+    "",
+    `- **Layer:** ${layer.name}`,
+    `- **Authority:** ${entity.authority}`,
+    `- **Map coordinates:** ${entity.x}, ${entity.y}`,
+    ...fields,
+    ...(entity.notes.trim() ? ["", "## Notes", "", entity.notes.trim()] : []),
+    ""
+  ].join("\n");
+};
+
+const buildCustomPointFiles = (snapshot: ArchiveWorldSnapshot, worldId: string): ArchiveExportFile[] => {
+  const files: ArchiveExportFile[] = [];
+  for (const layer of snapshot.pack.customLayers ?? []) {
+    if (!layer.archiveExport) continue;
+    const stems = layer.entities.map(entity =>
+      sanitizeArchiveFilename(`${entity.name || `Unnamed ${layer.name}`} (Azgaar ${layer.name})`)
+    );
+    const counts = new Map<string, number>();
+    for (const stem of stems) counts.set(stem.toLocaleLowerCase(), (counts.get(stem.toLocaleLowerCase()) ?? 0) + 1);
+    layer.entities.forEach((entity, index) => {
+      const stem = stems[index];
+      const uniqueStem = counts.get(stem.toLocaleLowerCase()) === 1 ? stem : `${stem} (${entity.id.slice(0, 8)})`;
+      const key = `${worldId}:custom-point:${layer.id}:${entity.id}`;
+      files.push({
+        content: renderCustomPoint(layer, entity, key),
+        entityKey: key,
+        path: `Custom Layers/${sanitizeArchiveFilename(layer.pluralName)}/${uniqueStem}.md`
+      });
+    });
+  }
+  return files;
+};
+
 const escapeTableCell = (value: unknown) =>
   String(value ?? "")
     .replaceAll("|", "\\|")
@@ -620,7 +679,10 @@ export const buildArchiveExportPlan = (
     }))
     .sort((left, right) => compareText(left.path, right.path));
   const snapshotFiles = profile.simulation.economy ? [renderEconomySnapshot(snapshot, lookup, worldId)] : [];
-  const generatedFiles = [...entityFiles, ...snapshotFiles].sort((left, right) => compareText(left.path, right.path));
+  const customPointFiles = buildCustomPointFiles(snapshot, worldId);
+  const generatedFiles = [...entityFiles, ...customPointFiles, ...snapshotFiles].sort((left, right) =>
+    compareText(left.path, right.path)
+  );
 
   const entities: Record<string, ArchiveManifestEntity> = {};
   for (const file of entityFiles) {
@@ -637,6 +699,16 @@ export const buildArchiveExportPlan = (
     entities[file.entityKey!] = {
       contentHash: hashArchiveContent(file.content),
       name: "Economy Simulation Snapshot",
+      path: file.path
+    };
+  }
+  for (const file of customPointFiles) {
+    const layer = snapshot.pack.customLayers?.find(candidate => file.entityKey?.includes(`:${candidate.id}:`));
+    const entity = layer?.entities.find(candidate => file.entityKey?.endsWith(`:${candidate.id}`));
+    if (!file.entityKey || !layer || !entity) continue;
+    entities[file.entityKey] = {
+      contentHash: hashArchiveContent(file.content),
+      name: entity.name,
       path: file.path
     };
   }

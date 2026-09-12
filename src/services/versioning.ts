@@ -19,10 +19,11 @@ import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.149.11";
+export const VERSION = "1.150.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Custom point layers with Archive export",
   "Desktop App",
   "URL params to open specific layers or preset",
   "Emblems rendering optimization",
