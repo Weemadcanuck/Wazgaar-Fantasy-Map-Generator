@@ -65,6 +65,24 @@ describe("Archive directory writer", () => {
     expect(await readFile(statePath, "utf8")).toBe("author edit");
   });
 
+  it("accepts Obsidian removing quotes from managed YAML without ignoring prose edits", async () => {
+    const request = makeRequest();
+    await applyArchiveDirectoryWrite(outputRoot, request);
+    const statePath = path.join(outputRoot, "States", "Old Name (Azgaar State).md");
+    const generated = await readFile(statePath, "utf8");
+    const normalizedByObsidian = generated.replace(/^([A-Za-z_]+): "([^"]+)"$/gm, "$1: $2");
+    await writeFile(statePath, normalizedByObsidian, "utf8");
+
+    const unchanged = await previewArchiveDirectoryWrite(outputRoot, request);
+    expect(unchanged.canApply).toBe(true);
+    expect(unchanged.counts.conflict).toBe(0);
+
+    await writeFile(statePath, normalizedByObsidian.replace("# Old Name", "# Authored Change"), "utf8");
+    const edited = await previewArchiveDirectoryWrite(outputRoot, request);
+    expect(edited.canApply).toBe(false);
+    expect(edited.counts.conflict).toBe(1);
+  });
+
   it("moves an unchanged generated file when its entity is renamed", async () => {
     await applyArchiveDirectoryWrite(outputRoot, makeRequest());
     const renamed = makeRequest(["New Name"]);

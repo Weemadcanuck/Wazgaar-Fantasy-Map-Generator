@@ -12,6 +12,7 @@ import type {
 import { ensureEl, rn } from "@/utils";
 
 let selectedLayerId: string | undefined;
+let lastPickedIcon: string | undefined;
 const safeColor = (value: string | undefined) => (value && /^#[\da-f]{6}$/i.test(value) ? value : "#7c4d8b");
 const authorityLabels: Record<CustomEntityAuthority, string> = {
   authored: "Azgaar authored",
@@ -52,6 +53,15 @@ const renderIconPreview = (value: string) =>
   isImageIcon(value)
     ? `<img src="${escapeHtml(value)}" alt="" style="width:1.4em;height:1.4em;object-fit:contain">`
     : escapeHtml(value);
+
+export function getPreferredIcon(): string {
+  if (lastPickedIcon) return lastPickedIcon;
+  for (const layer of [...CustomLayers.ensure()].reverse()) {
+    for (const entity of [...layer.entities].reverse()) if (entity.icon) return entity.icon;
+    if (layer.icon && layer.icon !== "◆") return layer.icon;
+  }
+  return "◆";
+}
 
 export function addFieldTemplate(textarea: HTMLTextAreaElement, key: string): number {
   const template = fieldTemplates[key];
@@ -175,10 +185,11 @@ function editLayer(layerId: string): void {
 function openLayerDefinition(layer?: CustomPointLayer): void {
   destroyDialog("customLayerDefinition");
   const fields = layer?.fields.map(field => `${field.name} | ${field.type}`).join("\n") ?? "";
+  const initialIcon = layer?.icon && layer.icon !== "◆" ? layer.icon : getPreferredIcon();
   const html = /* html */ `<div id="customLayerDefinition" class="dialog archive-export-dialog">
     <p><label>Singular name <input id="customLayerName" value="${escapeHtml(layer?.name || "")}" placeholder="Artifact"></label></p>
     <p><label>Plural name <input id="customLayerPlural" value="${escapeHtml(layer?.pluralName || "")}" placeholder="Artifacts"></label></p>
-    <p><label>Icon <input id="customLayerIcon" value="${escapeHtml(layer?.icon || "◆")}" style="width:6em"></label>
+    <p><label>Icon <input id="customLayerIcon" value="${escapeHtml(initialIcon)}" style="width:6em"></label>
       <button id="customLayerChooseIcon" type="button">Choose…</button>
       <label> Colour <input id="customLayerColor" type="color" value="${safeColor(layer?.color)}"></label></p>
     <p><label>Base size <input id="customLayerSize" type="number" min="8" max="100" value="${layer?.size ?? 30}" style="width:4em"></label>
@@ -202,7 +213,10 @@ function openLayerDefinition(layer?: CustomPointLayer): void {
 
   ensureEl("customLayerChooseIcon").addEventListener("click", () => {
     const input = ensureEl<HTMLInputElement>("customLayerIcon");
-    Controllers.IconSelector.open(input.value || "◆", value => (input.value = value));
+    Controllers.IconSelector.open(input.value || getPreferredIcon(), value => {
+      input.value = value;
+      lastPickedIcon = value;
+    });
   });
   ensureEl<HTMLSelectElement>("customLayerFieldTemplate").addEventListener("change", event => {
     const key = (event.target as HTMLSelectElement).value;
@@ -224,6 +238,7 @@ function openLayerDefinition(layer?: CustomPointLayer): void {
         if (!name) return void window.alert("A singular layer name is required.");
         const pluralName = ensureEl<HTMLInputElement>("customLayerPlural").value.trim() || `${name}s`;
         const icon = ensureEl<HTMLInputElement>("customLayerIcon").value.trim() || "◆";
+        lastPickedIcon = icon;
         const color = ensureEl<HTMLInputElement>("customLayerColor").value;
         const size = Math.min(100, Math.max(8, ensureEl<HTMLInputElement>("customLayerSize").valueAsNumber || 30));
         const resizeOnZoom = ensureEl<HTMLInputElement>("customLayerResize").checked;
@@ -352,10 +367,10 @@ function openPoint(layerId: string, entityId: string): void {
 
   ensureEl("customPointChooseIcon").addEventListener("click", () => {
     const input = ensureEl<HTMLInputElement>("customPointIcon");
-    Controllers.IconSelector.open(
-      input.value || layer.icon,
-      value => (input.value = value === layer.icon ? "" : value)
-    );
+    Controllers.IconSelector.open(input.value || layer.icon, value => {
+      input.value = value === layer.icon ? "" : value;
+      lastPickedIcon = value;
+    });
   });
 
   $("#customPointEditor").dialog({
@@ -366,10 +381,12 @@ function openPoint(layerId: string, entityId: string): void {
       Save: function (this: HTMLElement) {
         const values = readFieldValues(layer.fields);
         const useLayerColor = ensureEl<HTMLInputElement>("customPointUseLayerColor").checked;
+        const icon = ensureEl<HTMLInputElement>("customPointIcon").value.trim() || undefined;
+        if (icon) lastPickedIcon = icon;
         CustomLayers.updatePoint(layerId, entityId, {
           name: ensureEl<HTMLInputElement>("customPointName").value.trim() || `Unnamed ${layer.name}`,
           authority: ensureEl<HTMLSelectElement>("customPointAuthority").value as CustomEntityAuthority,
-          icon: ensureEl<HTMLInputElement>("customPointIcon").value.trim() || undefined,
+          icon,
           color: useLayerColor ? undefined : ensureEl<HTMLInputElement>("customPointColor").value,
           notes: ensureEl<HTMLTextAreaElement>("customPointNotes").value,
           values

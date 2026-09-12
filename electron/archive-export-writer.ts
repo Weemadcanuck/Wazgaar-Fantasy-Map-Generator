@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { hashArchiveContent } from "../src/services/io/archive-export";
+import { hashArchiveContent, matchesArchiveContentHash } from "../src/services/io/archive-export";
 import type {
   ArchiveDirectoryChange,
   ArchiveDirectoryChangeKind,
@@ -265,7 +265,7 @@ const buildInternalPlan = async (root: string, request: ArchiveDirectoryRequest)
       } else if (oldContent === null) {
         addChange(changes, counts, { entityKey, kind: "create", path: file.path });
         operations.push({ file, kind: "create" });
-      } else if (hashArchiveContent(oldContent) !== previous.contentHash) {
+      } else if (!matchesArchiveContentHash(oldContent, previous.contentHash)) {
         addChange(changes, counts, {
           entityKey,
           fromPath: previous.path,
@@ -283,9 +283,9 @@ const buildInternalPlan = async (root: string, request: ArchiveDirectoryRequest)
     if (currentContent === null) {
       addChange(changes, counts, { entityKey, kind: "create", path: file.path });
       operations.push({ file, kind: "create" });
-    } else if (hashArchiveContent(currentContent) === hashArchiveContent(file.content)) {
+    } else if (matchesArchiveContentHash(currentContent, hashArchiveContent(file.content))) {
       addChange(changes, counts, { entityKey, kind: "unchanged", path: file.path });
-    } else if (previous && hashArchiveContent(currentContent) === previous.contentHash) {
+    } else if (previous && matchesArchiveContentHash(currentContent, previous.contentHash)) {
       addChange(changes, counts, { entityKey, kind: "update", path: file.path });
       operations.push({ file, kind: "update" });
     } else {

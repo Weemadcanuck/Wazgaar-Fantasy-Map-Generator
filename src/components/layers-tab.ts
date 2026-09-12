@@ -9,6 +9,7 @@ interface LayerButton {
   label: string; // button text, may contain markup marking the shortcut letter
   shortcut?: string; // KeyboardEvent.code
   hint?: string; // shortcut as shown in the tip, defaults to the code without the "Key" prefix
+  styleElement?: string; // detailed style target when it differs from the layer root
 }
 
 // only layers listed here get a button, in registry order
@@ -25,7 +26,7 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["relief", { label: "Relie<u>f</u>", shortcut: "KeyF" }],
   ["religions", { label: "<u>R</u>eligions", shortcut: "KeyR" }],
   ["cultures", { label: "<u>C</u>ultures", shortcut: "KeyC" }],
-  ["states", { label: "<u>S</u>tates", shortcut: "KeyS" }],
+  ["states", { label: "Politie<u>s</u>", shortcut: "KeyS" }],
   ["provinces", { label: "<u>P</u>rovinces", shortcut: "KeyP" }],
   ["zones", { label: "<u>Z</u>ones", shortcut: "KeyZ" }],
   ["borders", { label: "Bor<u>d</u>ers", shortcut: "KeyD" }],
@@ -38,7 +39,7 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["precipitation", { label: "Precipit<u>a</u>tion", shortcut: "KeyA" }],
   ["population", { label: "Populatio<u>n</u>", shortcut: "KeyN" }],
   ["emblems", { label: "Emblems", shortcut: "KeyY" }],
-  ["burgIcons", { label: "<u>I</u>cons", shortcut: "KeyI" }],
+  ["burgIcons", { label: "Settlements", shortcut: "KeyI", styleElement: "burgIcons" }],
   ["labels", { label: "<u>L</u>abels", shortcut: "KeyL" }],
   ["military", { label: "<u>M</u>ilitary", shortcut: "KeyM" }],
   ["markers", { label: "Mar<u>k</u>ers", shortcut: "KeyK" }],
@@ -92,7 +93,8 @@ ensureEl("mapLayers").addEventListener("click", event => {
   const id = item?.dataset.layer;
   if (!id || !Layers.has(id)) return;
 
-  if (isCtrlClick(event)) return void editStyle(Layers.get(id).elementId);
+  const button = LAYER_TOGGLES.get(id);
+  if (isCtrlClick(event)) return void editStyle(button?.styleElement ?? Layers.get(id).elementId);
   Layers.toggle(id);
 });
 

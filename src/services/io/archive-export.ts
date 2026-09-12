@@ -667,6 +667,39 @@ export const hashArchiveContent = (content: string) => {
   return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, "0")}`;
 };
 
+const YAML_STRING_KEYS = new Set([
+  "Source_type",
+  "Azgaar_key",
+  "Azgaar_entity_type",
+  "Azgaar_layer_id",
+  "Azgaar_layer",
+  "Azgaar_authority",
+  "Azgaar_simulation_category",
+  "Azgaar_simulation_freshness"
+]);
+
+/** Restore the harmless quote removal performed by Obsidian's Properties writer. */
+const restoreManagedFrontmatterQuotes = (content: string): string => {
+  const lines = content.replaceAll("\r\n", "\n").split("\n");
+  if (lines[0] !== "---") return lines.join("\n");
+
+  for (let index = 1; index < lines.length; index++) {
+    if (lines[index] === "---") break;
+    const match = lines[index].match(/^([A-Za-z_]+): (.+)$/);
+    if (!match) continue;
+    const [, key, value] = match;
+    const isStringNativeId = key === "Azgaar_native_id" && !/^-?\d+(?:\.\d+)?$/.test(value);
+    if ((!YAML_STRING_KEYS.has(key) && !isStringNativeId) || value.startsWith('"')) continue;
+    lines[index] = `${key}: ${JSON.stringify(value)}`;
+  }
+
+  return lines.join("\n");
+};
+
+export const matchesArchiveContentHash = (content: string, expectedHash: string): boolean =>
+  hashArchiveContent(content) === expectedHash ||
+  hashArchiveContent(restoreManagedFrontmatterQuotes(content)) === expectedHash;
+
 export const buildArchiveExportPlan = (
   snapshot: ArchiveWorldSnapshot,
   options: ArchiveExportOptions
