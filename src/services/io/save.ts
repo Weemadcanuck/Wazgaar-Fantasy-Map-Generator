@@ -90,6 +90,7 @@ function prepareMapData(): string {
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
   const customLayers = JSON.stringify(pack.customLayers ?? []);
+  const archiveWorldId = pack.archiveWorldId ?? "";
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
@@ -207,7 +208,8 @@ function prepareMapData(): string {
     relief,
     layers,
     graphOverride,
-    customLayers
+    customLayers,
+    archiveWorldId
   ].join("\r\n");
   return mapData;
 }

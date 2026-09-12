@@ -77,5 +77,6 @@ describe("drawCustomPoints", () => {
 
     const image = document.querySelector<SVGImageElement>('[data-custom-point-id="crown"] image');
     expect(image?.getAttribute("href")).toBe("data:image/png;base64,AAAA");
+    expect(document.querySelector('[data-custom-point-id="crown"] g')).toBeNull();
   });
 });

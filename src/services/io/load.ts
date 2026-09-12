@@ -408,6 +408,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
     CustomLayers.restore(data[52] ? JSON.parse(data[52]) : []);
+    pack.archiveWorldId = data[53] || undefined;
 
     if (data[31]) {
       const namesDL = data[31].split("/");

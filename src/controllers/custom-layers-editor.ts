@@ -53,6 +53,19 @@ const renderIconPreview = (value: string) =>
     ? `<img src="${escapeHtml(value)}" alt="" style="width:1.4em;height:1.4em;object-fit:contain">`
     : escapeHtml(value);
 
+export function addFieldTemplate(textarea: HTMLTextAreaElement, key: string): number {
+  const template = fieldTemplates[key];
+  if (!template) return 0;
+  const existing = textarea.value
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+  const names = new Set(existing.map(line => line.split("|")[0].trim().toLocaleLowerCase()));
+  const additions = template.filter(line => !names.has(line.split("|")[0].trim().toLocaleLowerCase()));
+  textarea.value = [...existing, ...additions].join("\n");
+  return additions.length;
+}
+
 function open(layerId?: string): void {
   if (customization) return;
   closeDialogs("#customLayersEditor, .stable");
@@ -179,7 +192,7 @@ function openLayerDefinition(layer?: CustomPointLayer): void {
         <option value="site">Colony or point of interest</option>
         <option value="tracking">Archive tracking</option>
       </select>
-    </label> <button id="customLayerApplyTemplate" type="button">Add fields</button></p>
+    </label> <span id="customLayerTemplateStatus" aria-live="polite" style="font-style:italic"></span></p>
     <label>Structured fields <span style="font-style:italic">(one per line: <code>Name | text</code>, <code>Name | number</code>, or <code>Name | boolean</code>)</span>
       <textarea id="customLayerFields" rows="8" style="width:100%" placeholder="Status | text&#10;Power | number&#10;Active | boolean">${escapeHtml(fields)}</textarea>
     </label>
@@ -191,17 +204,14 @@ function openLayerDefinition(layer?: CustomPointLayer): void {
     const input = ensureEl<HTMLInputElement>("customLayerIcon");
     Controllers.IconSelector.open(input.value || "◆", value => (input.value = value));
   });
-  ensureEl("customLayerApplyTemplate").addEventListener("click", () => {
-    const key = ensureEl<HTMLSelectElement>("customLayerFieldTemplate").value;
+  ensureEl<HTMLSelectElement>("customLayerFieldTemplate").addEventListener("change", event => {
+    const key = (event.target as HTMLSelectElement).value;
     if (!key) return;
     const textarea = ensureEl<HTMLTextAreaElement>("customLayerFields");
-    const existing = textarea.value
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(Boolean);
-    const names = new Set(existing.map(line => line.split("|")[0].trim().toLocaleLowerCase()));
-    const additions = fieldTemplates[key].filter(line => !names.has(line.split("|")[0].trim().toLocaleLowerCase()));
-    textarea.value = [...existing, ...additions].join("\n");
+    const count = addFieldTemplate(textarea, key);
+    ensureEl("customLayerTemplateStatus").textContent = count
+      ? `${count} field${count === 1 ? "" : "s"} added.`
+      : "All starter fields are already present.";
   });
 
   $("#customLayerDefinition").dialog({

@@ -75,4 +75,5 @@ export interface PackedGraph {
   measurers: Measurer[];
   addedLabels: AddedLabel[];
   customLayers: CustomLayer[];
+  archiveWorldId?: string;
 }

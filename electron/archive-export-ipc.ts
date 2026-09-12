@@ -30,13 +30,30 @@ const handleDirectoryExport = async (
 ): Promise<ArchiveDirectoryResult> => {
   const window = BrowserWindow.fromWebContents(event.sender);
   try {
-    const selection = await chooseDirectory(window);
-    if (selection.canceled || !selection.filePaths[0]) return { status: "cancelled" };
+    const rememberedDirectory = request.reuseLastDirectory ? readLastArchiveDirectory(locationFile()) : undefined;
+    const selection = rememberedDirectory ? undefined : await chooseDirectory(window);
+    if (selection?.canceled || (!rememberedDirectory && !selection?.filePaths[0])) return { status: "cancelled" };
 
-    const directory = selection.filePaths[0];
+    const directory = rememberedDirectory || selection!.filePaths[0];
     writeLastArchiveDirectory(locationFile(), directory);
     const report = await previewArchiveDirectoryWrite(directory, request);
     if (!report.canApply) {
+      if (report.existingWorld) {
+        const existing = report.existingWorld;
+        const confirmation = await showMessage(window, {
+          type: "question",
+          buttons: ["Reconnect map", "Cancel"],
+          defaultId: 1,
+          cancelId: 1,
+          title: "Reconnect Archive export",
+          message: "This folder is already managed for an earlier identity of this map.",
+          detail: `${directory}\n\nFolder world: ${existing.worldName || "Unknown"}\nFolder world ID: ${existing.worldId}\nCurrent world ID: ${request.worldId}\n\nReconnect only if this is the same map. No files will be deleted.`
+        });
+        if (confirmation.response === 0) {
+          return { status: "reconnect", directory, reconnectWorldId: existing.worldId, report };
+        }
+        return { status: "cancelled", directory, report };
+      }
       await showMessage(window, {
         type: "warning",
         buttons: ["Close"],

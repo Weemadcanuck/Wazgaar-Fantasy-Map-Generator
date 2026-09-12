@@ -8,6 +8,7 @@ export type ArchiveDirectoryFile = {
 
 export type ArchiveDirectoryRequest = {
   files: ArchiveDirectoryFile[];
+  reuseLastDirectory?: boolean;
   worldId: string;
 };
 
@@ -30,11 +31,17 @@ export type ArchiveDirectoryReport = {
     path: string;
     toSchema: number;
   };
+  existingWorld?: {
+    mapId?: number | null;
+    worldId: string;
+    worldName?: string;
+  };
 };
 
 export type ArchiveDirectoryResult = {
   directory?: string;
   message?: string;
   report?: ArchiveDirectoryReport;
-  status: "blocked" | "cancelled" | "failed" | "unchanged" | "written";
+  reconnectWorldId?: string;
+  status: "blocked" | "cancelled" | "failed" | "reconnect" | "unchanged" | "written";
 };

@@ -64,7 +64,32 @@ describe("in-application Archive export", () => {
     expect(archivedFiles.has("Jotun (Azgaar Archive)/States/Daraluma (Azgaar State).md")).toBe(true);
     expect(archivedFiles.has("Jotun (Azgaar Archive)/Burgs/Drelgard (Azgaar Burg).md")).toBe(true);
     expect(localStorage.getItem("archive-export-world-id:1788160068282")).toBe("jotun-1788160068282");
+    expect(pack.archiveWorldId).toBe("jotun-1788160068282");
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
+  });
+
+  it("reconnects a regenerated map ID to its existing managed folder identity", async () => {
+    const writeDirectory = vi
+      .fn<(request: ArchiveDirectoryRequest) => Promise<ArchiveDirectoryResult>>()
+      .mockResolvedValueOnce({ status: "reconnect", reconnectWorldId: "jotun-original" })
+      .mockResolvedValueOnce({ status: "written" });
+    window.electron = {
+      isElectron: true,
+      platform: "win32",
+      requestQuit: vi.fn(),
+      versions: { electron: "test", chrome: "test", node: "test" },
+      archiveExport: { writeDirectory }
+    };
+
+    await ArchiveExportDownload.exportToDirectory();
+
+    expect(writeDirectory).toHaveBeenCalledTimes(2);
+    expect(writeDirectory.mock.calls[1]?.[0]).toMatchObject({
+      reuseLastDirectory: true,
+      worldId: "jotun-original"
+    });
+    expect(pack.archiveWorldId).toBe("jotun-original");
+    expect(localStorage.getItem("archive-export-world-id:1788160068282")).toBe("jotun-original");
   });
 
   it("sends the same export plan through the desktop bridge", async () => {
@@ -110,6 +135,17 @@ describe("in-application Archive export", () => {
     expect(economy?.includes("Drelgard Market")).toBe(true);
     const manifest = archivedFiles.get("Jotun (Azgaar Archive)/azgaar-archive-manifest.json");
     expect(manifest && JSON.parse(manifest).simulation.categories).toEqual(["economy"]);
+  });
+
+  it("prefers the world identity embedded in the map over map-ID keyed browser storage", async () => {
+    pack.archiveWorldId = "jotun-stable";
+    localStorage.setItem("archive-export-world-id:1788160068282", "jotun-transient");
+
+    await ArchiveExportDownload.downloadArchive();
+
+    const manifest = archivedFiles.get("Jotun (Azgaar Archive)/azgaar-archive-manifest.json");
+    expect(manifest && JSON.parse(manifest).worldId).toBe("jotun-stable");
+    expect(localStorage.getItem("archive-export-world-id:1788160068282")).toBe("jotun-stable");
   });
 
   it("opens with a reference-safe profile and disables direct folder export on the web", () => {

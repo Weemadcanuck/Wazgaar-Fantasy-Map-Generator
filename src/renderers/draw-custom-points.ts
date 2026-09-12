@@ -1,4 +1,3 @@
-import { getPin } from "@/renderers/draw-markers";
 import type { CustomPointEntity, CustomPointLayer } from "@/types/custom-layers";
 import { ensureEl, findEl, rn } from "@/utils";
 
@@ -27,28 +26,26 @@ function drawPoint(layer: CustomPointLayer, entity: CustomPointEntity): SVGSVGEl
   point.setAttribute("viewBox", "0 0 30 30");
   positionPoint(point, entity, size);
   point.setAttribute("aria-label", entity.name);
-
-  const pin = document.createElementNS(SVG_NS, "g");
-  pin.innerHTML = getPin("diamond", "#ffffff", safeColor(entity.color, safeColor(layer.color, "#7c4d8b")));
-  point.append(pin);
+  point.style.overflow = "visible";
 
   const iconValue = entity.icon || layer.icon;
   if (isImageIcon(iconValue)) {
     const icon = document.createElementNS(SVG_NS, "image");
-    icon.setAttribute("x", "8");
-    icon.setAttribute("y", "6");
-    icon.setAttribute("width", "14");
-    icon.setAttribute("height", "14");
+    icon.setAttribute("x", "3");
+    icon.setAttribute("y", "1");
+    icon.setAttribute("width", "24");
+    icon.setAttribute("height", "24");
     icon.setAttribute("href", iconValue);
     icon.setAttribute("preserveAspectRatio", "xMidYMid meet");
     point.append(icon);
   } else {
     const icon = document.createElementNS(SVG_NS, "text");
     icon.setAttribute("x", "50%");
-    icon.setAttribute("y", "52%");
-    icon.setAttribute("font-size", "12px");
+    icon.setAttribute("y", "48%");
+    icon.setAttribute("font-size", "22px");
     icon.setAttribute("text-anchor", "middle");
     icon.setAttribute("dominant-baseline", "middle");
+    icon.setAttribute("fill", safeColor(entity.color, safeColor(layer.color, "#7c4d8b")));
     icon.textContent = iconValue;
     point.append(icon);
   }

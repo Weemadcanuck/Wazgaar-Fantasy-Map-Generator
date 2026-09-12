@@ -8,7 +8,7 @@ import { applyArchiveDirectoryWrite, previewArchiveDirectoryWrite } from "./arch
 
 let outputRoot: string;
 
-const makeRequest = (names = ["Old Name"]): ArchiveDirectoryRequest => {
+const makeRequest = (names = ["Old Name"], worldId = "writer-test"): ArchiveDirectoryRequest => {
   const snapshot: ArchiveWorldSnapshot = {
     info: { mapId: 10, mapName: "Writer Test", version: "test" },
     pack: {
@@ -19,8 +19,8 @@ const makeRequest = (names = ["Old Name"]): ArchiveDirectoryRequest => {
       religions: [{ i: 0, name: "No religion" }]
     }
   };
-  const plan = buildArchiveExportPlan(snapshot, { worldId: "writer-test" });
-  return { files: plan.files, worldId: "writer-test" };
+  const plan = buildArchiveExportPlan(snapshot, { worldId });
+  return { files: plan.files, worldId };
 };
 
 beforeEach(async () => {
@@ -93,6 +93,19 @@ describe("Archive directory writer", () => {
     const result = await applyArchiveDirectoryWrite(outputRoot, makeRequest());
     expect(result.applied).toBe(false);
     expect(await readFile(path.join(outputRoot, "existing-note.md"), "utf8")).toBe("Do not touch");
+  });
+
+  it("reports the existing identity when the same folder is opened with a new world ID", async () => {
+    await applyArchiveDirectoryWrite(outputRoot, makeRequest());
+
+    const preview = await previewArchiveDirectoryWrite(outputRoot, makeRequest(["Old Name"], "replacement-id"));
+
+    expect(preview.canApply).toBe(false);
+    expect(preview.existingWorld).toMatchObject({
+      mapId: 10,
+      worldId: "writer-test",
+      worldName: "Writer Test"
+    });
   });
 
   it("retains entities removed from FMG for manual review", async () => {

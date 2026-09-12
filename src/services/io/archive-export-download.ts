@@ -59,9 +59,15 @@ const getSuggestedWorldId = () => {
 
 const getWorldId = (): string => {
   const storageKey = `${WORLD_ID_PREFIX}:${mapId}`;
-  const worldId = localStorage.getItem(storageKey) || getSuggestedWorldId();
+  const worldId = pack.archiveWorldId || localStorage.getItem(storageKey) || getSuggestedWorldId();
+  pack.archiveWorldId = worldId;
   localStorage.setItem(storageKey, worldId);
   return worldId;
+};
+
+const rememberWorldId = (worldId: string): void => {
+  pack.archiveWorldId = worldId;
+  localStorage.setItem(`${WORLD_ID_PREFIX}:${mapId}`, worldId);
 };
 
 export const getCurrentArchiveSnapshot = (): ArchiveWorldSnapshot => ({
@@ -144,7 +150,7 @@ async function downloadArchive(): Promise<void> {
   }
 }
 
-async function exportToDirectory(): Promise<void> {
+async function exportToDirectory(reuseLastDirectory = false): Promise<void> {
   if (customization) {
     tip("Archive data cannot be exported when edit mode is active. Exit the mode and retry", false, "error");
     return;
@@ -154,24 +160,39 @@ async function exportToDirectory(): Promise<void> {
     return;
   }
 
-  const worldId = getWorldId();
+  let worldId = getWorldId();
 
   TIME && console.time("exportArchiveToDirectory");
   try {
-    const plan = buildArchiveExportPlan(getCurrentArchiveSnapshot(), { worldId, profile: getCurrentProfile() });
-    const result = await window.electron.archiveExport.writeDirectory({ files: plan.files, worldId });
-    recordExport("directory", result.status, plan, {
-      directory: result.directory,
-      report: result.report
-    });
-    if (result.status === "written") {
-      tip("Archive reference directory was updated", true, "success", 7000);
-    } else if (result.status === "unchanged") {
-      tip("Archive reference directory is already current", true, "success", 7000);
-    } else if (result.status === "blocked") {
-      tip("Archive export was blocked by conflicts; no files were written", true, "error", 7000);
-    } else if (result.status === "failed") {
-      tip(`Archive export failed: ${result.message || "Unknown error"}`, true, "error", 7000);
+    while (true) {
+      const plan = buildArchiveExportPlan(getCurrentArchiveSnapshot(), { worldId, profile: getCurrentProfile() });
+      const result = await window.electron.archiveExport.writeDirectory({
+        files: plan.files,
+        reuseLastDirectory,
+        worldId
+      });
+      if (result.status === "reconnect") {
+        if (!result.reconnectWorldId) throw new Error("Archive reconnect did not return the existing world ID");
+        worldId = result.reconnectWorldId;
+        rememberWorldId(worldId);
+        reuseLastDirectory = true;
+        tip("Reconnected this map to its existing Archive export", true, "success", 5000);
+        continue;
+      }
+      recordExport("directory", result.status, plan, {
+        directory: result.directory,
+        report: result.report
+      });
+      if (result.status === "written") {
+        tip("Archive reference directory was updated", true, "success", 7000);
+      } else if (result.status === "unchanged") {
+        tip("Archive reference directory is already current", true, "success", 7000);
+      } else if (result.status === "blocked") {
+        tip("Archive export was blocked by conflicts; no files were written", true, "error", 7000);
+      } else if (result.status === "failed") {
+        tip(`Archive export failed: ${result.message || "Unknown error"}`, true, "error", 7000);
+      }
+      break;
     }
   } catch (error) {
     ERROR && console.error(error);

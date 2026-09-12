@@ -20,7 +20,9 @@ type ManifestEntity = {
 type Manifest = {
   entities: Record<string, ManifestEntity>;
   schemaVersion?: number;
+  source?: { mapId?: number | null };
   worldId: string;
+  worldName?: string;
 };
 
 type WriteOperation = {
@@ -194,7 +196,20 @@ const buildInternalPlan = async (root: string, request: ArchiveDirectoryRequest)
           path: MANIFEST_PATH,
           reason: `The selected directory belongs to world ID ${JSON.stringify(previousManifest.worldId)}`
         });
-        return { manifestFile, operations, report: { canApply: false, changes, counts } };
+        return {
+          manifestFile,
+          operations,
+          report: {
+            canApply: false,
+            changes,
+            counts,
+            existingWorld: {
+              mapId: previousManifest.source?.mapId,
+              worldId: previousManifest.worldId,
+              worldName: previousManifest.worldName
+            }
+          }
+        };
       }
       if (previousManifest.schemaVersion !== nextSchema) {
         const contentHash = hashArchiveContent(currentManifestContent).replace(":", "-");
