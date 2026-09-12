@@ -1,11 +1,15 @@
-import { BrowserWindow, dialog, ipcMain } from "electron";
+import path from "node:path";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import {
   ARCHIVE_EXPORT_DIRECTORY_CHANNEL,
   type ArchiveDirectoryReport,
   type ArchiveDirectoryRequest,
   type ArchiveDirectoryResult
 } from "../src/types/archive-export-ipc";
+import { readLastArchiveDirectory, writeLastArchiveDirectory } from "./archive-export-location";
 import { applyArchiveDirectoryWrite, previewArchiveDirectoryWrite } from "./archive-export-writer";
+
+const locationFile = () => path.join(app.getPath("userData"), "archive-export-location.json");
 
 const summarize = (report: ArchiveDirectoryReport) => {
   const { create, update, move, unchanged, removed, conflict } = report.counts;
@@ -26,7 +30,8 @@ const chooseDirectory = async (window: BrowserWindow | null) => {
   const options: Electron.OpenDialogOptions = {
     title: "Select the managed Archive export directory",
     buttonLabel: "Use this folder",
-    properties: ["openDirectory", "createDirectory"]
+    properties: ["openDirectory", "createDirectory"],
+    defaultPath: readLastArchiveDirectory(locationFile())
   };
   return window ? dialog.showOpenDialog(window, options) : dialog.showOpenDialog(options);
 };
@@ -41,6 +46,7 @@ const handleDirectoryExport = async (
     if (selection.canceled || !selection.filePaths[0]) return { status: "cancelled" };
 
     const directory = selection.filePaths[0];
+    writeLastArchiveDirectory(locationFile(), directory);
     const report = await previewArchiveDirectoryWrite(directory, request);
     if (!report.canApply) {
       const conflicts = report.changes
