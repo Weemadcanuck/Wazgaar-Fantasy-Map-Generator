@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ArchiveDirectoryRequest, ArchiveDirectoryResult } from "@/types/archive-export-ipc";
+import { loadArchiveExportDiagnostic } from "./archive-export-diagnostics";
 import { ArchiveExportDownload } from "./archive-export-download";
 import { saveArchiveSimulationOptions } from "./archive-export-profile";
 
@@ -88,6 +89,11 @@ describe("in-application Archive export", () => {
     expect(request.worldId).toBe("jotun-live");
     expect(request.files).toHaveLength(7);
     expect(request.files.some(file => file.path === "azgaar-archive-manifest.json")).toBe(true);
+    expect(loadArchiveExportDiagnostic(localStorage, mapId)).toMatchObject({
+      status: "written",
+      target: "directory",
+      worldId: "jotun-live"
+    });
   });
 
   it("uses the simulation profile saved for the current map", async () => {
@@ -121,5 +127,18 @@ describe("in-application Archive export", () => {
     expect(document.querySelector("#archiveExportProfileStatus")?.textContent).toContain(
       "4 optional simulation categories"
     );
+  });
+
+  it("shows current package contents, ownership, and the last export", async () => {
+    await ArchiveExportDownload.downloadArchive();
+
+    ArchiveExportDownload.openDiagnostics();
+
+    const diagnostics = document.querySelector("#archiveExportDiagnostics")?.textContent;
+    expect(diagnostics).toContain("jotun-1788160068282");
+    expect(diagnostics).toContain("2 polities, 1 territories, 1 settlements, 2 cultures");
+    expect(diagnostics).toContain("Authored Archive prose and canon fields");
+    expect(diagnostics).toContain("downloaded");
+    expect(document.querySelectorAll("#archiveExportDiagnostics details")).toHaveLength(1);
   });
 });

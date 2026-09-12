@@ -25,6 +25,11 @@ export type ArchiveDirectoryReport = {
   canApply: boolean;
   changes: ArchiveDirectoryChange[];
   counts: Record<ArchiveDirectoryChangeKind, number>;
+  manifestBackup?: {
+    fromSchema: number | null;
+    path: string;
+    toSchema: number;
+  };
 };
 
 export type ArchiveDirectoryResult = {

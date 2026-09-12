@@ -5,11 +5,14 @@ import { VERSION } from "@/services/versioning";
 import { ensureEl } from "@/utils";
 import { downloadFile, getFileName } from "@/utils/fileUtils";
 import {
+  ARCHIVE_SCHEMA_VERSION,
+  type ArchiveExportPlan,
   type ArchiveWorldSnapshot,
   buildArchiveExportPlan,
   createArchiveExportProfile,
   sanitizeArchiveFilename
 } from "./archive-export";
+import { loadArchiveExportDiagnostic, saveArchiveExportDiagnostic } from "./archive-export-diagnostics";
 import {
   ARCHIVE_FULL_SNAPSHOT_OPTIONS,
   ARCHIVE_REFERENCE_SAFE_OPTIONS,
@@ -21,6 +24,7 @@ import {
 const JSZIP_SOURCE = "libs/jszip.min.js";
 const WORLD_ID_PREFIX = "archive-export-world-id";
 const PROFILE_DIALOG_ID = "archiveExportProfile";
+const DIAGNOSTICS_DIALOG_ID = "archiveExportDiagnostics";
 
 let jsZipLoading: Promise<void> | undefined;
 
@@ -83,6 +87,27 @@ export const getCurrentArchiveSnapshot = (): ArchiveWorldSnapshot => ({
 
 const getCurrentProfile = () => createArchiveExportProfile(loadArchiveSimulationOptions(localStorage, mapId));
 
+const recordExport = (
+  target: "directory" | "download",
+  status: "blocked" | "cancelled" | "failed" | "unchanged" | "written" | "downloaded",
+  plan: ArchiveExportPlan,
+  details: {
+    directory?: string;
+    fileName?: string;
+    report?: import("@/types/archive-export-ipc").ArchiveDirectoryReport;
+  } = {}
+) =>
+  saveArchiveExportDiagnostic(localStorage, mapId, {
+    categories: plan.manifest.simulation.categories,
+    completedAt: new Date().toISOString(),
+    fileCount: plan.files.length,
+    schemaVersion: plan.manifest.schemaVersion,
+    status,
+    target,
+    worldId: plan.manifest.worldId,
+    ...details
+  });
+
 async function downloadArchive(): Promise<void> {
   if (customization) {
     tip("Archive data cannot be exported when edit mode is active. Exit the mode and retry", false, "error");
@@ -108,6 +133,7 @@ async function downloadArchive(): Promise<void> {
     });
     const fileName = `${getFileName("Archive")}.zip`;
     downloadFile(blob, fileName, "application/zip");
+    recordExport("download", "downloaded", plan, { fileName });
     tip(savedMessage(fileName), true, "success", 7000);
   } catch (error) {
     ERROR && console.error(error);
@@ -133,6 +159,10 @@ async function exportToDirectory(): Promise<void> {
   try {
     const plan = buildArchiveExportPlan(getCurrentArchiveSnapshot(), { worldId, profile: getCurrentProfile() });
     const result = await window.electron.archiveExport.writeDirectory({ files: plan.files, worldId });
+    recordExport("directory", result.status, plan, {
+      directory: result.directory,
+      report: result.report
+    });
     if (result.status === "written") {
       tip("Archive reference directory was updated", true, "success", 7000);
     } else if (result.status === "unchanged") {
@@ -148,6 +178,114 @@ async function exportToDirectory(): Promise<void> {
   } finally {
     TIME && console.timeEnd("exportArchiveToDirectory");
   }
+}
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+const countFiles = (plan: ArchiveExportPlan, prefix: string) =>
+  plan.files.filter(file => file.path.startsWith(prefix)).length;
+
+const renderLastExport = () => {
+  const last = loadArchiveExportDiagnostic(localStorage, mapId);
+  if (!last) return "<p><i>No export has been recorded for this map in this installation.</i></p>";
+  const affected = last.report?.changes.filter(change => change.kind !== "unchanged") ?? [];
+  const counts = last.report?.counts;
+  const destination = last.directory || last.fileName || "Not recorded";
+  return /* html */ `
+    <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.25em 0.8em">
+      <dt>Status</dt><dd>${escapeHtml(last.status)}</dd>
+      <dt>Completed</dt><dd>${escapeHtml(new Date(last.completedAt).toLocaleString())}</dd>
+      <dt>Target</dt><dd>${escapeHtml(last.target)}</dd>
+      <dt>Destination</dt><dd><code>${escapeHtml(destination)}</code></dd>
+      ${counts ? `<dt>Dry run</dt><dd>${counts.create} create, ${counts.update} update, ${counts.move} move, ${counts.removed} retained, ${counts.conflict} conflict</dd>` : ""}
+    </dl>
+    ${
+      affected.length
+        ? `<details><summary>${affected.length} affected ${affected.length === 1 ? "file" : "files"}</summary><ul style="max-height: 12em; overflow: auto">${affected
+            .map(
+              change =>
+                `<li><b>${escapeHtml(change.kind)}</b>: <code>${escapeHtml(change.fromPath ? `${change.fromPath} → ${change.path}` : change.path)}</code>${change.reason ? ` — ${escapeHtml(change.reason)}` : ""}</li>`
+            )
+            .join("")}</ul></details>`
+        : ""
+    }`;
+};
+
+function openDiagnostics(): void {
+  const snapshot = getCurrentArchiveSnapshot();
+  const worldId = getWorldId();
+  const plan = buildArchiveExportPlan(snapshot, { worldId, profile: getCurrentProfile() });
+  const categories = plan.manifest.simulation.categories;
+  const categoryRows = [
+    [
+      "Names, FMG types and forms, parent links, neighbors, coordinates, and settlement features",
+      true,
+      "FMG-owned generated reference"
+    ],
+    [
+      "Estimated population, rural population, and urban population",
+      categories.includes("population"),
+      "Derived simulation reference"
+    ],
+    [
+      "Taxes, treasuries, markets, gross product, goods, inventories, prices, and trade deals",
+      categories.includes("economy"),
+      "Generated simulation reference"
+    ],
+    [
+      "War alert, formations, personnel, and unit composition",
+      categories.includes("military"),
+      "Generated simulation reference"
+    ],
+    ["Polity relationship labels and targets", categories.includes("diplomacy"), "Generated simulation reference"],
+    ["Authored Archive prose and canon fields", false, "Archive-owned; never imported or overwritten"]
+  ] as const;
+
+  closeDialogs(`#${DIAGNOSTICS_DIALOG_ID}`);
+  destroyDialog(DIAGNOSTICS_DIALOG_ID);
+  const html = /* html */ `<div id="${DIAGNOSTICS_DIALOG_ID}" class="dialog stable">
+    <h3>Current map and profile</h3>
+    <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.25em 0.8em">
+      <dt>World</dt><dd>${escapeHtml(plan.manifest.worldName)}</dd>
+      <dt>World ID</dt><dd><code>${escapeHtml(worldId)}</code></dd>
+      <dt>Map ID</dt><dd><code>${escapeHtml(snapshot.info.mapId ?? "Unknown")}</code></dd>
+      <dt>FMG version</dt><dd>${escapeHtml(snapshot.info.version ?? "Unknown")}</dd>
+      <dt>Archive schema</dt><dd>${ARCHIVE_SCHEMA_VERSION}</dd>
+      <dt>Profile</dt><dd><code>${escapeHtml(plan.manifest.profile)}</code></dd>
+      <dt>Optional categories</dt><dd>${categories.length ? categories.map(escapeHtml).join(", ") : "None (reference-safe)"}</dd>
+    </dl>
+    <h3>Planned package</h3>
+    <p>${plan.files.length} files: ${countFiles(plan, "States/")} polities, ${countFiles(plan, "Provinces/")} territories, ${countFiles(plan, "Burgs/")} settlements, ${countFiles(plan, "Cultures/")} cultures, ${countFiles(plan, "Religions/")} religions, and ${countFiles(plan, "Simulation/")} simulation snapshots, plus the manifest.</p>
+    <details><summary>Show exact generated file paths</summary><ul style="max-height: 14em; overflow: auto">${plan.files
+      .map(file => `<li><code>${escapeHtml(file.path)}</code></li>`)
+      .join("")}</ul></details>
+    <h3>Field ownership</h3>
+    <table class="standard" style="width: 100%"><thead><tr><th>Data group</th><th>Included</th><th>Authority</th></tr></thead><tbody>${categoryRows
+      .map(
+        ([label, included, authority]) =>
+          `<tr><td>${label}</td><td>${included ? "Yes" : "No"}</td><td>${authority}</td></tr>`
+      )
+      .join("")}</tbody></table>
+    <h3>Last export</h3>
+    ${renderLastExport()}
+    <div style="display: flex; justify-content: flex-end; margin-top: 0.8em">
+      <button type="button" id="archiveDiagnosticsConfigure">Configure or export…</button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl("archiveDiagnosticsConfigure").addEventListener("click", openConfiguration);
+  $(`#${DIAGNOSTICS_DIALOG_ID}`).dialog({
+    title: "Archive Export Diagnostics",
+    width: Math.min(innerWidth * 0.9, 820),
+    maxHeight: Math.min(innerHeight * 0.9, 760),
+    position: { my: "center", at: "center", of: "svg", collision: "fit" }
+  });
 }
 
 const getProfileFormOptions = (): ArchiveSimulationOptions => ({
@@ -258,4 +396,4 @@ function openConfiguration(): void {
   });
 }
 
-export const ArchiveExportDownload = { downloadArchive, exportToDirectory, openConfiguration };
+export const ArchiveExportDownload = { downloadArchive, exportToDirectory, openConfiguration, openDiagnostics };

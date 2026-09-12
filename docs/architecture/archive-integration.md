@@ -145,6 +145,14 @@ Every enabled category is labelled as unapproved generated simulation. The manif
 
 The Tools interface begins moving toward a typed action registry. New Archive and Jord actions should register stable IDs and categories there instead of adding unrelated inline handlers to the monolithic interface.
 
+### Export diagnostics and schema backups
+
+The Export and Sync menu exposes an Archive Export Diagnostics window. It reports the current world and map IDs, schema and profile, enabled simulation categories, entity counts, every planned relative file path, and the last export result stored for that map on the current installation. Export history is local application state and is deliberately excluded from deterministic generated notes and manifests.
+
+The diagnostics ownership table makes the current synchronization boundary explicit: FMG geography and identity are generated reference data; optional population, economy, military, and diplomacy values are generated simulation references; authored Archive prose and canon fields are not imported or overwritten.
+
+Before a desktop folder export replaces a manifest whose schema differs from the new export schema, the writer stores the exact old manifest under `.azgaar-manifest-backups/`. The backup path is content-addressed, remains inside the selected managed export directory, and is created before entity or manifest writes. The dry-run report identifies the planned backup and schema transition.
+
 ## Safe repeated export
 
 The writer operates on an export plan and the previous manifest:

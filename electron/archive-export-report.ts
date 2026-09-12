@@ -26,11 +26,23 @@ export const summarizeArchiveReport = (report: ArchiveDirectoryReport, detailLim
     `Conflicts: ${conflict}`
   ];
   const affected = report.changes.filter(change => change.kind !== "unchanged");
-  if (!affected.length) return counts.join("\n");
+  const backup = report.manifestBackup
+    ? [
+        "",
+        `Manifest backup: ${report.manifestBackup.path}`,
+        `Schema migration: ${report.manifestBackup.fromSchema ?? "unknown"} -> ${report.manifestBackup.toSchema}`
+      ]
+    : [];
+  if (!affected.length) return [...counts, ...backup].join("\n");
 
   const visible = affected.slice(0, detailLimit).map(describeChange);
   const remaining = affected.length - visible.length;
-  return [...counts, "", "Affected files:", ...visible, ...(remaining ? [`- ...and ${remaining} more`] : [])].join(
-    "\n"
-  );
+  return [
+    ...counts,
+    ...backup,
+    "",
+    "Affected files:",
+    ...visible,
+    ...(remaining ? [`- ...and ${remaining} more`] : [])
+  ].join("\n");
 };

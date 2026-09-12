@@ -35,4 +35,14 @@ register({
   }
 });
 
+register({
+  id: "archive-export-diagnostics",
+  category: "export-sync",
+  label: "Archive Export Diagnostics",
+  run: async () => {
+    const { ArchiveExportDownload } = await import("@/services/io/archive-export-download");
+    ArchiveExportDownload.openDiagnostics();
+  }
+});
+
 export const ToolActions = { list, register, run };

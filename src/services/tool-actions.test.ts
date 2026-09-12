@@ -2,12 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { ToolActions } from "./tool-actions";
 
 describe("tool action registry", () => {
-  it("lists the Archive action in the export and sync category", () => {
-    expect(ToolActions.list("export-sync")).toContainEqual({
-      category: "export-sync",
-      id: "archive-export",
-      label: "Archive Export Profile"
-    });
+  it("lists the Archive actions in the export and sync category", () => {
+    expect(ToolActions.list("export-sync")).toEqual([
+      { category: "export-sync", id: "archive-export", label: "Archive Export Profile" },
+      {
+        category: "export-sync",
+        id: "archive-export-diagnostics",
+        label: "Archive Export Diagnostics"
+      }
+    ]);
   });
 
   it("runs registered actions by stable id", async () => {

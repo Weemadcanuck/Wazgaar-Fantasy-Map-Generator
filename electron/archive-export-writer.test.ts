@@ -109,6 +109,26 @@ describe("Archive directory writer", () => {
     );
   });
 
+  it("backs up the previous manifest before applying a schema migration", async () => {
+    const request = makeRequest();
+    await applyArchiveDirectoryWrite(outputRoot, request);
+    const manifestPath = path.join(outputRoot, "azgaar-archive-manifest.json");
+    const previousManifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    previousManifest.schemaVersion = 1;
+    const previousContent = `${JSON.stringify(previousManifest, null, 2)}\n`;
+    await writeFile(manifestPath, previousContent, "utf8");
+
+    const preview = await previewArchiveDirectoryWrite(outputRoot, request);
+
+    expect(preview.canApply).toBe(true);
+    expect(preview.manifestBackup).toMatchObject({ fromSchema: 1, toSchema: 2 });
+    const result = await applyArchiveDirectoryWrite(outputRoot, request);
+    expect(result.applied).toBe(true);
+    const backupPath = preview.manifestBackup?.path;
+    if (!backupPath) throw new Error("Schema migration did not plan a manifest backup");
+    expect(await readFile(path.join(outputRoot, ...backupPath.split("/")), "utf8")).toBe(previousContent);
+  });
+
   it("rejects an export path that escapes the selected directory", async () => {
     const request = makeRequest();
     const entityFile = request.files.find(file => file.entityKey);

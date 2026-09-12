@@ -5,6 +5,11 @@ import { summarizeArchiveReport } from "./archive-export-report";
 const report: ArchiveDirectoryReport = {
   canApply: true,
   counts: { create: 1, update: 1, move: 1, unchanged: 4, removed: 1, conflict: 0 },
+  manifestBackup: {
+    fromSchema: 1,
+    path: ".azgaar-manifest-backups/schema-1-before-2-test.json",
+    toSchema: 2
+  },
   changes: [
     { kind: "create", path: "Burgs/New (Azgaar Burg).md" },
     { kind: "update", path: "Burgs/Changed (Azgaar Burg).md" },
@@ -25,6 +30,8 @@ describe("Archive export report", () => {
     expect(summary).toContain("- Update: Burgs/Changed (Azgaar Burg).md");
     expect(summary).toContain("- Move: Burgs/Old (Azgaar Burg).md -> Burgs/Renamed (Azgaar Burg).md");
     expect(summary).toContain("- Retained: Burgs/Retained (Azgaar Burg).md");
+    expect(summary).toContain("Schema migration: 1 -> 2");
+    expect(summary).toContain(".azgaar-manifest-backups/schema-1-before-2-test.json");
   });
 
   it("caps long reports while preserving the total omitted count", () => {

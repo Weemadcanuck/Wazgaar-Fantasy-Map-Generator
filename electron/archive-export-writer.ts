@@ -19,6 +19,7 @@ type ManifestEntity = {
 
 type Manifest = {
   entities: Record<string, ManifestEntity>;
+  schemaVersion?: number;
   worldId: string;
 };
 
@@ -29,6 +30,12 @@ type WriteOperation = {
 };
 
 type InternalPlan = {
+  manifestBackup?: {
+    content: string;
+    fromSchema: number | null;
+    path: string;
+    toSchema: number;
+  };
   manifestFile: ArchiveDirectoryFile;
   operations: WriteOperation[];
   report: ArchiveDirectoryReport;
@@ -129,6 +136,9 @@ const validateRequest = (request: ArchiveDirectoryRequest) => {
   }
 
   const manifest = parseManifest(manifestFiles[0].content, "New Archive manifest");
+  if (!Number.isInteger(manifest.schemaVersion) || (manifest.schemaVersion ?? 0) < 1) {
+    throw new Error("New Archive manifest is missing a valid schemaVersion");
+  }
   if (manifest.worldId !== request.worldId) throw new Error("Archive export world ID does not match its manifest");
   for (const [entityKey, entity] of Object.entries(manifest.entities)) {
     if (!entity || typeof entity.path !== "string" || typeof entity.contentHash !== "string") {
@@ -173,6 +183,8 @@ const buildInternalPlan = async (root: string, request: ArchiveDirectoryRequest)
   }
 
   let previousManifest: Manifest | null = null;
+  let manifestBackup: InternalPlan["manifestBackup"];
+  const nextSchema = nextManifest.schemaVersion!;
   if (currentManifestContent !== null) {
     try {
       previousManifest = parseManifest(currentManifestContent, "Existing Archive manifest");
@@ -183,6 +195,28 @@ const buildInternalPlan = async (root: string, request: ArchiveDirectoryRequest)
           reason: `The selected directory belongs to world ID ${JSON.stringify(previousManifest.worldId)}`
         });
         return { manifestFile, operations, report: { canApply: false, changes, counts } };
+      }
+      if (previousManifest.schemaVersion !== nextSchema) {
+        const contentHash = hashArchiveContent(currentManifestContent).replace(":", "-");
+        const fromSchema = previousManifest.schemaVersion ?? null;
+        const fromLabel = fromSchema ?? "unknown";
+        const backupPath = `.azgaar-manifest-backups/schema-${fromLabel}-before-${nextSchema}-${contentHash}.json`;
+        await assertNoSymlink(outputRoot, backupPath);
+        const existingBackup = await readText(resolveInsideRoot(outputRoot, backupPath));
+        if (existingBackup !== null && existingBackup !== currentManifestContent) {
+          addChange(changes, counts, {
+            kind: "conflict",
+            path: backupPath,
+            reason: "The required manifest backup path already contains different content"
+          });
+          return { manifestFile, operations, report: { canApply: false, changes, counts } };
+        }
+        manifestBackup = {
+          content: currentManifestContent,
+          fromSchema,
+          path: backupPath,
+          toSchema: nextSchema
+        };
       }
     } catch (error) {
       addChange(changes, counts, {
@@ -269,10 +303,25 @@ const buildInternalPlan = async (root: string, request: ArchiveDirectoryRequest)
     addChange(changes, counts, { kind: "update", path: MANIFEST_PATH });
   }
 
+  const report: ArchiveDirectoryReport = {
+    canApply: counts.conflict === 0,
+    changes,
+    counts,
+    ...(manifestBackup
+      ? {
+          manifestBackup: {
+            fromSchema: manifestBackup.fromSchema,
+            path: manifestBackup.path,
+            toSchema: manifestBackup.toSchema
+          }
+        }
+      : {})
+  };
   return {
+    manifestBackup,
     manifestFile,
     operations,
-    report: { canApply: counts.conflict === 0, changes, counts }
+    report
   };
 };
 
@@ -306,6 +355,11 @@ export const applyArchiveDirectoryWrite = async (root: string, request: ArchiveD
   const outputRoot = path.resolve(root);
   const plan = await buildInternalPlan(outputRoot, request);
   if (!plan.report.canApply) return { applied: false, report: plan.report };
+
+  if (plan.manifestBackup) {
+    const backupTarget = resolveInsideRoot(outputRoot, plan.manifestBackup.path);
+    if ((await readText(backupTarget)) === null) await writeAtomically(backupTarget, plan.manifestBackup.content);
+  }
 
   for (const operation of plan.operations) {
     const target = resolveInsideRoot(outputRoot, operation.file.path);
