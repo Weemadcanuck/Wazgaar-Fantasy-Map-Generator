@@ -7,6 +7,7 @@ export type ElectronBridge = {
   };
   isElectron: true;
   platform: string;
+  requestQuit: () => void;
   versions: { electron: string; chrome: string; node: string };
 };
 

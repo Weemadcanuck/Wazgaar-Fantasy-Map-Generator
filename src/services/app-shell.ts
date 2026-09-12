@@ -29,11 +29,14 @@ function onTitlebarButtonTouch(event: TouchEvent): void {
  * the release 404s when it lazy-loads a chunk it has not requested yet ("Failed to fetch
  * dynamically imported module"). Offer a reload to pick up the new build
  */
-function onChunkLoadError(): void {
+function onChunkLoadError(event: Event): void {
+  event.preventDefault();
+  const desktop = isElectron();
   confirmationDialog({
-    title: "New version released",
-    message:
-      "This part of the app failed to load because a new version was released while the page was open.<br />Reload the page to get the new version. If you have unsaved changes, save the map first",
+    title: desktop ? "Tool failed to load" : "New version released",
+    message: desktop
+      ? "A packaged application file could not be loaded.<br />Save the map, then reload the window. If the problem repeats, reinstall the latest Archival Fork build"
+      : "This part of the app failed to load because a new version was released while the page was open.<br />Reload the page to get the new version. If you have unsaved changes, save the map first",
     confirm: "Reload",
     cancel: "Not now",
     onConfirm: () => {
@@ -55,6 +58,8 @@ function initialize(): void {
 }
 
 function removeWebOnlyControls(): void {
+  const quitButton = findEl("quitApplicationButton");
+  if (quitButton) quitButton.hidden = false;
   findEl("getAppButton")?.remove();
   findEl("azgaarAssistant")?.closest("tr")?.remove();
   findEl("saveToDropboxButton")?.remove();

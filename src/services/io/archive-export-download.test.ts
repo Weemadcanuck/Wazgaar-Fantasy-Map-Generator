@@ -66,6 +66,7 @@ describe("in-application Archive export", () => {
     window.electron = {
       isElectron: true,
       platform: "win32",
+      requestQuit: vi.fn(),
       versions: { electron: "test", chrome: "test", node: "test" },
       archiveExport: { writeDirectory }
     };
