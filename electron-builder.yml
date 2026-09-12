@@ -1,4 +1,4 @@
-appId: com.azgaar.fantasy-map-generator
+appId: com.lucasadler94.azgaar-archival-fork
 copyright: Copyright © 2017-2026 Azgaar and contributors
 directories:
   output: release
@@ -9,7 +9,7 @@ files:
   - "!node_modules/**/*" # the renderer is bundled by Vite, the main process only needs Electron itself
 asar: true
 afterPack: ./scripts/adhoc-sign.mjs
-artifactName: fmg-${version}-${os}-${arch}.${ext}
+artifactName: azgaar-archival-fork-${version}-${os}-${arch}.${ext}
 mac:
   category: public.app-category.graphics-design
   target:
@@ -18,9 +18,10 @@ mac:
     - target: zip
       arch: [arm64, x64]
 win:
+  icon: build/icon.ico
   target:
     - target: nsis
-      arch: [x64, arm64]
+      arch: [x64]
 linux:
   category: Graphics
   maintainer: Azgaar <azgaar.fmg@yandex.com>
@@ -36,6 +37,3 @@ nsis:
   allowToChangeInstallationDirectory: true
   # otherwise a third installer carrying both architectures is built next to the per-arch ones
   buildUniversalInstaller: false
-publish:
-  provider: github
-  releaseType: draft

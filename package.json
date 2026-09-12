@@ -1,8 +1,8 @@
 {
-  "name": "fantasy-map-generator",
-  "productName": "Fantasy Map Generator",
+  "name": "azgaar-archival-fork",
+  "productName": "Azgaar Archival Fork",
   "version": "1.149.2",
-  "description": "Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.",
+  "description": "An Archive-oriented fork of Azgaar's Fantasy Map Generator with guarded Obsidian export.",
   "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator#readme",
   "bugs": {
     "url": "https://github.com/Azgaar/Fantasy-Map-Generator/issues"
@@ -12,7 +12,7 @@
     "url": "git+https://github.com/Azgaar/Fantasy-Map-Generator.git"
   },
   "license": "MIT",
-  "author": "Azgaar",
+  "author": "Lucas Adler <Lucasadler94@gmail.com>",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",

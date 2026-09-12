@@ -6,7 +6,6 @@ import { pathToFileURL } from "node:url";
 import type { MenuItemConstructorOptions } from "electron";
 import { app, BrowserWindow, dialog, Menu, nativeImage, net, protocol, screen, shell } from "electron";
 import { registerArchiveExportHandlers } from "./archive-export-ipc";
-import { initUpdater } from "./updater";
 
 const SCHEME = "app";
 const HOST = "fmg";
@@ -210,16 +209,11 @@ function buildMenu(): void {
 }
 
 let quitting = false; // set on Cmd+Q, where closing the window alone would leave the app running
-let skipConfirmation = false; // set once the user has confirmed, and by the updater to install on restart
+let skipConfirmation = false; // set once the user has confirmed
 
 app.on("before-quit", () => {
   quitting = true;
 });
-
-/** Closes the window without the quit confirmation, so the installer can restart the app */
-function allowClose(): void {
-  skipConfirmation = true;
-}
 
 /**
  * The web app warns before navigating away via `onbeforeunload`, but Electron cancels the close
@@ -305,7 +299,6 @@ if (!app.requestSingleInstanceLock()) {
     buildMenu();
     registerArchiveExportHandlers();
     createWindow();
-    initUpdater(allowClose); // app-wide, so re-opening a window on macOS does not start a second updater
     app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());
   });
 

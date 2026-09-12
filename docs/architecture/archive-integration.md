@@ -175,6 +175,12 @@ Useful future fields include relationship type, administrative role, sovereignty
 
 The first Archive generation profile should affect labels, hierarchy rules, and requested counts only after reference export is proven. It must not use generated economic or military values as a substitute for authored worldbuilding.
 
+## Later milestone: workstation-specific performance
+
+After export, controlled import, managed synchronization, and the Archive-oriented domain model are stable, profile and optimize the fork for the owner's actual Windows PC and Archive workflow. Broad hardware compatibility is secondary for this fork, but optimizations must continue to preserve `.map` integrity and deterministic Archive output.
+
+Begin with measured baselines using representative large maps such as Jotun: startup and load time, generation stages, editor interactions, redraws, exports, CPU and GPU utilization, peak memory, and long-session behavior. Use those measurements to prioritize rendering invalidation, worker usage, data layout, caching, hardware acceleration, and filesystem access rather than applying speculative general-purpose tuning.
+
 ## Initial implementation slices
 
 ### Slice 1: deterministic exporter
