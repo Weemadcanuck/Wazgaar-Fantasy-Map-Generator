@@ -6,7 +6,6 @@ import { type ArchiveWorldSnapshot, buildArchiveExportPlan, sanitizeArchiveFilen
 
 const JSZIP_SOURCE = "libs/jszip.min.js";
 const WORLD_ID_PREFIX = "archive-export-world-id";
-const WORLD_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 let jsZipLoading: Promise<void> | undefined;
 
@@ -39,21 +38,9 @@ const getSuggestedWorldId = () => {
   return `${name || "world"}-${mapId}`;
 };
 
-const requestWorldId = (): string | null => {
+const getWorldId = (): string => {
   const storageKey = `${WORLD_ID_PREFIX}:${mapId}`;
-  const previous = localStorage.getItem(storageKey) || getSuggestedWorldId();
-  const entered = window.prompt(
-    "Stable Archive world ID. Keep this unchanged across exports so Obsidian can match renamed entities.",
-    previous
-  );
-  if (entered === null) return null;
-
-  const worldId = entered.trim();
-  if (!WORLD_ID_PATTERN.test(worldId)) {
-    tip("World ID must use 1-128 letters, numbers, dots, underscores, or hyphens", true, "error", 7000);
-    return null;
-  }
-
+  const worldId = localStorage.getItem(storageKey) || getSuggestedWorldId();
   localStorage.setItem(storageKey, worldId);
   return worldId;
 };
@@ -80,8 +67,7 @@ async function downloadArchive(): Promise<void> {
     return;
   }
 
-  const worldId = requestWorldId();
-  if (!worldId) return;
+  const worldId = getWorldId();
 
   TIME && console.time("downloadArchive");
   try {
@@ -119,8 +105,7 @@ async function exportToDirectory(): Promise<void> {
     return;
   }
 
-  const worldId = requestWorldId();
-  if (!worldId) return;
+  const worldId = getWorldId();
 
   TIME && console.time("exportArchiveToDirectory");
   try {

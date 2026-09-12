@@ -42,7 +42,6 @@ beforeEach(() => {
 
   window.JSZip = FakeZip as unknown as typeof window.JSZip;
   window.electron = undefined;
-  window.prompt = vi.fn(() => "jotun-live");
   window.URL.createObjectURL = vi.fn(() => "blob:archive");
   window.URL.revokeObjectURL = vi.fn();
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
@@ -55,11 +54,12 @@ describe("in-application Archive export", () => {
     expect(archivedFiles.has("Jotun (Azgaar Archive)/azgaar-archive-manifest.json")).toBe(true);
     expect(archivedFiles.has("Jotun (Azgaar Archive)/States/Daraluma (Azgaar State).md")).toBe(true);
     expect(archivedFiles.has("Jotun (Azgaar Archive)/Burgs/Drelgard (Azgaar Burg).md")).toBe(true);
-    expect(localStorage.getItem("archive-export-world-id:1788160068282")).toBe("jotun-live");
+    expect(localStorage.getItem("archive-export-world-id:1788160068282")).toBe("jotun-1788160068282");
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
   });
 
   it("sends the same export plan through the desktop bridge", async () => {
+    localStorage.setItem("archive-export-world-id:1788160068282", "jotun-live");
     const writeDirectory = vi.fn(
       async (_request: ArchiveDirectoryRequest): Promise<ArchiveDirectoryResult> => ({ status: "written" })
     );
