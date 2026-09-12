@@ -78,7 +78,7 @@ function start() {
         popover: {
           title: "Hover Tooltips",
           description:
-            "Move your mouse over the map (when the tour is over), the tooltip bar at the bottom updates with information about cells, burgs, states, and more. Click Next when you're ready to continue.",
+            "Move your mouse over the map (when the tour is over), the tooltip bar at the bottom updates with information about cells, settlements, polities, and more. Click Next when you're ready to continue.",
           side: "top",
           align: "center"
         }
@@ -185,7 +185,7 @@ function start() {
         popover: {
           title: "Options Tab",
           description:
-            "The Options tab lets you configure world generation parameters like the number of states, cultures, religions, and other settings that shape the generated world.",
+            "The Options tab lets you configure world generation parameters like the number of polities, cultures, religions, and other settings that shape the generated world.",
           side: "bottom"
         }
       },
@@ -197,7 +197,7 @@ function start() {
         popover: {
           title: "Generation Options",
           description:
-            "Set world parameters like the number of cultures, states, and religions before generating a new map. UI preferences like tooltips and autosave are also here.",
+            "Set world parameters like the number of cultures, polities, and religions before generating a new map. UI preferences like tooltips and autosave are also here.",
           side: "right"
         }
       },
@@ -245,7 +245,7 @@ function start() {
         popover: {
           title: "Tools Tab",
           description:
-            "The Tools tab gives you direct access to all of the map's editors: terrain, biomes, states, cultures, religions, routes, and more.",
+            "The Tools tab gives you direct access to all of the map's editors: terrain, biomes, polities, cultures, religions, routes, and more.",
           side: "bottom"
         }
       },

@@ -449,7 +449,7 @@
         </div>
         <div id="styleContent" class="tabcontent">
           <p
-            data-tip="Select a style preset. State labels may required regeneration if font is changed"
+            data-tip="Select a style preset. Polity labels may require regeneration if the font is changed"
             style="display: inline-block"
           >
             Style preset:
@@ -483,7 +483,7 @@
             <option value="anchors">Anchor Icons</option>
             <option value="biomes">Biomes</option>
             <option value="borders">Borders</option>
-            <option value="burgIcons">Burg Icons</option>
+            <option value="burgIcons">Settlement Icons</option>
             <option value="cells">Cells</option>
             <option value="coastline">Coastline</option>
             <option value="coordinates">Coordinates</option>
@@ -493,7 +493,7 @@
             <option value="goods">Goods</option>
             <option value="goodsCells">Goods: production</option>
             <option value="goodsIcons">Goods: resources</option>
-            <option value="goodsBurgs">Goods: burg plates</option>
+            <option value="goodsBurgs">Goods: settlement plates</option>
             <option value="gridOverlay">Grid</option>
             <option value="terrs">Heightmap</option>
             <option value="ice">Ice</option>
@@ -515,7 +515,7 @@
             <option value="routes">Routes</option>
             <option value="ruler">Rulers</option>
             <option value="scaleBar">Scale Bar</option>
-            <option value="regions" selected>States</option>
+            <option value="regions" selected>Polities</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
             <option value="tradeAnimation">Trade Animation</option>
@@ -1035,13 +1035,13 @@
               </tr>
             </tbody>
             <tbody id="styleStates" style="display: block">
-              <tr data-tip="Set states fill opacity. 0: invisible, 1: solid">
+              <tr data-tip="Set polity fill opacity. 0: invisible, 1: solid">
                 <td>Body opacity</td>
                 <td>
                   <slider-input id="styleStatesBodyOpacity" min="0" max="1" step="0.01"></slider-input>
                 </td>
               </tr>
-              <tr data-tip="Select filter for states fill. Please note filters may cause performance issues!">
+              <tr data-tip="Select a filter for polity fill. Filters may affect performance">
                 <td>Body filter</td>
                 <td><select id="styleStatesBodyFilter" /></td>
               </tr>
@@ -1050,13 +1050,13 @@
                   Halo is only rendered if "Rendering" option is set to "Best quality"!
                 </td>
               </tr>
-              <tr data-tip="Set states halo effect width">
+              <tr data-tip="Set polity halo effect width">
                 <td>Halo width</td>
                 <td>
                   <slider-input id="styleStatesHaloWidth" min="0" max="30" step="0.1"></slider-input>
                 </td>
               </tr>
-              <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
+              <tr data-tip="Set polity halo effect opacity. 0: invisible, 1: solid">
                 <td>Halo opacity</td>
                 <td>
                   <slider-input id="styleStatesHaloOpacity" min="0" max="1" step="0.01"></slider-input>
@@ -1084,8 +1084,8 @@
               </tr>
             </tbody>
             <tbody id="styleEmblems">
-              <tr data-tip="Set state emblems size multiplier">
-                <td>State size</td>
+              <tr data-tip="Set polity emblem size multiplier">
+                <td>Polity size</td>
                 <td>
                   <slider-input id="emblemsStateSizeInput" min="0" max="5" step=".01"></slider-input>
                 </td>
@@ -1096,8 +1096,8 @@
                   <slider-input id="emblemsProvinceSizeInput" min="0" max="5" step=".01"></slider-input>
                 </td>
               </tr>
-              <tr data-tip="Set burg emblems size multiplier">
-                <td>Burg size</td>
+              <tr data-tip="Set settlement emblem size multiplier">
+                <td>Settlement size</td>
                 <td>
                   <slider-input id="emblemsBurgSizeInput" min="0" max="5" step=".01"></slider-input>
                 </td>
@@ -1124,7 +1124,7 @@
               </tr>
             </tbody>
             <tbody id="styleGoodsBurgs" style="display: none">
-              <tr data-tip="Set burg production plate icon size in pixels. Plate and font scale together with it">
+              <tr data-tip="Set settlement production plate icon size in pixels. Plate and font scale together">
                 <td>Plate size</td>
                 <td>
                   <slider-input id="styleGoodsBurgsSize" min="1" max="12" step=".5"></slider-input>
@@ -1412,17 +1412,17 @@
               </td>
               <td></td>
             </tr>
-            <tr data-tip="Define how many states and capitals should be generated">
+            <tr data-tip="Define how many polities and capitals should be generated">
               <td>
                 <i data-locked="0" id="lock_statesNumber" class="icon-lock-open"></i>
               </td>
-              <td>States number</td>
+              <td>Polities number</td>
               <td colspan="2">
                 <slider-input id="statesNumber" data-stored="statesNumber" min="0" max="100"></slider-input>
               </td>
             </tr>
             <tr
-              data-tip="Set what share of eligible burgs in each state will become province centers. Higher values create more provinces"
+              data-tip="Set what share of eligible settlements in each polity become province centers. Higher values create more provinces"
             >
               <td>
                 <i data-locked="0" id="lock_provincesRatio" class="icon-lock-open"></i>
@@ -1432,7 +1432,7 @@
                 <slider-input id="provincesRatio" data-stored="provincesRatio" min="0" max="100"></slider-input>
               </td>
             </tr>
-            <tr data-tip="Define how much states and cultures can vary in size. Defines expansionism value">
+            <tr data-tip="Define how much polities and cultures can vary in size. This defines expansionism">
               <td>
                 <i data-locked="0" id="lock_sizeVariety" class="icon-lock-open"></i>
               </td>
@@ -1441,7 +1441,7 @@
                 <slider-input id="sizeVariety" data-stored="sizeVariety" min="0" max="10" step=".1"></slider-input>
               </td>
             </tr>
-            <tr data-tip="Set state and cultures growth rate. Defines how many lands will stay neutral">
+            <tr data-tip="Set polity and culture growth rates. This defines how much land remains neutral">
               <td>
                 <i data-locked="0" id="lock_growthRate" class="icon-lock-open"></i>
               </td>
@@ -1454,7 +1454,7 @@
               <td>
                 <i data-locked="0" id="lock_manors" class="icon-lock-open"></i>
               </td>
-              <td>Burgs number</td>
+              <td>Settlements number</td>
               <td>
                 <input id="manorsInput" data-stored="manors" type="range" min="0" max="1000" step="1" value="1000" />
               </td>
@@ -1586,7 +1586,7 @@
                   <optgroup label="Diversiform">
                     <option value="culture" selected>Culture-specific</option>
                     <option value="random">Culture-random</option>
-                    <option value="state">State-specific</option>
+                    <option value="state">Polity-specific</option>
                   </optgroup>
                   <optgroup label="Basic">
                     <option value="heater">Heater</option>
@@ -1737,8 +1737,8 @@
             <button id="editBiomesButton" data-tip="Click to open Biomes Editor" data-shortcut="Shift + B">
               Biomes
             </button>
-            <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
-              Burgs
+            <button id="overviewBurgsButton" data-tip="Click to open Settlements Overview" data-shortcut="Shift + T">
+              Settlements
             </button>
             <button
               id="editCoastlineSettings"
@@ -1802,8 +1802,8 @@
             <button id="overviewRoutesButton" data-tip="Click to open Routes Overview" data-shortcut="Shift + U">
               Routes
             </button>
-            <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
-              States
+            <button id="editStatesButton" data-tip="Click to open Polities Editor" data-shortcut="Shift + S">
+              Polities
             </button>
             <button id="editTradeAnimationButton" data-tip="Click to open Trade Animation Editor">
               Trade
@@ -1815,9 +1815,9 @@
           <div id="regenerateFeature" class="grid">
             <button
               id="regenerateBurgs"
-              data-tip="Click to regenerate all unlocked burgs and routes. States will remain as they are. Note: burgs are only generated in populated areas with culture assigned"
+              data-tip="Click to regenerate all unlocked settlements and routes. Polities will remain as they are. Note: settlements are only generated in populated areas with culture assigned"
             >
-              Burgs
+              Settlements
             </button>
             <button id="regenerateCultures" data-tip="Click to regenerate non-locked cultures">Cultures</button>
             <button
@@ -1831,9 +1831,9 @@
             <button id="regenerateIce" data-tip="Click to regenerate icebergs and glaciers">Ice</button>
             <button
               id="regenerateStateLabels"
-              data-tip="Click to update state labels placement based on current borders"
+              data-tip="Click to update polity label placement based on current borders"
             >
-              State Labels
+              Polity Labels
             </button>
             <button id="regenerateMarkers" data-tip="Click to regenerate unlocked markers">
               Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
@@ -1858,7 +1858,7 @@
             </button>
             <button
               id="regenerateProvinces"
-              data-tip="Click to regenerate non-locked provinces. States will remain as they are"
+              data-tip="Click to regenerate non-locked provinces. Polities will remain as they are"
             >
               Provinces
             </button>
@@ -1875,9 +1875,9 @@
             <button id="regenerateRoutes" data-tip="Click to regenerate all unlocked routes">Routes</button>
             <button
               id="regenerateStates"
-              data-tip="Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different"
+              data-tip="Click to regenerate non-locked polities. Emblems and military forces will be regenerated as well; settlements will remain, but capitals will be different"
             >
-              States
+              Polities
             </button>
             <button
               id="regenerateZones"
@@ -1890,10 +1890,10 @@
           <div id="addFeature" class="grid">
             <button
               id="addBurgTool"
-              data-tip="Click on map to place a burg. Hold Shift to add multiple"
+              data-tip="Click on map to place a settlement. Hold Shift to add multiple"
               data-shortcut="Shift + 1"
             >
-              Burg
+              Settlement
             </button>
             <button
               id="addLabel"
@@ -2267,7 +2267,7 @@
               <label>1 population point:</label>
             </slider-input>
           </div>
-          <div data-tip="Set urban population modifier. Change to increase or descrese burgs population">
+          <div data-tip="Set urban population modifier. Change to increase or decrease settlement population">
             <slider-input id="urbanizationInput" data-stored="urbanization" min=".01" max="5" step=".01" value="1">
               <label>Urbanization rate:</label>
             </slider-input>

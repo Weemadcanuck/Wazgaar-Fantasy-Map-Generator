@@ -355,7 +355,7 @@ function renderDialog(): void {
             class="icon-button-field"
           ></button>
           <button data-tip="Naval Battle: naval units combat" data-type="naval" class="icon-button-naval"></button>
-          <button data-tip="Siege: burg blockade and storming" data-type="siege" class="icon-button-siege"></button>
+          <button data-tip="Siege: settlement blockade and storming" data-type="siege" class="icon-button-siege"></button>
           <button data-tip="Ambush: surprise attack" data-type="ambush" class="icon-button-ambush"></button>
           <button data-tip="Landing: amphibious attack" data-type="landing" class="icon-button-landing"></button>
           <button
@@ -398,7 +398,7 @@ function renderDialog(): void {
     </div>
     <div id="regimentSelectorScreen" class="dialog">
       <div id="regimentSelectorHeader" class="header" style="grid-template-columns: 9em 13em 4em 6em">
-        <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">
+        <div data-tip="Click to sort by polity name" class="sortable alphabetically" data-sortby="state">
           State&nbsp;
         </div>
         <div data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">

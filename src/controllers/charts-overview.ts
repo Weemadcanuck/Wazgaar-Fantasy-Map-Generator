@@ -84,7 +84,7 @@ interface StackSeries {
 
 const entitiesMap: Record<string, Dimension> = {
   states: {
-    label: "State",
+    label: "Polity",
     getId: cellId => pack.cells.state[cellId],
     getName: nameGetter("states"),
     getColors: colorsGetter("states"),
@@ -183,7 +183,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   burgs_number: {
-    label: "Burgs",
+    label: "Settlements",
     hint: "Number of burgs",
     quantize: cellId => (pack.cells.burg[cellId] ? 1 : 0),
     aggregate: values => sum(values),
@@ -442,7 +442,7 @@ function renderDialog() {
           </select>
         </label>
 
-        <label data-tip="Exclude zero element from the results (id 0, e.g. the neutral state)" for="chartsOverview__excludeNeutral">
+        <label data-tip="Exclude the zero element from results (id 0, e.g. the neutral polity)" for="chartsOverview__excludeNeutral">
           <input id="chartsOverview__excludeNeutral" type="checkbox" class="native" />
           <span>Exclude neutral</span>
         </label>

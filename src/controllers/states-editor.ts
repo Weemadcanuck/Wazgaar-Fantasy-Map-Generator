@@ -45,7 +45,7 @@ const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
-    label: "State",
+    label: "Polity",
     width: "7em",
     permanent: true,
     sortBy: s => s.name || "",
@@ -77,7 +77,7 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "burgs",
-    label: "Burgs",
+    label: "Settlements",
     width: "5em",
     mobileHidden: true,
     sortBy: s => s.burgs || 0
@@ -109,7 +109,7 @@ const columns: EditorColumn<State>[] = [
     label: "Treasury",
     width: "6em",
     mobileHidden: true,
-    tip: "Click to sort by state treasury. Click on a value to view and edit taxes",
+    tip: "Click to sort by polity treasury. Click a value to view and edit taxes",
     sortBy: s => s.treasury || 0
   },
   {
@@ -152,7 +152,7 @@ function open(): void {
   statesTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "States Editor",
+    title: "Polities Editor",
     resizable: false,
     width: "fit-content",
     position,
@@ -168,42 +168,42 @@ function renderDialog(): void {
     </div>
 
     <div id="statesFooter" class="totalLine">
-      <div data-tip="States number" style="margin-left: 5px">States:&nbsp;<span id="statesFooterStates">0</span></div>
-      <div data-tip="Total burgs number" style="margin-left: 12px" data-col="burgs">Burgs:&nbsp;<span id="statesFooterBurgs">0</span></div>
+      <div data-tip="Polities number" style="margin-left: 5px">Polities:&nbsp;<span id="statesFooterStates">0</span></div>
+      <div data-tip="Total settlements number" style="margin-left: 12px" data-col="burgs">Settlements:&nbsp;<span id="statesFooterBurgs">0</span></div>
       <div data-tip="Total land area" style="margin-left: 12px" data-col="area">Land Area:&nbsp;<span id="statesFooterArea">0</span></div>
       <div data-tip="Total population" style="margin-left: 12px" data-col="population">Population:&nbsp;<span id="statesFooterPopulation">0</span></div>
     </div>
 
     <div id="statesBottom" class="editorToolbar">
       <button id="statesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="statesEditStyle" data-tip="Edit states style in Style Editor" class="icon-adjust"></button>
+      <button id="statesEditStyle" data-tip="Edit polity style in Style Editor" class="icon-adjust"></button>
       <button id="statesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
       <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
-      <button id="statesChart" data-tip="Show states bubble chart" class="icon-chart-area"></button>
+      <button id="statesChart" data-tip="Show polities bubble chart" class="icon-chart-area"></button>
 
       <button id="statesRegenerate" data-tip="Show the regeneration menu and more data" class="icon-cog-alt"></button>
       <div id="statesRegenerateButtons" style="display: none">
         <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
-        <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
+        <button id="statesRandomize" data-tip="Randomize polity expansion values and recalculate polities and provinces" class="icon-shuffle"></button>
         <div data-tip="Additional growth rate. Defines how many land cells remain neutral" style="display: inline-block">
           <slider-input id="statesGrowthRate" min=".1" max="3" step=".05" value="1">Growth rate:</slider-input>
         </div>
-        <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
-        <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
+        <button id="statesRecalculate" data-tip="Recalculate polities from current growth-related attributes" class="icon-retweet"></button>
+        <div data-tip="Allow polity neutral-distance, expansion, and type changes to take immediate effect" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
           <label for="statesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
         </div>
-        <div data-tip="Allow system to change state labels when states data is change" style="display: inline-block">
+        <div data-tip="Allow the system to update polity labels when polity data changes" style="display: inline-block">
           <input id="adjustLabels" class="checkbox" type="checkbox" />
           <label for="adjustLabels" class="checkbox-label"><i>auto-change labels</i></label>
         </div>
       </div>
 
-      <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
+      <button id="statesManually" data-tip="Manually reassign polities" class="icon-brush"></button>
 
-      <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
-      <button id="statesMerge" data-tip="Merge several states into one" class="icon-layer-group"></button>
-      <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
+      <button id="statesAdd" data-tip="Add a new polity. Hold Shift to add multiple" class="icon-plus"></button>
+      <button id="statesMerge" data-tip="Merge several polities into one" class="icon-layer-group"></button>
+      <button id="statesExport" data-tip="Save polity-related data as a text file (.csv)" class="icon-download"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -332,8 +332,8 @@ function renderStatesPage(view: TableView<State>): void {
         </div>
         <select class="stateCulture placeholder" data-col="culture">${getCultureOptions(0)}</select>
         <div data-col="burgs">
-          <span data-tip="Click to overview neutral burgs" class="icon-dot-circled pointer" style="padding-right: 1px"></span>
-          <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
+        <span data-tip="Click to overview neutral settlements" class="icon-dot-circled pointer" style="padding-right: 1px"></span>
+        <div data-tip="Settlements count" class="stateBurgs">${s.burgs}</div>
         </div>
         <div data-col="cells">
           <span data-tip="Cells count" class="icon-check-empty"></span>
@@ -377,50 +377,50 @@ function renderStatesPage(view: TableView<State>): void {
       data-expansionism=${s.expansionism}
     >
       <fill-box fill="${s.color}" data-col="color"></fill-box>
-      <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
-      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
-      <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${
-        s.formName
-      }" readonly data-col="form" />
+        <input data-tip="Polity name. Click to change" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
+        <svg data-tip="Click to show and edit polity emblem" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
+        <input data-tip="Polity form name. Click to change" class="stateForm name pointer" value="${
+          s.formName
+        }" readonly data-col="form" />
       <div data-col="capital">
-        <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
+        <span data-tip="Polity capital. Click to zoom into view" class="icon-star-empty pointer"></span>
         <div data-tip="Capital name" class="stateCapital">${capital}</div>
       </div>
       <select data-tip="Dominant culture. Click to change" class="stateCulture" data-col="culture">${getCultureOptions(
         s.culture
       )}</select>
       <div data-col="burgs">
-        <span data-tip="Click to overview state burgs" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
-        <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
+        <span data-tip="Click to overview polity settlements" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
+        <div data-tip="Settlements count" class="stateBurgs">${s.burgs}</div>
       </div>
       <div data-col="cells">
         <span data-tip="Cells count" class="icon-check-empty"></span>
         <div data-tip="Cells count" class="stateCells">${s.cells}</div>
       </div>
       <div data-col="area">
-        <span data-tip="State area" style="padding-right: 4px" class="icon-map-o"></span>
-        <div data-tip="State area" class="stateArea">${si(area)} ${unit}</div>
+        <span data-tip="Polity area" style="padding-right: 4px" class="icon-map-o"></span>
+        <div data-tip="Polity area" class="stateArea">${si(area)} ${unit}</div>
       </div>
       <div data-col="population">
         <span data-tip="${populationTip}" class="icon-male"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
       </div>
       <div data-tip="${treasuryTip}" class="stateTreasury pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
-      <select data-tip="State type. Defines growth model. Click to change" class="cultureType" data-col="type">${getTypeOptions(
-        s.type
-      )}</select>
+        <select data-tip="Polity type. Defines growth model. Click to change" class="cultureType" data-col="type">${getTypeOptions(
+          s.type
+        )}</select>
       <div data-col="expansionism">
-        <span data-tip="State expansionism" class="icon-resize-full"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
+        <span data-tip="Polity expansionism" class="icon-resize-full"></span>
+        <input data-tip="Expansionism (defines competitive size). Change to recalculate polities from the new value"
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
       <div data-col="actions">
-        <span data-tip="Locate the state" class="icon-target"></span>
-        <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
-        <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${
+        <span data-tip="Locate the polity" class="icon-target"></span>
+        <span data-tip="Toggle polity focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
+        <span data-tip="Lock the polity to protect it from regeneration" class="icon-lock${
           s.lock ? "" : "-open"
         }"></span>
-        <span data-tip="Remove the state" class="icon-trash-empty"></span>
+        <span data-tip="Remove the polity" class="icon-trash-empty"></span>
       </div>
     </div>`;
   }
@@ -544,7 +544,7 @@ function editStateName(state: number): void {
 
   $("#stateNameEditor").dialog({
     resizable: false,
-    title: "Change state name",
+    title: "Change polity name",
     buttons: {
       Apply: function (this: HTMLElement) {
         applyNameChange(s);
@@ -638,7 +638,7 @@ function renderNameEditor(): void {
   destroyDialog("stateNameEditor");
   const nameEditorHtml = /* html */ `<div id="stateNameEditor" class="dialog" data-state="0">
       <div>
-        <div data-tip="State short name" class="label">Short name:</div>
+      <div data-tip="Polity short name" class="label">Short name:</div>
         <input
           id="stateNameEditorShort"
           data-tip="Type to change the short name"
@@ -655,7 +655,7 @@ function renderNameEditor(): void {
         <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
       </div>
       <div data-tip="Select form name">
-        <div data-tip="State form name" class="label">Form name:</div>
+      <div data-tip="Polity form name" class="label">Form name:</div>
         <select id="stateNameEditorSelectForm" style="width: 11em">
           <option value="">blank</option>
           <optgroup label="Monarchy">
@@ -741,12 +741,12 @@ function renderNameEditor(): void {
         />
         <span
           id="stateNameEditorAddForm"
-          data-tip="Click to add custom state form name to the list"
+          data-tip="Click to add a custom polity form name to the list"
           class="icon-plus pointer"
         ></span>
       </div>
       <div>
-        <div data-tip="State full name" class="label">Full name:</div>
+      <div data-tip="Polity full name" class="label">Full name:</div>
         <input
           id="stateNameEditorFull"
           data-tip="Type to change the full name"
@@ -762,7 +762,7 @@ function renderNameEditor(): void {
           class="icon-arrows-cw pointer"
         ></span>
       </div>
-      <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
+      <div data-tip="Uncheck to keep the current polity label when the name changes" style="padding-block: 0.2em">
         <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
         <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
       </div>
@@ -778,7 +778,7 @@ function closeStateNameEditor(): void {
 function changePopulation(stateId: number): void {
   const state = pack.states[stateId];
   if (!state.cells) {
-    tip("State does not have any cells, cannot change population", false, "error");
+    tip("The polity has no cells, so its population cannot be changed", false, "error");
     return;
   }
 
@@ -788,7 +788,7 @@ function changePopulation(stateId: number): void {
   const format = (n: number) => Number(n).toLocaleString();
 
   alertMessage.innerHTML = /* html */ `<div>
-    <i>Change population of all cells assigned to the state</i>
+      <i>Change the population of all cells assigned to the polity</i>
     <div style="margin: 0.5em 0">
       Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
       Urban: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" />
@@ -815,7 +815,7 @@ function changePopulation(stateId: number): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: "Change state population",
+    title: "Change polity population",
     width: "24em",
     buttons: {
       Apply: function (this: HTMLElement) {
@@ -885,7 +885,7 @@ function openTreasuryDialog(stateId: number): void {
     return sellerStateId === stateId ? sum + deal.tax : sum;
   }, 0);
 
-  alertMessage.innerHTML = /* html */ `<div data-tip="Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tax changes take effect on Production regeneration" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+  alertMessage.innerHTML = /* html */ `<div data-tip="Sales tax applies to deals with a seller from the polity. Poll tax applies to the polity's entire population. Tax changes take effect after Production regeneration" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
       <label for="stateSalesTaxInput">Sales Tax:</label>
       <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
       <label for="statePollTaxInput">Poll Tax:</label>
@@ -955,8 +955,8 @@ function stateRemovePrompt(state: number): void {
   if (customization) return;
 
   confirmationDialog({
-    title: "Remove state",
-    message: "Are you sure you want to remove the state? <br>This action cannot be reverted",
+    title: "Remove polity",
+    message: "Are you sure you want to remove the polity? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => stateRemove(state)
   });
@@ -1034,7 +1034,7 @@ function toggleLegend(): void {
     .filter(s => s.i && !s.removed && s.cells)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(s => [s.i, s.color, s.name]);
-  drawLegend("States", data);
+  drawLegend("Polities", data);
 }
 
 function togglePercentageMode(): void {
@@ -1065,7 +1065,7 @@ function togglePercentageMode(): void {
 function showStatesChart(): void {
   const statesData = pack.states.filter(s => !s.removed);
   if (statesData.length < 2) {
-    tip("There are no states to show", false, "error");
+    tip("There are no polities to show", false, "error");
     return;
   }
 
@@ -1087,7 +1087,7 @@ function showStatesChart(): void {
     <option value="population">Total population</option>
     <option value="rural">Rural population</option>
     <option value="urban">Urban population</option>
-    <option value="burgs">Burgs number</option>
+          <option value="burgs">Settlements number</option>
   </select>`;
   alertMessage.innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
 
@@ -1150,7 +1150,7 @@ function showStatesChart(): void {
           : option === "urban"
             ? `Urban population: ${si(urban)}`
             : option === "burgs"
-              ? `Burgs number: ${d.data.burgs}`
+              ? `Settlements number: ${d.data.burgs}`
               : `Population: ${si(rural + urban)}`;
 
     ensureEl("statesInfo").innerHTML = /* html */ `${state}. ${value}`;
@@ -1196,7 +1196,7 @@ function showStatesChart(): void {
   }
 
   $("#alert").dialog({
-    title: "States bubble chart",
+    title: "Polities bubble chart",
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
@@ -1260,7 +1260,7 @@ function openPaintEditor(): void {
   const adjustLabels = ensureEl<HTMLInputElement>("adjustLabels").checked;
 
   void Controllers.PaintEditor.open({
-    title: "Paint States",
+    title: "Paint Polities",
     parentDialogId: dialogId,
     onClose: open,
     items: pack.states
@@ -1464,7 +1464,7 @@ function enterAddStateMode(this: HTMLElement): void {
   }
   customization = 3;
   this.classList.add("pressed");
-  tip("Click on the map to create a new capital or promote an existing burg", true);
+  tip("Click the map to create a new capital or promote an existing settlement", true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addState);
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
@@ -1478,13 +1478,13 @@ function addState(this: SVGElement, event: MouseEvent): void {
   const point = getPointer(event, this);
   const center = Pack.findCell(point[0], point[1])!;
   if (cells.h[center] < 20) {
-    tip("You cannot place state into the water. Please click on a land cell", false, "error");
+    tip("You cannot place a polity in the water. Please click a land cell", false, "error");
     return;
   }
 
   let burgId = cells.burg[center];
   if (burgId && burgs[burgId].capital) {
-    tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
+    tip("An existing capital cannot become another polity's capital. Select another cell", false, "error");
     return;
   }
 
@@ -1608,8 +1608,8 @@ function openStateMergeDialog(): void {
   alertMessage.innerHTML = /* html */ `
     <form id='mergeStatesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
-        Check the <b>checkbox</b> next to each state you want to merge.
-        Use the <b>radio button</b> to pick the <em>ruling state</em> that will absorb all others (its name, color, and capital will be kept).
+      Check the <b>checkbox</b> next to each polity you want to merge.
+      Use the <b>radio button</b> to pick the <em>ruling polity</em> that will absorb all others (its name, color, and capital will be kept).
         Hover over a row to highlight the state on the map.
       </p>
       <main style='display: grid; grid-template-columns: 1fr 1fr; gap: .3em;'>
@@ -1656,7 +1656,7 @@ function openStateMergeDialog(): void {
 
   $("#alert").dialog({
     width: 600,
-    title: `Merge states`,
+    title: `Merge polities`,
     close: stateHighlightOff,
     buttons: {
       Merge: function (this: HTMLElement) {
@@ -1664,7 +1664,7 @@ function openStateMergeDialog(): void {
 
         const rulingStateId = Number(formData.get("rulingState"));
         if (!rulingStateId) {
-          tip("Please select a state to merge into", false, "error");
+          tip("Please select a polity to merge into", false, "error");
           return;
         }
         const rullingState = pack.states[rulingStateId];
@@ -1674,17 +1674,17 @@ function openStateMergeDialog(): void {
           .map(Number)
           .filter(stateId => stateId !== rulingStateId);
         if (!statesToMerge.length) {
-          tip("Please select several states to merge", false, "error");
+          tip("Please select several polities to merge", false, "error");
           return;
         }
 
         confirmationDialog({
-          title: "Merge states",
+          title: "Merge polities",
           // prettier-ignore
           message: /* html */ `
-            <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${emblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
-            <p>Removed states data (burgs, provinces, regiments) will be assigned to ${emblem(rullingState.i)}${rullingState.name}.</p>
-            <p>Are you sure you want to merge states? This action cannot be reverted.</p>`,
+      <p>The following polities will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${emblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
+      <p>Removed polity data (settlements, provinces, regiments) will be assigned to ${emblem(rullingState.i)}${rullingState.name}.</p>
+      <p>Are you sure you want to merge polities? This action cannot be reverted.</p>`,
           confirm: "Merge",
           onConfirm: () => {
             mergeStates(statesToMerge, rulingStateId);

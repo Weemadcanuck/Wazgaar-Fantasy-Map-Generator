@@ -70,7 +70,7 @@ let selectedDiplomacyId = 0;
 const columns: EditorColumn<State>[] = [
   {
     key: "name",
-    label: "State",
+    label: "Polity",
     width: "15em",
     permanent: true,
     sortBy: state => state.fullName || state.name,
@@ -132,26 +132,26 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="diplomacyBodySection" class="table"></div>
-      <div id="diplomacyFooter" class="totalLine"><div>States: <span id="diplomacyFooterStates">0</span></div></div>
+      <div id="diplomacyFooter" class="totalLine"><div>Polities: <span id="diplomacyFooterStates">0</span></div></div>
       <div class="info-line">Click on state name to see relations.<br />Click on relations name to change it</div>
       <div id="diplomacyBottom" style="margin-top: 0.1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button
           id="diplomacyEditStyle"
-          data-tip="Edit states (including diplomacy view) style in Style Editor"
+          data-tip="Edit polity style, including the diplomacy view, in Style Editor"
           class="icon-adjust"
         ></button>
         <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
         <button
           id="diplomacyReset"
-          data-tip="Reset diplomatical relations of selected state to Neutral"
+          data-tip="Reset the selected polity's diplomatic relations to Neutral"
           class="icon-eraser"
         ></button>
         <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
         <button id="diplomacyShowMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
         <button
           id="diplomacyExport"
-          data-tip="Save state relations matrix as a text file (.csv)"
+          data-tip="Save the polity relations matrix as a text file (.csv)"
           class="icon-download"
         ></button>
       </div>
@@ -363,8 +363,8 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
         <section style="display: flex; flex-direction: column; gap: .3em;">${relationsSelector}</section>
         <section style="display: flex; flex-direction: column; gap: .3em;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3em;">
-            <label style="font-weight: 500; font-size: 0.95em;">States:</label>
-            <button id="selectAllNoneBtn" type="button" style="padding: 0.3em 0.8em; cursor: pointer; font-size: 0.9em;" data-tip="Toggle selection of all states. Also supports Ctrl+A.">Select All / None</button>
+            <label style="font-weight: 500; font-size: 0.95em;">Polities:</label>
+            <button id="selectAllNoneBtn" type="button" style="padding: 0.3em 0.8em; cursor: pointer; font-size: 0.9em;" data-tip="Toggle selection of all polities. Also supports Ctrl+A.">Select All / None</button>
           </div>
           <div id="stateSelectionContainer" style="display: flex; flex-direction: column; gap: .3em;">${objectsSelector}</div>
         </section>

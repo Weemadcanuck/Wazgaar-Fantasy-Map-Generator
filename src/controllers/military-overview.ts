@@ -59,16 +59,16 @@ function renderDialog(): void {
         ${renderEditorHeader({ dialogId, columns })}
       </div>
       <div id="militaryFooter" class="totalLine">
-        <div data-tip="States number" style="margin-left: 4px">
+        <div data-tip="Polities number" style="margin-left: 4px">
           States:&nbsp;<span id="militaryFooterStates">0</span>
         </div>
         <div data-tip="Total military forces" style="margin-left: 14px" data-col="total">
           Total forces:&nbsp;<span id="militaryFooterForcesTotal">0</span>
         </div>
-        <div data-tip="Average military forces per state" style="margin-left: 14px" data-col="total">
+        <div data-tip="Average military forces per polity" style="margin-left: 14px" data-col="total">
           Average forces:&nbsp;<span id="militaryFooterForces">0</span>
         </div>
-        <div data-tip="Average forces rate per state" style="margin-left: 14px" data-col="rate">
+        <div data-tip="Average forces rate per polity" style="margin-left: 14px" data-col="rate">
           Average rate:&nbsp;<span id="militaryFooterRate">0%</span>
         </div>
         <div data-tip="Average War Alert" style="margin-left: 14px" data-col="alert">
@@ -151,7 +151,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
     { key: "color", width: "1.2em", permanent: true },
     {
       key: "state",
-      label: "State",
+      label: "Polity",
       width: "7em",
       permanent: true,
       sortBy: row => row.state.name || "",
@@ -248,16 +248,16 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
       const unitCells = options.military
         .map(unit => {
           const value = row.forces[unit.name] || 0;
-          return `<div data-col="${`unit:${unit.name}`}" data-tip="State ${unit.name} units number">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
+          return `<div data-col="${`unit:${unit.name}`}" data-tip="Polity ${unit.name} units number">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
         })
         .join("");
       return /* html */ `<div class="states" data-id="${row.state.i}">
         <fill-box data-col="color" data-tip="${row.state.fullName}" fill="${row.state.color}" disabled></fill-box>
         <input data-col="state" data-tip="${row.state.fullName}" value="${row.state.name}" readonly />
         ${unitCells}
-        <div data-col="total" data-tip="Total state military personnel (considering crew)" style="font-weight:bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
-        <div data-col="population" data-tip="State population">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
-        <div data-col="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(row.rate, 2)}%</div>
+        <div data-col="total" data-tip="Total polity military personnel, including crew" style="font-weight:bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
+        <div data-col="population" data-tip="Polity population">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
+        <div data-col="rate" data-tip="Military personnel rate (% of polity population). Depends on war alert">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="War Alert. Editable modifier to military forces number, depends on political situation" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
         <div data-col="actions"><span data-tip="Show regiments list" class="icon-list-bullet pointer"></span></div>
       </div>`;
@@ -631,7 +631,7 @@ function renderOptions(): void {
               <th data-tip="Unit icon">Icon</th>
               <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
               <th style="width: 5em" data-tip="Select allowed biomes">Biomes</th>
-              <th style="width: 5em" data-tip="Select allowed states">States</th>
+              <th style="width: 5em" data-tip="Select allowed polities">Polities</th>
               <th style="width: 5em" data-tip="Select allowed cultures">Cultures</th>
               <th style="width: 5em" data-tip="Select allowed religions">Religions</th>
               <th data-tip="Conscription percentage for rural population">Rural</th>

@@ -57,7 +57,7 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="markersBody" class="table"></div>
       <div id="markersFilters" style="display:flex; gap:.2em; padding:0.5em 0; flex-direction:column; font-size:smaller">
-        <select id="markersFilterState" data-tip="Show only markers located in the selected state"></select>
+        <select id="markersFilterState" data-tip="Show only markers in the selected polity"></select>
         <select id="markersFilterCulture" data-tip="Show only markers located in the selected culture"></select>
         <select id="markersFilterType" data-tip="Show only markers of the selected type"></select>
         <label for="markersSearch" data-tip="Filter by type">Search: <input id="markersSearch" type="search" /></label>

@@ -249,7 +249,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           </div>
           <select class="cultureType placeholder" data-col="type">${getTypeOptions(c.type)}</select>
           <div data-col="base">
-            <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw"></span>
+            <span data-tip="Click to regenerate names for settlements with this culture" class="icon-arrows-cw"></span>
             <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
               class="cultureBase">${getBaseOptions(c.base)}</select>
           </div>
@@ -297,7 +297,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
         <select data-tip="Culture type. Defines growth model. Click to change"
           class="cultureType" data-col="type">${getTypeOptions(c.type)}</select>
         <div data-col="base">
-          <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw"></span>
+          <span data-tip="Click to regenerate names for settlements with this culture" class="icon-arrows-cw"></span>
           <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
             class="cultureBase">${getBaseOptions(c.base)}</select>
         </div>

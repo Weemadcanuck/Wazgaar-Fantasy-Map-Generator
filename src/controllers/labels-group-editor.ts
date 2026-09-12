@@ -63,7 +63,7 @@ function renderDialog(): void {
             <th data-tip="Activate/deactivate group. Deactivated group labels are not visible">Active</th>
             <th data-tip="Group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes">Group</th>
             <th data-tip="Label type, cannot be changed after creation">Type</th>
-            <th data-tip="Name display mode. Only applicable to States and Provinces">Mode</th>
+            <th data-tip="Name display mode. Only applicable to polities and provinces">Mode</th>
             <th data-tip="Minimum zoom level to show the group">Zoom min</th>
             <th data-tip="Maximum zoom level to show the group">Zoom max</th>
             <th data-tip="Layer that must be toggled on for this group to be shown">Layer dependency</th>

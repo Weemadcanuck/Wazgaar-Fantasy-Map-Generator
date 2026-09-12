@@ -15,7 +15,7 @@ function toggle(): void {
   toggleMapPlacement(
     "addBurgTool",
     addOnClick,
-    "Click on the map to create a new burg. Hold Shift to add multiple",
+    "Click on the map to create a new settlement. Hold Shift to add multiple",
     "warn",
     unpressProxyButton
   );
@@ -30,11 +30,11 @@ function addOnClick(event: MouseEvent): void {
   if (cell === undefined) return;
 
   if (pack.cells.h[cell] < 20) {
-    tip("You cannot place a burg in the water. Please click on a land cell", false, "error");
+    tip("You cannot place a settlement in the water. Please click on a land cell", false, "error");
     return;
   }
   if (pack.cells.burg[cell]) {
-    tip("There is already a burg in this cell. Please select a free cell", false, "error");
+    tip("There is already a settlement in this cell. Please select a free cell", false, "error");
     return;
   }
 

@@ -46,6 +46,45 @@ describe("Archive export", () => {
     expect(state?.content.includes("not automatic Archive canon")).toBe(true);
   });
 
+  it("exports settlement features but keeps population out of generated references", () => {
+    const snapshot: ArchiveWorldSnapshot = {
+      info: { mapName: "Features", version: "test" },
+      pack: {
+        states: [
+          { i: 0, name: "Neutrals" },
+          { i: 1, name: "Example Polity", capital: 1 }
+        ],
+        provinces: [],
+        burgs: [
+          { i: 0, name: "No settlement" },
+          {
+            i: 1,
+            name: "Example Settlement",
+            state: 1,
+            population: 1000,
+            capital: 1,
+            port: 1,
+            citadel: 1,
+            walls: 1,
+            plaza: 1,
+            temple: 1,
+            shanty: 1
+          }
+        ],
+        cultures: [{ i: 0, name: "Wildlands" }],
+        religions: [{ i: 0, name: "No religion" }]
+      }
+    };
+    const plan = buildArchiveExportPlan(snapshot, { worldId: "jotun-test" });
+    const note = plan.files.find(file => file.entityKey === "jotun-test:burg:1")?.content;
+
+    expect(
+      note?.includes("- **Features:** Capital, Port, Citadel, Walls, Market center, Religious center, Shanty town")
+    ).toBe(true);
+    expect(note?.includes("- **Polity:**")).toBe(true);
+    expect(note).not.toMatch(/population/i);
+  });
+
   it("sanitizes unsafe and Windows-reserved filenames", () => {
     expect(sanitizeArchiveFilename("AUX")).toBe("AUX-note");
     expect(sanitizeArchiveFilename("North: East/West. ")).toBe("North- East-West");

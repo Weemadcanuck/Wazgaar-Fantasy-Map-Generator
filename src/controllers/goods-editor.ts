@@ -112,8 +112,8 @@ function renderDialog(): void {
       <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
       <div id="goodsFooter" class="totalLine hide">
         <div data-tip="Number of goods (displayed / total)" style="margin-left: 5px">Goods:&nbsp;<span id="goodsDisplayed">0</span> of <span id="goodsNumber">0</span></div>
-        <div data-tip="Total units produced daily by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
-        <div data-tip="Total units in stock across all markets and burg inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
+        <div data-tip="Total units produced daily by all cells and settlements" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
+        <div data-tip="Total units in stock across all markets and settlement inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
       </div>
       <div id="goodsBottom">
         <button id="goodsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
@@ -193,8 +193,8 @@ function renderGoodsPage(view: TableView<Good>) {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
     if (type === "RAW")
-      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="Raw goods are produced by rural population in cells based on biome availability and in cells and burgs when bonus resource is assigned to cells">RAW</span>`;
-    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="Manufactured goods are produced in burgs">MFG</span>`;
+      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="Raw goods are produced by rural populations according to biome availability, and by cells and settlements with bonus resources">RAW</span>`;
+    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="Manufactured goods are produced in settlements">MFG</span>`;
   };
 
   const lines = view.rows
@@ -214,7 +214,7 @@ function renderGoodsPage(view: TableView<Good>) {
         </svg><span data-tip="Good name" class="goodName">${good.name}</span></div>
         <div data-col="type" data-tip="Good types" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
         <div data-col="unit" data-tip="Unit of production" class="goodUnit">${good.unit ?? ""}</div>
-        <div data-col="produced" data-tip="${producedTip}. Click to see burgs producing this good" class="goodProduced pointer" style="text-align: right">
+        <div data-col="produced" data-tip="${producedTip}. Click to see settlements producing this good" class="goodProduced pointer" style="text-align: right">
           <div style="display: inline-block; width: 3em">${percentage ? `${rn(totalProduced ? (produced / totalProduced) * 100 : 0, 2)}%` : produced}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
         </div>
@@ -279,13 +279,13 @@ function openProducersDialog(goodId: number) {
     const header = /*html*/ `
           <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
             <div></div>
-            <div>Burg</div>
+            <div>Settlement</div>
             <div>Units</div>
          </div>`;
     const rows = producers
       .map(
         ({ burg, units }) => /*html*/ `
-          <div data-tip="Click to zoom to burg" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
+          <div data-tip="Click to zoom to settlement" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
             <div class="icon-dot-circled" style="width:1em"></div>
             <div style="width:7em;">${burg.name}</div>
             <div style="width:4em;">${units}</div>

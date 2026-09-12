@@ -15,6 +15,7 @@
   "include": [
     "archive-export-ipc.ts",
     "archive-export-location.ts",
+    "archive-export-report.ts",
     "archive-export-writer.ts",
     "main.ts",
     "preload.ts",

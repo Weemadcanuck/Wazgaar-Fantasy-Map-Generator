@@ -45,7 +45,7 @@ function renderDialog(): void {
           <output id="submapPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
         </div>
       </div>
-      <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
+      <div data-tip="Check to fit settlement styles (icon and label size) to the submap scale">
         <input type="checkbox" class="checkbox" id="submapRescaleBurgStyles" checked />
         <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale burg styles</label>
       </div>

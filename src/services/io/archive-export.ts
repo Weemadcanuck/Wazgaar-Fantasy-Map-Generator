@@ -30,10 +30,16 @@ type Province = NativeEntity & {
 type Burg = NativeEntity & {
   capital?: number;
   cell?: number;
+  citadel?: number;
   culture?: number;
+  plaza?: number;
+  population?: number;
   port?: number;
+  shanty?: number;
   state?: number;
+  temple?: number;
   type?: string;
+  walls?: number;
   x?: number;
   y?: number;
 };
@@ -246,10 +252,10 @@ const renderState = (state: State, lookup: Map<string, EntityDescriptor>) => [
 const renderProvince = (province: Province, lookup: Map<string, EntityDescriptor>) => [
   province.fullName && province.fullName !== province.name ? `- **Full name:** ${province.fullName}` : null,
   province.formName ? `- **Administrative form:** ${province.formName}` : null,
-  renderList("State", [makeLink(lookup, "state", province.state)]),
+  renderList("Polity", [makeLink(lookup, "state", province.state)]),
   renderList("Capital", [makeLink(lookup, "burg", province.burg)]),
   renderList(
-    "Burgs",
+    "Settlements",
     (province.burgs ?? []).map(id => makeLink(lookup, "burg", id))
   )
 ];
@@ -262,13 +268,21 @@ const getProvinceId = (cells: PackedCells | undefined, cellId: number | undefine
 
 const renderBurg = (burg: Burg, snapshot: ArchiveWorldSnapshot, lookup: Map<string, EntityDescriptor>) => {
   const provinceId = getProvinceId(snapshot.pack.cells, burg.cell);
+  const features = [
+    burg.capital ? "Capital" : null,
+    burg.port ? "Port" : null,
+    burg.citadel ? "Citadel" : null,
+    burg.walls ? "Walls" : null,
+    burg.plaza ? "Market center" : null,
+    burg.temple ? "Religious center" : null,
+    burg.shanty ? "Shanty town" : null
+  ].filter((feature): feature is string => Boolean(feature));
   return [
-    renderList("State", [makeLink(lookup, "state", burg.state)]),
+    renderList("Polity", [makeLink(lookup, "state", burg.state)]),
     renderList("Province", [makeLink(lookup, "province", provinceId)]),
     renderList("Culture", [makeLink(lookup, "culture", burg.culture)]),
     burg.type ? `- **FMG type:** ${burg.type}` : null,
-    burg.capital ? "- **Capital:** Yes" : null,
-    burg.port ? "- **Port:** Yes" : null,
+    features.length ? `- **Features:** ${features.join(", ")}` : null,
     burg.x !== undefined && burg.y !== undefined ? `- **Map coordinates:** ${burg.x}, ${burg.y}` : null
   ];
 };

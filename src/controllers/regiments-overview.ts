@@ -64,8 +64,8 @@ function renderDialog(): void {
           class="icon-percent"
         ></button>
         <button id="regimentsAddNew" data-tip="Add new Regiment" class="icon-user-plus"></button>
-        <div data-tip="Select state" style="display: inline-block">
-          <span>State: </span
+        <div data-tip="Select polity" style="display: inline-block">
+          <span>Polity: </span
           ><select id="regimentsFilter"></select>
         </div>
         <button
@@ -124,7 +124,7 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
     { key: "color", width: "1.2em", permanent: true },
     {
       key: "state",
-      label: "State",
+      label: "Polity",
       width: "7em",
       permanent: true,
       sortBy: row => row.state.name || "",

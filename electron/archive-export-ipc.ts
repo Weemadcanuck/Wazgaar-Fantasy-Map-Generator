@@ -2,26 +2,14 @@ import path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import {
   ARCHIVE_EXPORT_DIRECTORY_CHANNEL,
-  type ArchiveDirectoryReport,
   type ArchiveDirectoryRequest,
   type ArchiveDirectoryResult
 } from "../src/types/archive-export-ipc";
 import { readLastArchiveDirectory, writeLastArchiveDirectory } from "./archive-export-location";
+import { summarizeArchiveReport } from "./archive-export-report";
 import { applyArchiveDirectoryWrite, previewArchiveDirectoryWrite } from "./archive-export-writer";
 
 const locationFile = () => path.join(app.getPath("userData"), "archive-export-location.json");
-
-const summarize = (report: ArchiveDirectoryReport) => {
-  const { create, update, move, unchanged, removed, conflict } = report.counts;
-  return [
-    `Create: ${create}`,
-    `Update: ${update}`,
-    `Move: ${move}`,
-    `Unchanged: ${unchanged}`,
-    `Removed from FMG, retained for review: ${removed}`,
-    `Conflicts: ${conflict}`
-  ].join("\n");
-};
 
 const showMessage = async (window: BrowserWindow | null, options: Electron.MessageBoxOptions) =>
   window ? dialog.showMessageBox(window, options) : dialog.showMessageBox(options);
@@ -49,17 +37,12 @@ const handleDirectoryExport = async (
     writeLastArchiveDirectory(locationFile(), directory);
     const report = await previewArchiveDirectoryWrite(directory, request);
     if (!report.canApply) {
-      const conflicts = report.changes
-        .filter(change => change.kind === "conflict")
-        .slice(0, 8)
-        .map(change => `${change.path}: ${change.reason || "Conflict"}`)
-        .join("\n");
       await showMessage(window, {
         type: "warning",
         buttons: ["Close"],
         title: "Archive export blocked",
         message: "No files were written because the dry run found conflicts.",
-        detail: `${summarize(report)}${conflicts ? `\n\n${conflicts}` : ""}`
+        detail: summarizeArchiveReport(report)
       });
       return { status: "blocked", directory, report };
     }
@@ -71,7 +54,7 @@ const handleDirectoryExport = async (
         buttons: ["Close"],
         title: "Archive export is current",
         message: "The selected directory already matches this map.",
-        detail: summarize(report)
+        detail: summarizeArchiveReport(report)
       });
       return { status: "unchanged", directory, report };
     }
@@ -83,7 +66,7 @@ const handleDirectoryExport = async (
       cancelId: 1,
       title: "Confirm Archive export",
       message: "Apply this dry-run plan to the selected directory?",
-      detail: `${directory}\n\n${summarize(report)}`
+      detail: `${directory}\n\n${summarizeArchiveReport(report)}`
     });
     if (confirmation.response !== 0) return { status: "cancelled", directory, report };
 
@@ -94,7 +77,7 @@ const handleDirectoryExport = async (
         buttons: ["Close"],
         title: "Archive export changed before writing",
         message: "No files were written because a new conflict appeared after the dry run.",
-        detail: summarize(applied.report)
+        detail: summarizeArchiveReport(applied.report)
       });
       return { status: "blocked", directory, report: applied.report };
     }
@@ -104,7 +87,7 @@ const handleDirectoryExport = async (
       buttons: ["Close"],
       title: "Archive export complete",
       message: "Generated reference notes were written successfully.",
-      detail: `${directory}\n\n${summarize(applied.report)}`
+      detail: `${directory}\n\n${summarizeArchiveReport(applied.report)}`
     });
     return { status: "written", directory, report: applied.report };
   } catch (error) {
