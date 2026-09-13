@@ -1,9 +1,9 @@
 # Relief Performance Implementation Plan
 
-Status: scheduler retained after target-PC capture; keyed DOM implemented, target-PC comparison pending
+Status: distant-view raster prototype 1.153.3 implemented; target-PC performance and functional checks pending
 
 Parent: [Archive Fork 2.0 Worklist](./archive-fork-2.0-worklist.md)
-Updated: 2026-09-12
+Updated: 2026-09-13
 
 ## Objective
 
@@ -67,7 +67,18 @@ package before changing rendering behavior; record the actual tested stage in ea
   scheduler for edits, eliminating the separate queued scene rebuild. Hide and root/map replacement clear caches.
 - Local keyed-DOM checks: 108 tests across 11 files, including node retention, ordering, mutation handling, twenty
   toggles, old/missing versus intentionally empty relief, pending-edit exports and existing IO/rendering regressions.
-- Next: target-PC capture and manual editor/save/export check for keyed DOM, then Phase 2 spatial indexing.
+- Initial keyed-DOM captures showed worse zoomed-out frame intervals despite lower reconciliation costs. Later
+  cross-build Chromium traces show severe Layerize stalls in both builds, so a keyed-specific cause is unproven.
+  This candidate has not passed the responsiveness gate. User editing and export checks found no visible faults.
+- Paired Chromium traces attribute about 95% of the relief-on recording to main-thread Layerize (median 497.5 ms
+  per call versus 0.636 ms with relief off). Isolated SVG probes do not reproduce this severity.
+- Scheduler comparison received: Layerize occupies 89.4% of its trace, with 43 calls over 100 ms and a 619.6 ms
+  maximum. Both SVG builds share the bottleneck; do not infer a PC fault or roll back keyed DOM as a proven cure.
+- Next: a reversible distant-view raster prototype in the full application, preserving all Phase 5 editing/export
+  and resource-lifecycle requirements. Phase 2 spatial indexing and Phase 4 cadence tuning remain deferred because
+  neither targets the measured dominant cost. This evidence-based ordering overrides the original Phase 5 sequence;
+  it authorizes testing the fallback, not accepting it without visual, functional and target-PC performance checks.
+  See the updated baseline analysis for attribution and limits.
 
 ### Relief mutation and persistence audit
 
@@ -390,3 +401,37 @@ cause as unconfirmed unless a profiler establishes attribution. Do not block 2.0
 
 Each commit must build and pass its targeted tests. Do not combine the scheduler, spatial index and DOM reconciliation
 into one commit; the measured effect and rollback point of each repair should remain visible.
+
+
+## Distant-view raster prototype checkpoint (1.153.3)
+
+Approved by the user after the scheduler Chromium comparison. Build stage: `distant-relief-raster`.
+Installer: `release/relief-raster-prototype/azgaar-archival-fork-1.153.3-win-x64.exe`.
+
+- Enabled by default in this candidate only through the internal `reliefRasterPrototype` localStorage flag. Set its
+  value to `off` and reload to compare the same build using SVG; remove the key and reload to restore the prototype.
+- Uses tiles at scale <= 2; closer views and the open relief editor use individual SVG icons. Clicking a distant tile
+  opens the relief editor and restores SVG; select the desired individual icon after entering the editor.
+- Tiles are 256 map units wide, rasterized at twice device pixel density to support the distant zoom range. Source
+  icons are retained in order. A two-pixel gutter is rendered and cropped for boundary sampling.
+- Generates one tile at a time and limits estimated decoded cache storage to 128 MiB. This is a tile-cache estimate,
+  not a cap on whole-process/GPU memory: one in-flight SVG/PNG/canvas decode and browser overhead are additional.
+  Requests exceeding that limit or a 2048-pixel tile edge fall back to SVG. Old unrequested cache entries are disposed.
+- Keeps SVG visible until the requested tiles are ready. Entering uncached areas can temporarily return to SVG while
+  new tiles build. This deliberately conservative first prototype may still show warm-up or boundary stalls.
+- Edits, direct relief draws (including size/set/generation), hide, map/root replacement, and display-density changes
+  invalidate tiles. Close zoom/editor entry cancels work. Generation tokens reject obsolete completions.
+- The relief group's opacity/filter/mask remain on the live parent. No raster data is serialized. Full-map and viewport
+  export clones continue to materialize ordered vector relief from source data independently of the live mode.
+- Diagnostics include initial/final `reliefRendering` (mode, enabled flag, editing, estimated cache bytes, failure) and
+  opt-in raster tile timings. Tile timings include asynchronous decode/encode wall time, not just JavaScript CPU.
+
+Local verification includes lifecycle and integration tests for sequential generation, eviction, cancellation,
+failure fallback, limits, crossing tiles, atomic mode replacement, vector export isolation, editor entry and close
+zoom. The existing renderer/IO tests remain applicable. Desktop TypeScript/build and source lint passed.
+
+An isolated Electron 43.4.1 visual probe used original Jotun symbols and 12,257 saved source icons at DPR 1.625.
+For a sampled 1182 x 739 view it built 24 tiles in 864 ms with 66,453,504 estimated decoded bytes (~63.4 MiB).
+Completed vector/raster screenshots had a mean absolute BGRA-channel difference of 0.672 on a 0-255 scale;
+visual inspection showed preserved shape/placement and no obvious seams in that sample. This is not a full-app
+speedup result or proof for every zoom/style. Target-PC navigation, editor/save/export and boundary checks remain pending.

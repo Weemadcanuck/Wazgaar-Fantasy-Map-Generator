@@ -6,7 +6,16 @@ const state = vi.hoisted(() => ({ active: true }));
 vi.mock("@/components/layers", () => ({ Layers: { isOn: () => state.active } }));
 
 import { restoreReliefData, serializeReliefData } from "@/services/io/relief-data";
-import { drawRelief, getSceneReliefIcon, redrawRelief, removeRelief, renderReliefForExport } from "./draw-relief-icons";
+import {
+  drawRelief,
+  getReliefRenderStatus,
+  getSceneReliefIcon,
+  redrawRelief,
+  removeRelief,
+  renderReliefForExport,
+  setReliefEditing
+} from "./draw-relief-icons";
+import * as rasterTools from "./relief/relief-raster";
 import { PerformanceMetrics } from "./viewport/performance-metrics";
 import { ViewportLayers } from "./viewport/viewport-renderer";
 
@@ -270,5 +279,52 @@ describe("keyed relief rendering", () => {
     state.active = false;
     renderReliefForExport(clone, full);
     expect(clone.querySelectorAll("use")).toHaveLength(0);
+  });
+});
+
+describe("distant raster integration", () => {
+  it("switches atomically to raster, exports vectors, and restores individual editing", async () => {
+    document
+      .querySelector("svg")!
+      .insertAdjacentHTML(
+        "afterbegin",
+        '<defs><g id="defs-relief"><symbol id="relief-mount-1" viewBox="0 0 10 10"><path d="M0 0L10 10" /></symbol></g></defs>'
+      );
+    const dispose = vi.fn();
+    vi.spyOn(rasterTools, "rasterizeReliefTile").mockResolvedValue({ url: "blob:tile", dispose });
+    drawRelief();
+    expect(elements().length).toBeGreaterThan(0);
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    tick();
+    expect(getReliefRenderStatus().mode).toBe("raster");
+    expect(terrain().querySelectorAll("image").length).toBeGreaterThan(0);
+    expect(elements()).toHaveLength(0);
+    const clone = document.querySelector("svg")!.cloneNode(true) as SVGSVGElement;
+    renderReliefForExport(clone, full);
+    expect(clone.querySelectorAll("#terrain use")).toHaveLength(pack.relief.length);
+    expect(clone.querySelectorAll("#terrain image")).toHaveLength(0);
+    expect(terrain().querySelectorAll("image").length).toBeGreaterThan(0);
+    setReliefEditing(true);
+    expect(getReliefRenderStatus().mode).toBe("SVG");
+    expect(elements().length).toBeGreaterThan(0);
+    expect(dispose).toHaveBeenCalled();
+    expect(getSceneReliefIcon((elements()[0] as SVGUseElement).dataset.id!)).toBe(pack.relief[0]);
+    state.active = false;
+    setReliefEditing(false);
+  });
+
+  it("returns to SVG on close zoom even while inside existing viewport coverage", async () => {
+    document.querySelector("svg")!.insertAdjacentHTML("afterbegin", '<defs><g id="defs-relief" /></defs>');
+    vi.spyOn(rasterTools, "rasterizeReliefTile").mockResolvedValue({ url: "blob:tile", dispose: vi.fn() });
+    drawRelief();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    tick();
+    expect(getReliefRenderStatus().mode).toBe("raster");
+    scale = 3;
+    ViewportLayers.schedule();
+    tick();
+    expect(getReliefRenderStatus().mode).toBe("SVG");
+    expect(getReliefRenderStatus().cacheBytes).toBe(0);
+    expect(elements().length).toBeGreaterThan(0);
   });
 });

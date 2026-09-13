@@ -5,7 +5,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
 import { getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
-import { getSceneReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
+import { getSceneReliefIcon, redrawRelief, setReliefEditing } from "@/renderers/draw-relief-icons";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { ReliefSet } from "@/types/relief";
 import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
@@ -44,6 +44,7 @@ const setIconsHtml = (set: ReliefSet): string =>
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
+  setReliefEditing(true);
   Layers.show("relief");
 
   selectedIcon = getIconData(element);
@@ -463,6 +464,7 @@ function closeReliefEditor(): void {
   clearMainTip();
   $("#reliefEditor").dialog("destroy");
   ensureEl("reliefEditor").remove();
+  setReliefEditing(false);
 }
 
 export const ReliefEditor = { open };

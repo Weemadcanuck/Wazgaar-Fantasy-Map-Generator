@@ -1,5 +1,6 @@
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
+import { getReliefRenderStatus } from "@/renderers/draw-relief-icons";
 import { PerformanceMetrics } from "@/renderers/viewport/performance-metrics";
 import { VERSION } from "@/services/versioning";
 
@@ -9,6 +10,7 @@ function snapshot() {
   return {
     mapId,
     reliefCount: pack.relief?.length ?? 0,
+    reliefRendering: getReliefRenderStatus(),
     layers: Layers.state,
     reliefStyle: { ...style.relief },
     viewport: { scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight },
@@ -67,7 +69,7 @@ function beginCapture(label: string): void {
       document.removeEventListener("visibilitychange", onVisibility);
       const report = {
         schemaVersion: 1,
-        stage: "keyed-relief-dom",
+        stage: "distant-relief-raster",
         version: VERSION,
         capturedAt: new Date().toISOString(),
         label,

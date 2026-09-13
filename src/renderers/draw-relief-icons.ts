@@ -7,6 +7,14 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 
+import {
+  planReliefTiles,
+  ReliefRasterCache,
+  rasterizeReliefTile,
+  reliefTileSvg,
+  TILE_SIZE
+} from "./relief/relief-raster";
+
 export type ReliefMutation = { type: "geometry" | "appearance"; icon: ReliefIcon } | { type: "order" | "structure" };
 
 interface LiveIcon extends ReliefIcon {
@@ -21,16 +29,109 @@ const lookup = new Map<string, ReliefIcon>();
 let nextId = 0;
 let owner: typeof pack | null = null;
 let liveRoot: Element | null = null;
-const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief, isActive: () => Layers.isOn("relief") });
+let editing = false;
+let rasterVisible = false;
+let rasterDefinitions: Element | null = null;
+let rasterSignature = "";
+let displayScale = 0;
+// Reversible prototype flag. No serialized map/style fields are added.
+const rasterEnabled = typeof localStorage !== "undefined" && localStorage.getItem("reliefRasterPrototype") !== "off";
+const raster = new ReliefRasterCache(
+  async (tile, signal) => {
+    const start = performance.now();
+    const svg = reliefTileSvg(tile, pack.relief ?? [], rasterDefinitions!);
+    const result = await rasterizeReliefTile(svg, tile.pixels, signal);
+    if (PerformanceMetrics.active)
+      PerformanceMetrics.record({
+        layer: "relief",
+        reason: "tile generation",
+        phase: "raster tile",
+        start,
+        duration: performance.now() - start,
+        created: 1
+      });
+    return result;
+  },
+  () => ViewportLayers.invalidate("relief", "raster ready")
+);
+const layer = ViewportLayers.register({
+  id: "relief",
+  render: reconcileRelief,
+  isActive: () => Layers.isOn("relief"),
+  scaleSensitive: true
+});
+
+export function getReliefRenderStatus() {
+  return {
+    enabled: rasterEnabled,
+    mode: rasterVisible ? "raster" : "SVG",
+    editing,
+    cacheBytes: raster.bytes,
+    failed: raster.failed
+  };
+}
+
+export function setReliefEditing(value: boolean): void {
+  editing = value;
+  if (value) raster.clear();
+  layer.render();
+}
+
+function invalidateRaster(): void {
+  raster.clear();
+  rasterDefinitions = null;
+  rasterSignature = "";
+}
+
+function tryRaster(terrain: Element, context: ViewportRenderContext): boolean {
+  if (!rasterEnabled || editing || context.bounds.scale > 2 || !pack.relief?.length || raster.failed) return false;
+  const definitions = document.querySelector("#defs-relief");
+  if (!definitions) return false;
+  const dpr = window.devicePixelRatio || 1;
+  if (displayScale !== dpr) {
+    invalidateRaster();
+    displayScale = dpr;
+  }
+  const tiles = planReliefTiles(context.bounds, pack.relief, dpr);
+  if (!tiles) {
+    raster.clear();
+    return false;
+  }
+  rasterDefinitions ??= definitions;
+  const ready = raster.request(tiles);
+  if (!ready) return false;
+  const signature = ready.map(tile => tile.url).join("|");
+  if (!rasterVisible || signature !== rasterSignature) {
+    const fragment = document.createDocumentFragment();
+    for (const tile of ready) {
+      const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+      image.setAttribute("href", tile.url);
+      image.setAttribute("x", String(tile.x));
+      image.setAttribute("y", String(tile.y));
+      image.setAttribute("width", String(TILE_SIZE));
+      image.setAttribute("height", String(TILE_SIZE));
+      image.setAttribute("preserveAspectRatio", "none");
+      fragment.append(image);
+    }
+    terrain.replaceChildren(fragment);
+    nodes.clear();
+    lookup.clear();
+    rasterSignature = signature;
+  }
+  rasterVisible = true;
+  return true;
+}
 
 export function drawRelief(): void {
   if (!Layers.isOn("relief")) return void removeRelief();
+  invalidateRaster();
   // An empty array is authored data. Only an absent field requests initial generation.
   if (!pack.relief) Relief.generate();
   layer.render();
 }
 
 export function redrawRelief(mutation: ReliefMutation = { type: "structure" }): void {
+  invalidateRaster();
   // Read objects at flush time; edits do not rebuild a parallel scene or queue stale object snapshots.
   ViewportLayers.invalidate("relief", `edit ${mutation.type}`);
 }
@@ -42,6 +143,8 @@ export function getSceneReliefIcon(id: string): ReliefIcon | undefined {
 }
 
 export function removeRelief(): void {
+  invalidateRaster();
+  rasterVisible = false;
   nodes.clear();
   lookup.clear();
   owner = null;
@@ -115,12 +218,22 @@ function reconcileRelief(context: ViewportRenderContext): void {
   if (!terrain) return;
   if (!Layers.isOn("relief")) return void removeRelief();
   if (owner !== pack || liveRoot !== terrain) {
+    invalidateRaster();
+    rasterVisible = false;
     nodes.clear();
     lookup.clear();
     terrain.replaceChildren();
     owner = pack;
     liveRoot = terrain;
   }
+
+  if (tryRaster(terrain, context)) return;
+  if (rasterVisible) {
+    terrain.replaceChildren();
+    rasterVisible = false;
+    rasterSignature = "";
+  }
+  if (editing || context.bounds.scale > 2) raster.clear();
 
   const start = PerformanceMetrics.active ? performance.now() : 0;
   const source = pack.relief ?? [];
