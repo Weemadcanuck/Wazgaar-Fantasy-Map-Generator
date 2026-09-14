@@ -1,6 +1,6 @@
 # Relief Performance Implementation Plan
 
-Status: distant-view raster prototype 1.153.3 implemented; target-PC performance and functional checks pending
+Status: 1.153.4 cache-reuse candidate implemented; target-PC cold/warm comparison pending; manual edit/save/export checks deferred by user
 
 Parent: [Archive Fork 2.0 Worklist](./archive-fork-2.0-worklist.md)
 Updated: 2026-09-13
@@ -435,3 +435,45 @@ For a sampled 1182 x 739 view it built 24 tiles in 864 ms with 66,453,504 estima
 Completed vector/raster screenshots had a mean absolute BGRA-channel difference of 0.672 on a 0-255 scale;
 visual inspection showed preserved shape/placement and no obvious seams in that sample. This is not a full-app
 speedup result or proof for every zoom/style. Target-PC navigation, editor/save/export and boundary checks remain pending.
+
+
+### Target-PC update (2026-09-14)
+
+The user reports much better navigation once loaded, including zooming, with a longer initial wait. New captures
+confirm improved responsiveness and no half-second Layerize calls in the supplied DevTools trace. However, the
+application captures report SVG at both endpoints and show vector phases for every recorded relief reconciliation.
+DPR 2.6 also pushes wide-view requests beyond the 128 MiB cache budget; some fitting requests take seconds to build.
+See baseline analysis for exact measurements. Keep warmed responsiveness, cold-start cost and verified raster
+activity distinct. Next refinement: mode/fallback visibility and transition metrics, then budget-aware tile planning
+and reuse. Editing/save/export confirmation remains pending; do not mark the full acceptance gate passed.
+
+
+## Cache and request refinement checkpoint (1.153.4)
+
+The user approved optimization before any memory increase and deferred manual editing/save/reload/export checks
+until the end. The decoded tile-cache cap remains exactly 128 MiB. Capture stage: `relief-raster-cache-reuse`.
+Installer: `release/relief-raster-cache-reuse/azgaar-archival-fork-1.153.4-win-x64.exe`.
+
+- Tile density follows 1x, 1.5x and 2x zoom bands, rounding upward to meet the current device pixel density. The
+  previous prototype paid for 2x in every distant view. This removes unnecessary supersampling at lower zoom;
+  it does not undersample the current display or change source/export detail. Zoom-band transitions may warm again.
+- Raster requests cover the actual visible viewport, with centre tiles built first. SVG retains its existing overscan.
+  An opt-in viewport-sensitive scheduler hook updates relief on small distant pans so coverage remains correct when
+  raster requests do not include the SVG overscan. Other layers retain their normal guard behavior.
+- Recently used tiles survive nearby pans and close-zoom/editor entry. Sequential allocation evicts only unrequested
+  least-recently-used entries when needed. Real edits, direct relief draws, hide, map/root and DPR changes still clear
+  the cache. Pause cancels obsolete in-flight work without discarding valid completed tiles.
+- Standalone tile SVGs include only used self-contained relief symbols. Referenced or unfamiliar definitions retain
+  the full definition set so dependencies are not silently lost.
+- A prototype-only bottom-left badge shows raster, tile build progress, or the reason SVG is active. It sits outside
+  the map/export SVG. Capture `display` records include mode, reason, estimated cache bytes and tile progress on
+  reconciliation and tile completion, supplementing initial/final snapshots. Existing bounded collection still applies.
+- Tested reproduction of the supplied 1231 x 770 viewport at scale 1 / DPR 2.6 requests 24 tiles of 666 pixels each,
+  totaling 42,581,376 decoded bytes (~40.6 MiB), without raising the cap. This is allocation evidence, not a timing claim.
+
+Validation: 119 targeted tests across 12 files; source lint; renderer/Electron TypeScript and build. Tests cover the
+observed high-DPR request, native-resolution bands, LRU eviction at the limit, reuse after close zoom, real-edit
+invalidation, visible status/recording, small-pan coverage, symbol dependency preservation and existing IO regressions.
+An isolated Electron vector/raster visual comparison passed inspection for sampled shape/placement and obvious
+seams. Its runtime reported DPR 1; it is not a target-PC DPR 2.6 timing benchmark. Full-app cold/warm recordings remain
+necessary. Functional manual checks remain deferred as requested, not marked passed.

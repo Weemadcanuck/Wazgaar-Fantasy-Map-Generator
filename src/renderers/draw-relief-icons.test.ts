@@ -307,8 +307,11 @@ describe("distant raster integration", () => {
     setReliefEditing(true);
     expect(getReliefRenderStatus().mode).toBe("SVG");
     expect(elements().length).toBeGreaterThan(0);
-    expect(dispose).toHaveBeenCalled();
+    expect(dispose).not.toHaveBeenCalled();
     expect(getSceneReliefIcon((elements()[0] as SVGUseElement).dataset.id!)).toBe(pack.relief[0]);
+    pack.relief[0].x += 2;
+    redrawRelief({ type: "geometry", icon: pack.relief[0] });
+    expect(dispose).toHaveBeenCalled();
     state.active = false;
     setReliefEditing(false);
   });
@@ -324,7 +327,20 @@ describe("distant raster integration", () => {
     ViewportLayers.schedule();
     tick();
     expect(getReliefRenderStatus().mode).toBe("SVG");
-    expect(getReliefRenderStatus().cacheBytes).toBe(0);
+    expect(getReliefRenderStatus().cacheBytes).toBeGreaterThan(0);
     expect(elements().length).toBeGreaterThan(0);
+    const builds = vi.mocked(rasterTools.rasterizeReliefTile).mock.calls.length;
+    PerformanceMetrics.start();
+    scale = 1;
+    ViewportLayers.schedule();
+    tick();
+    expect(getReliefRenderStatus().mode).toBe("raster");
+    expect(vi.mocked(rasterTools.rasterizeReliefTile).mock.calls).toHaveLength(builds);
+    const report = PerformanceMetrics.stop();
+    expect(report.records.find(record => record.phase === "display")).toMatchObject({
+      mode: "raster",
+      reason: "ready"
+    });
+    expect(document.getElementById("reliefRenderStatus")?.textContent).toBe("Relief: raster");
   });
 });

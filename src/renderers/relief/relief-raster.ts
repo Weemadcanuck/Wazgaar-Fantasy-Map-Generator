@@ -17,7 +17,9 @@ export interface RasterImage {
 
 /** Bound the request before allocating anything, including unusually large windows / display scales. */
 export function planReliefTiles(bounds: ViewportBounds, icons: ReliefIcon[], dpr: number): ReliefTile[] | null {
-  const pixels = Math.ceil(TILE_SIZE * Math.max(1, dpr) * 2);
+  // Half-step bands always meet the current screen density without paying for 2x at distant zoom.
+  const zoomBand = Math.max(1, Math.ceil(bounds.scale * 2) / 2);
+  const pixels = Math.ceil(TILE_SIZE * Math.max(1, dpr) * zoomBand);
   if (pixels > 2048 || !Number.isFinite(pixels)) return null;
   if (!icons.length) return [];
   let x0 = Infinity;
@@ -41,7 +43,10 @@ export function planReliefTiles(bounds: ViewportBounds, icons: ReliefIcon[], dpr
     for (let x = left; x <= right; x++)
       tiles.push({ key: `${x},${y},${pixels}`, x: x * TILE_SIZE, y: y * TILE_SIZE, pixels });
   }
-  return tiles;
+  const cx = (bounds.x0 + bounds.x1) / 2;
+  const cy = (bounds.y0 + bounds.y1) / 2;
+  const distance = (tile: ReliefTile) => (tile.x + TILE_SIZE / 2 - cx) ** 2 + (tile.y + TILE_SIZE / 2 - cy) ** 2;
+  return tiles.sort((a, b) => distance(a) - distance(b));
 }
 
 /** Sequential, latest-request cache. A discarded decode can never publish into a new map or edit revision. */
@@ -64,18 +69,41 @@ export class ReliefRasterCache {
 
   request(tiles: ReliefTile[]): Array<ReliefTile & RasterImage> | null {
     this.wanted = tiles;
-    // Only keep requested tiles: displayed images remain owned by the DOM until its atomic replacement.
-    const keys = new Set(tiles.map(tile => tile.key));
-    for (const [key, entry] of this.entries) {
-      if (keys.has(key)) continue;
-      entry.image.dispose();
-      this.entries.delete(key);
+    // Touch requested entries in LRU order; departing tiles remain reusable until the budget needs their space.
+    for (const tile of tiles) {
+      const entry = this.entries.get(tile.key);
+      if (!entry) continue;
+      this.entries.delete(tile.key);
+      this.entries.set(tile.key, entry);
     }
     if (tiles.every(tile => this.entries.has(tile.key))) {
       return tiles.map(tile => ({ ...tile, ...this.entries.get(tile.key)!.image }));
     }
     if (!this.running && !this.failed) void this.pump();
     return null;
+  }
+
+  get progress(): { ready: number; requested: number } {
+    return { ready: this.wanted.filter(tile => this.entries.has(tile.key)).length, requested: this.wanted.length };
+  }
+
+  /** Suspend generation for a close view/editor without throwing away valid tiles. */
+  pause(): void {
+    this.generation++;
+    this.controller.abort();
+    this.controller = new AbortController();
+    this.wanted = [];
+  }
+
+  private makeRoom(bytes: number): void {
+    const protectedKeys = new Set(this.wanted.map(tile => tile.key));
+    for (const [key, entry] of this.entries) {
+      if (this.bytes + bytes <= CACHE_BYTES) return;
+      if (protectedKeys.has(key)) continue;
+      entry.image.dispose();
+      this.entries.delete(key);
+    }
+    if (this.bytes + bytes > CACHE_BYTES) throw new Error("Relief raster cache budget exceeded");
   }
 
   clear(): void {
@@ -95,17 +123,19 @@ export class ReliefRasterCache {
       while (generation === this.generation) {
         const tile = this.wanted.find(tile => !this.entries.has(tile.key));
         if (!tile) break;
+        const bytes = tile.pixels * tile.pixels * 4;
+        this.makeRoom(bytes);
         const image = await this.build(tile, this.controller.signal);
-        if (generation !== this.generation || !this.wanted.some(wanted => wanted.key === tile.key)) {
+        if (generation !== this.generation) {
           image.dispose();
           continue;
         }
-        const bytes = tile.pixels * tile.pixels * 4;
         if (this.bytes + bytes > CACHE_BYTES) {
           image.dispose();
           throw new Error("Relief raster cache budget exceeded");
         }
         this.entries.set(tile.key, { image, bytes });
+        this.ready();
       }
     } catch (error) {
       if (generation === this.generation) {
@@ -131,17 +161,26 @@ export function reliefTileSvg(tile: ReliefTile, icons: ReliefIcon[], definitions
     "viewBox",
     `${tile.x - gutter} ${tile.y - gutter} ${TILE_SIZE + 2 * gutter} ${TILE_SIZE + 2 * gutter}`
   );
+  const visible = icons.filter(
+    icon =>
+      icon.x <= tile.x + TILE_SIZE + gutter &&
+      icon.y <= tile.y + TILE_SIZE + gutter &&
+      icon.x + icon.s >= tile.x - gutter &&
+      icon.y + icon.s >= tile.y - gutter
+  );
+  const ids = new Set(visible.map(icon => icon.icon));
+  const children = Array.from(definitions.children);
+  const selected = children.filter(child => ids.has(child.id));
+  // Built-in relief symbols are self-contained. Preserve the full definitions for unfamiliar referenced artwork.
+  const independent =
+    children.every(child => child.localName === "symbol") &&
+    selected.every(child => !child.querySelector("use") && !/url\(/.test(child.outerHTML));
+  const subset = definitions.cloneNode(!independent) as Element;
+  if (independent) for (const child of selected) subset.append(child.cloneNode(true));
   const defs = doc.createElementNS(NS, "defs");
-  defs.append(definitions.cloneNode(true));
+  defs.append(subset);
   svg.append(defs);
-  for (const icon of icons) {
-    if (
-      icon.x > tile.x + TILE_SIZE + gutter ||
-      icon.y > tile.y + TILE_SIZE + gutter ||
-      icon.x + icon.s < tile.x - gutter ||
-      icon.y + icon.s < tile.y - gutter
-    )
-      continue;
+  for (const icon of visible) {
     const use = doc.createElementNS(NS, "use");
     use.setAttribute("href", `#${icon.icon}`);
     use.setAttribute("x", String(icon.x));

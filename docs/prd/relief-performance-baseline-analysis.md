@@ -185,3 +185,41 @@ experimental change, not a proven solution or permission to reduce source/export
 editing and exports; switch to SVG for close views and editing, bound sequential tile generation and cache memory,
 cancel stale work on changes, and compare actual app traces before retaining the implementation. The SVG-only probe
 above does not validate this approach because it never reproduced the full application bottleneck.
+
+
+## Raster candidate target-PC feedback and captures (2026-09-14)
+
+The user reports massively improved navigation once loaded, including zooming in and out, but longer loading than
+the isolated probe suggested. Three `relief-performance-raster-...` reports identify 1.153.3 / distant-relief-raster,
+11,991 source icons, DPR 2.5999999046, no dropped samples and no background interval.
+
+| Condition | Median rAF interval | p95 | Longest | Completed raster tile timings |
+| --- | ---: | ---: | ---: | --- |
+| Relief on | 18.0 ms | 175.9 ms | 266.8 ms | 9, totaling 10,407.9 ms; max 1,389.7 ms |
+| Relief off | 6.1 ms | 103.0 ms | 206.1 ms | 0 |
+| Relief only | 18.2 ms | 109.2 ms | 139.4 ms | 1, taking 1,068.9 ms |
+
+Crucial attribution limit: all three application reports start and end in SVG mode. Relief-on ends with 28,387,584
+estimated cached bytes, still in SVG mode; relief-only ends with zero cache bytes. Every recorded relief reconcile
+also contains a vector scan/DOM phase (19 on, 62 only), so these reports do not demonstrate a completed raster-mode
+reconciliation. They show improved responsiveness in the candidate and some tile generation, not a clean warmed
+raster benchmark. The user's separate experience after loading remains meaningful subjective evidence.
+
+The new `raster-zoomed-out-relief-on.json.gz` DevTools trace spans 22.178 seconds. Layerize totals 8,270.006 ms across
+432 completed calls (37.3% of the window), with median 18.728 ms and maximum 36.755 ms; no Layerize call exceeds
+100 ms. The keyed trace had median 497.492 ms and maximum 616.792 ms. The severe Layerize stalls are absent from
+this new trace, but it does not include our runtime mode snapshots and cannot independently certify raster activity.
+Different gestures, display density and session conditions prohibit assigning the whole change to the raster path.
+
+The current DPR is 2.6 versus 1.625 in the probe: tiles now have 1332-pixel edges rather than 832 (approximately
+2.56 times the area). At 7,096,896 estimated decoded bytes per tile, the 128 MiB cache admits at most 18 tiles.
+The mostly zoomed-out viewport plus overscan can require more, so the current all-or-nothing budget check returns to
+SVG without building that request. Requests at closer zoom can fit but still require several seconds to warm.
+Recorded tile durations include asynchronous decode/encode and scheduling delays; do not treat them as pure CPU time
+or extrapolate an exact full-view loading time. The earlier 864 ms probe was never a target-PC loading estimate.
+
+Retain the candidate for continued validation; do not call the raster performance gate conclusively passed yet.
+Next refinement should expose runtime mode and fallback reason, capture mode transitions throughout a run, and
+improve budget/resolution planning and cache reuse at the observed DPR without silently blurring distant relief or
+raising the memory cap. Measure cold-start and warm navigation separately. No further identical captures are needed
+before those diagnostic improvements. User confirmation of editing/save/export checks remains outstanding.

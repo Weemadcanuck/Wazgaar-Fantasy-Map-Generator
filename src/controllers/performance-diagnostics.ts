@@ -69,7 +69,7 @@ function beginCapture(label: string): void {
       document.removeEventListener("visibilitychange", onVisibility);
       const report = {
         schemaVersion: 1,
-        stage: "distant-relief-raster",
+        stage: "relief-raster-cache-reuse",
         version: VERSION,
         capturedAt: new Date().toISOString(),
         label,

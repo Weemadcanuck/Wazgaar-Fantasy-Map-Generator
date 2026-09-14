@@ -34,6 +34,7 @@ let rasterVisible = false;
 let rasterDefinitions: Element | null = null;
 let rasterSignature = "";
 let displayScale = 0;
+let rasterReason = "not drawn";
 // Reversible prototype flag. No serialized map/style fields are added.
 const rasterEnabled = typeof localStorage !== "undefined" && localStorage.getItem("reliefRasterPrototype") !== "off";
 const raster = new ReliefRasterCache(
@@ -52,13 +53,18 @@ const raster = new ReliefRasterCache(
       });
     return result;
   },
-  () => ViewportLayers.invalidate("relief", "raster ready")
+  () => {
+    reportReliefDisplay();
+    const { ready, requested } = raster.progress;
+    if (ready === requested || raster.failed) ViewportLayers.invalidate("relief", "raster ready");
+  }
 );
 const layer = ViewportLayers.register({
   id: "relief",
   render: reconcileRelief,
   isActive: () => Layers.isOn("relief"),
-  scaleSensitive: true
+  scaleSensitive: true,
+  viewportSensitive: () => rasterEnabled && !editing && typeof scale === "number" && scale <= 2
 });
 
 export function getReliefRenderStatus() {
@@ -67,13 +73,15 @@ export function getReliefRenderStatus() {
     mode: rasterVisible ? "raster" : "SVG",
     editing,
     cacheBytes: raster.bytes,
-    failed: raster.failed
+    failed: raster.failed,
+    reason: rasterReason,
+    ...raster.progress
   };
 }
 
 export function setReliefEditing(value: boolean): void {
   editing = value;
-  if (value) raster.clear();
+  if (value) raster.pause();
   layer.render();
 }
 
@@ -84,17 +92,36 @@ function invalidateRaster(): void {
 }
 
 function tryRaster(terrain: Element, context: ViewportRenderContext): boolean {
-  if (!rasterEnabled || editing || context.bounds.scale > 2 || !pack.relief?.length || raster.failed) return false;
+  rasterReason = !rasterEnabled
+    ? "disabled"
+    : editing
+      ? "editing"
+      : context.bounds.scale > 2
+        ? "close zoom"
+        : !pack.relief?.length
+          ? "empty"
+          : raster.failed
+            ? "tile failure"
+            : "warming";
+  if (rasterReason !== "warming") return false;
   const definitions = document.querySelector("#defs-relief");
-  if (!definitions) return false;
+  if (!definitions) {
+    rasterReason = "missing symbols";
+    return false;
+  }
   const dpr = window.devicePixelRatio || 1;
   if (displayScale !== dpr) {
     invalidateRaster();
     displayScale = dpr;
   }
-  const tiles = planReliefTiles(context.bounds, pack.relief, dpr);
+  // Raster coverage follows the actual visible viewport. The scheduler reconciles each distant pan.
+  const tiles = planReliefTiles(ViewportLayers.getVisibleBounds(), pack.relief, dpr);
   if (!tiles) {
-    raster.clear();
+    raster.pause();
+    rasterReason =
+      Math.ceil(256 * Math.max(1, dpr) * Math.max(1, Math.ceil(context.bounds.scale * 2) / 2)) > 2048
+        ? "tile size limit"
+        : "visible viewport exceeds cache budget";
     return false;
   }
   rasterDefinitions ??= definitions;
@@ -119,6 +146,7 @@ function tryRaster(terrain: Element, context: ViewportRenderContext): boolean {
     rasterSignature = signature;
   }
   rasterVisible = true;
+  rasterReason = "ready";
   return true;
 }
 
@@ -142,9 +170,44 @@ export function getSceneReliefIcon(id: string): ReliefIcon | undefined {
   return data && pack.relief?.includes(data) ? data : undefined;
 }
 
+function reportReliefDisplay(): void {
+  if (rasterEnabled && document.body) {
+    let badge = document.getElementById("reliefRenderStatus");
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = "reliefRenderStatus";
+      badge.style.cssText =
+        "position:fixed;left:12px;bottom:12px;z-index:10;pointer-events:none;background:#222c;color:#fff;padding:4px 8px;border-radius:4px;font:12px sans-serif";
+      document.body.append(badge);
+    }
+    const { ready, requested } = raster.progress;
+    const label = rasterVisible
+      ? "Relief: raster"
+      : rasterReason === "warming"
+        ? `Relief: loading tiles ${ready}/${requested}`
+        : `Relief: SVG (${rasterReason})`;
+    if (badge.textContent !== label) badge.textContent = label;
+  }
+  if (PerformanceMetrics.active)
+    PerformanceMetrics.record({
+      layer: "relief",
+      phase: "display",
+      reason: rasterReason,
+      start: performance.now(),
+      duration: 0,
+      mode: rasterVisible ? "raster" : "SVG",
+      cacheBytes: raster.bytes,
+      readyTiles: raster.progress.ready,
+      requestedTiles: raster.progress.requested
+    });
+}
+
 export function removeRelief(): void {
   invalidateRaster();
   rasterVisible = false;
+  rasterReason = "hidden";
+  reportReliefDisplay();
+  document.getElementById("reliefRenderStatus")?.remove();
   nodes.clear();
   lookup.clear();
   owner = null;
@@ -227,13 +290,18 @@ function reconcileRelief(context: ViewportRenderContext): void {
     liveRoot = terrain;
   }
 
-  if (tryRaster(terrain, context)) return;
+  const ready = tryRaster(terrain, context);
+  if (ready) {
+    reportReliefDisplay();
+    return;
+  }
   if (rasterVisible) {
     terrain.replaceChildren();
     rasterVisible = false;
     rasterSignature = "";
   }
-  if (editing || context.bounds.scale > 2) raster.clear();
+  if (editing || context.bounds.scale > 2) raster.pause();
+  reportReliefDisplay();
 
   const start = PerformanceMetrics.active ? performance.now() : 0;
   const source = pack.relief ?? [];

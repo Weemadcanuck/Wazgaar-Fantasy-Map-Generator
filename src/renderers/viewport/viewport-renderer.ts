@@ -16,6 +16,7 @@ interface ViewportLayer {
   render: (context: ViewportRenderContext) => void;
   isActive?: () => boolean;
   scaleSensitive?: boolean;
+  viewportSensitive?: () => boolean;
   dependencies?: () => readonly string[];
   overscanPixels?: number;
   guardPixels?: number;
@@ -188,6 +189,16 @@ export class ViewportRenderer {
     }
     const previous = state.materializedBounds;
     if (state.dirty || !previous) return true;
+    if (state.layer.viewportSensitive?.()) {
+      const current = this.getBounds(state.layer.overscanPixels ?? this.options.overscanPixels);
+      if (
+        current.x0 !== previous.x0 ||
+        current.y0 !== previous.y0 ||
+        current.x1 !== previous.x1 ||
+        current.y1 !== previous.y1
+      )
+        return true;
+    }
     const bounds = this.getBounds(0);
     const guard = (state.layer.guardPixels ?? this.options.guardPixels) / bounds.scale;
     return (

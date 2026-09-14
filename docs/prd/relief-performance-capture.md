@@ -1,6 +1,26 @@
 # Relief baseline capture
 
-## Current request: distant raster prototype 1.153.3
+## Current request: cache-reuse candidate 1.153.4
+
+Install `release/relief-raster-cache-reuse/azgaar-archival-fork-1.153.4-win-x64.exe` with the app closed.
+The bottom-left badge shows `Relief: loading tiles N/M`, `Relief: raster`, or `Relief: SVG (reason)`.
+The cache cap is unchanged. Manual editing/save/reload/export checks are deferred until the end at the user's request.
+
+1. Open the same map and mostly zoomed-out starting view. Record how long the initial badge takes to reach raster,
+   approximately; if it stays in SVG, report the displayed reason. Do not change window size or application zoom.
+2. Once the badge says raster, use Tools -> Record performance (22s), label `cache warm relief on`, and pan/zoom.
+   Visit a nearby area, return, zoom closer and back out. This tests reuse as well as transitions.
+3. Record `cache relief off` with the same view and similar movement for the control.
+4. If warm-up remains long, toggle relief off before starting a 22s recording labelled `cache cold load`, then turn
+   relief on during that recording and hold the view steady. That intentional layer change is specific to this
+   cold-load diagnostic. If it takes longer than 22 seconds, also report the approximate total wait.
+5. Save reports to `performance optimisation`. A new DevTools trace is optional unless responsiveness remains poor;
+   application mode records now show when raster is actually active. Avoid editing during performance recordings.
+
+The new stage is `relief-raster-cache-reuse`. The previous flag still disables raster for a same-build SVG comparison.
+
+
+## Previous request: distant raster prototype 1.153.3
 
 1. Close the fork and install `release/relief-raster-prototype/azgaar-archival-fork-1.153.3-win-x64.exe`.
 2. Open the same Jotun map and usual layers. At the mostly zoomed-out view, pause for a few seconds to build tiles,

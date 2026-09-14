@@ -198,3 +198,18 @@ describe("independent viewport scheduling", () => {
     expect(render).toHaveBeenCalledTimes(2);
   });
 });
+
+it("updates opted-in viewport coverage on a small pan inside the normal guard", () => {
+  const render = vi.fn();
+  let sensitive = true;
+  renderer.register({ id: "raster", render, viewportSensitive: () => sensitive });
+  renderer.renderNow();
+  render.mockClear();
+  viewport.x += 1;
+  renderer.flush();
+  expect(render).toHaveBeenCalledTimes(1);
+  sensitive = false;
+  viewport.x += 1;
+  renderer.flush();
+  expect(render).toHaveBeenCalledTimes(1);
+});

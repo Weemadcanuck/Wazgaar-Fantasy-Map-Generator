@@ -25,7 +25,7 @@ describe("relief raster lifecycle", () => {
   it("bounds tile requests and rejects oversized or invalid requests before allocation", () => {
     const result = planReliefTiles(bounds, icons, 1.625)!;
     expect(result).toHaveLength(2);
-    expect(result[0].pixels).toBe(832);
+    expect(result[0].pixels).toBe(416);
     expect(result.length * result[0].pixels ** 2 * 4).toBeLessThanOrEqual(CACHE_BYTES);
     expect(planReliefTiles(bounds, icons, 10)).toBeNull();
     expect(planReliefTiles({ ...bounds, x1: 1e8, y1: 1e8 }, [{ icon: "x", x: 0, y: 0, s: 1e8 }], 2)).toBeNull();
@@ -45,7 +45,7 @@ describe("relief raster lifecycle", () => {
     expect(cache.request([tile, other])).toHaveLength(2);
     expect(build).toHaveBeenCalledTimes(2);
     cache.request([tile]);
-    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(dispose).not.toHaveBeenCalled();
     cache.clear();
     expect(dispose).toHaveBeenCalledTimes(2);
     expect(cache.bytes).toBe(0);
@@ -104,4 +104,45 @@ describe("relief raster lifecycle", () => {
     expect(next.querySelectorAll("use")).toHaveLength(1);
     expect(definitions.querySelector("symbol")).not.toBeNull();
   });
+});
+
+it("fits the observed distant high-DPR viewport without undersampling or raising the cap", () => {
+  const view = { scale: 1, x0: 398, y0: 176, x1: 1629, y1: 946 };
+  const source = [{ icon: "x", x: 0, y: 0, s: 2048 }];
+  const tiles = planReliefTiles(view, source, 2.6)!;
+  expect(tiles).toHaveLength(24);
+  expect(tiles[0].pixels).toBe(666);
+  expect(tiles.length * 666 ** 2 * 4).toBe(42581376);
+  for (const zoom of [0.8, 1, 1.01, 1.5, 1.51, 2]) {
+    const result = planReliefTiles({ ...bounds, scale: zoom }, icons, 2.6)!;
+    expect(result[0].pixels / 256).toBeGreaterThanOrEqual(zoom * 2.6);
+  }
+});
+
+it("evicts least-recently-used unrequested tiles only when allocation requires it", async () => {
+  const freed: string[] = [];
+  const build = vi.fn(async (tile: ReliefTile) => ({ url: tile.key, dispose: () => freed.push(tile.key) }));
+  const cache = new ReliefRasterCache(build, vi.fn());
+  const tiles = Array.from({ length: 8 }, (_, i) => ({ ...tile, key: String(i), pixels: 2048 }));
+  cache.request(tiles);
+  for (let i = 0; i < 10; i++) await flush();
+  expect(cache.bytes).toBe(CACHE_BYTES);
+  cache.pause();
+  expect(cache.request([tiles[0]])).toHaveLength(1);
+  expect(build).toHaveBeenCalledTimes(8);
+  cache.request([tiles[0], { ...tiles[0], key: "new" }]);
+  await flush();
+  expect(freed).toEqual(["1"]);
+  expect(cache.bytes).toBe(CACHE_BYTES);
+  cache.clear();
+});
+
+it("omits unused self-contained symbols but retains dependencies for referenced artwork", () => {
+  document.body.innerHTML =
+    '<svg><g id="defs-relief"><symbol id="mount"><path /></symbol><symbol id="unused"><path /></symbol></g></svg>';
+  const defs = document.querySelector("#defs-relief")!;
+  const source = [{ icon: "mount", x: 0, y: 0, s: 20 }];
+  expect(reliefTileSvg(tile, source, defs)).not.toContain('id="unused"');
+  defs.querySelector("#mount")!.innerHTML = '<use href="#unused" />';
+  expect(reliefTileSvg(tile, source, defs)).toContain('id="unused"');
 });
