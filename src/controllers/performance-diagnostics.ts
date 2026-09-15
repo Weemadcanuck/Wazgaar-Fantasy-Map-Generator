@@ -30,7 +30,7 @@ export function capturePerformance(): void {
   dialog.className = "dialog";
   dialog.innerHTML = `<p>Warm up with one pan and zoom first. Recording starts 3 seconds after Start and lasts 22 seconds.
     Move around the map normally, keeping the same layers and window size. A JSON report downloads at the end.</p>
-    <label>Capture label <input id="performanceCaptureLabel" value="Jotun relief on, run 1" style="width: 100%" /></label>`;
+    <label>Capture label <input id="performanceCaptureLabel" value="Relief on, run 1" style="width: 100%" /></label>`;
   document.getElementById("dialogs")!.append(dialog);
   $(dialog).dialog({
     title: "Record map performance",

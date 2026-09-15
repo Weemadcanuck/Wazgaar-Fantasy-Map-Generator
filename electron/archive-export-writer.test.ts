@@ -160,11 +160,15 @@ describe("Archive directory writer", () => {
     expect(await readFile(path.join(outputRoot, ...backupPath.split("/")), "utf8")).toBe(previousContent);
   });
 
-  it("rejects an export path that escapes the selected directory", async () => {
+  it.each([
+    "../escape.md",
+    "States/./alias.md",
+    "States/note.md:stream"
+  ])("rejects unsafe export path %s", async unsafePath => {
     const request = makeRequest();
     const entityFile = request.files.find(file => file.entityKey);
     if (!entityFile?.entityKey) throw new Error("Test request has no entity file");
-    entityFile.path = "../escape.md";
+    entityFile.path = unsafePath;
     const manifestFile = request.files.find(file => file.path === "azgaar-archive-manifest.json");
     if (!manifestFile) throw new Error("Test request has no manifest");
     const manifest = JSON.parse(manifestFile.content);

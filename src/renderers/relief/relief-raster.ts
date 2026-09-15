@@ -131,7 +131,7 @@ export class ReliefRasterCache {
     };
   }
 
-  /** Suspend generation for a close view/editor without throwing away valid tiles. */
+  /** Suspend generation while hidden, zoomed in or editing, preserving completed tiles. */
   pause(): void {
     this.generation++;
     this.controller.abort();
@@ -181,7 +181,7 @@ export class ReliefRasterCache {
     } catch (error) {
       if (generation === this.generation) {
         this.failed = true;
-        console.warn("Relief raster prototype fell back to SVG", error);
+        console.warn("Relief raster fell back to SVG", error);
       }
     } finally {
       this.running = false;

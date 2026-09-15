@@ -29,3 +29,5 @@ jobs:
 
       - name: Run Unit tests
         run: npm run test
+      - name: Run desktop export tests
+        run: npm run test:electron -- --run

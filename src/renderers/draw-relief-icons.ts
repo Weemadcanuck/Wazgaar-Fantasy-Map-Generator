@@ -38,7 +38,7 @@ let rasterMixed = false;
 let displayScale = 0;
 let rasterReason = "not drawn";
 let hiddenSignature: string | null = null;
-// Reversible prototype flag. No serialized map/style fields are added.
+// Keep the original preference key for compatibility. Set to "off" and reload to use SVG only.
 const rasterEnabled = typeof localStorage !== "undefined" && localStorage.getItem("reliefRasterPrototype") !== "off";
 const raster = new ReliefRasterCache(
   async (tile, signal) => {
@@ -127,7 +127,7 @@ function tryRaster(
   if (!tiles) {
     raster.pause();
     rasterReason =
-      Math.ceil(256 * Math.max(1, dpr) * Math.max(1, Math.ceil(context.bounds.scale * 2) / 2)) > 2048
+      Math.ceil(TILE_SIZE * Math.max(1, dpr) * Math.max(1, Math.ceil(context.bounds.scale * 2) / 2)) > 2048
         ? "tile size limit"
         : "visible viewport exceeds cache budget";
     return null;

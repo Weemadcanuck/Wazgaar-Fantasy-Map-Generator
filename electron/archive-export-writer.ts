@@ -90,7 +90,13 @@ const normalizeRelativePath = (relativePath: string) => relativePath.replaceAll(
 
 const resolveInsideRoot = (root: string, relativePath: string) => {
   const normalized = normalizeRelativePath(relativePath);
-  if (!normalized || path.isAbsolute(normalized) || normalized.split("/").some(part => part === ".." || !part)) {
+  // Reject aliases and Windows streams as well as traversal, before comparing or writing paths.
+  if (
+    !normalized ||
+    path.isAbsolute(normalized) ||
+    normalized.includes(":") ||
+    normalized.split("/").some(part => part === "." || part === ".." || !part)
+  ) {
     throw new Error(`Unsafe Archive export path: ${relativePath}`);
   }
 
