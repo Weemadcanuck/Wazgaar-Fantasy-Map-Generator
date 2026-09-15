@@ -19,7 +19,7 @@ import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.153.7";
+export const VERSION = "1.153.8";
 
 // new changes on top
 const latestPublicChanges = [
@@ -151,6 +151,8 @@ function announceVersion(): void {
   if (parseMapVersion(VERSION) !== VERSION) alert("versioning: Invalid format or parsing function");
 
   document.title += ` v${VERSION}`;
+  const aboutVersion = document.getElementById("aboutVersion");
+  if (aboutVersion) aboutVersion.textContent = VERSION;
   const loadingScreenVersion = document.getElementById("versionText");
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
 

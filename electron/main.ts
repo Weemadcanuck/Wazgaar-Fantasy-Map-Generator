@@ -22,7 +22,7 @@ const DISCORD_URL = "https://discord.gg/X7E84HU";
 app.setPath("userData", path.join(app.getPath("appData"), ARCHIVAL_USER_DATA_DIRECTORY));
 
 app.setAboutPanelOptions({
-  applicationName: app.name,
+  applicationName: "Azgaar Obsidian Fork",
   applicationVersion: app.getVersion(),
   iconPath: ICON_PATH,
   copyright: "MIT License. Azgaar and Team, 2017-2026"
@@ -232,7 +232,7 @@ function confirmOnClose(window: BrowserWindow): void {
         defaultId: 1,
         cancelId: 1,
         title: "Quit",
-        message: "Quit Azgaar Archival Fork?",
+        message: "Quit Azgaar Obsidian Fork?",
         detail: "Autosave runs only at its configured interval. Save the map to a file before quitting to be safe"
       })
       .then(({ response }) => {

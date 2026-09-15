@@ -33,7 +33,7 @@ const LINKS = [
 
 function render(): string {
   const platform = window.electron?.isElectron ? "Desktop" : "Web";
-  return /* html */ `<p><strong>Azgaar Archival Fork</strong><br />Version ID: <strong>${VERSION}</strong> · ${platform}</p>
+  return /* html */ `<p><strong>Azgaar Obsidian Fork</strong><br />Version ID: <strong>${VERSION}</strong> · ${platform}</p>
 
     <b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
     you wish.

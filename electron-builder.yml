@@ -1,3 +1,4 @@
+# Keep appId stable so renamed releases upgrade the existing fork installation.
 appId: com.lucasadler94.azgaar-archival-fork
 copyright: Copyright © 2017-2026 Azgaar and contributors
 directories:
@@ -9,7 +10,7 @@ files:
   - "!node_modules/**/*" # the renderer is bundled by Vite, the main process only needs Electron itself
 asar: true
 afterPack: ./scripts/adhoc-sign.mjs
-artifactName: azgaar-archival-fork-${version}-${os}-${arch}.${ext}
+artifactName: azgaar-obsidian-fork-${version}-${os}-${arch}.${ext}
 mac:
   category: public.app-category.graphics-design
   target:

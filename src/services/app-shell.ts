@@ -35,7 +35,7 @@ function onChunkLoadError(event: Event): void {
   confirmationDialog({
     title: desktop ? "Tool failed to load" : "New version released",
     message: desktop
-      ? "A packaged application file could not be loaded.<br />Save the map, then reload the window. If the problem repeats, reinstall the latest Archival Fork build"
+      ? "A packaged application file could not be loaded.<br />Save the map, then reload the window. If the problem repeats, reinstall the latest Obsidian Fork build"
       : "This part of the app failed to load because a new version was released while the page was open.<br />Reload the page to get the new version. If you have unsaved changes, save the map first",
     confirm: "Reload",
     cancel: "Not now",

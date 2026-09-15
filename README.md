@@ -1,4 +1,6 @@
-# Fantasy Map Generator
+# Azgaar Obsidian Fork
+
+An Obsidian-oriented fork of Azgaar’s Fantasy Map Generator. The app displays its version in the About tab and information popup. Desktop releases retain the earlier archival-fork installation and storage identifiers for compatibility.
 
 Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.
 
