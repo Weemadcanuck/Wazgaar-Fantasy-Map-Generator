@@ -14,10 +14,12 @@ export interface RenderMetric {
   updated?: number;
   moved?: number;
   live?: number;
-  mode?: "raster" | "SVG";
+  mode?: "raster" | "mixed" | "SVG";
   cacheBytes?: number;
   readyTiles?: number;
   requestedTiles?: number;
+  reusedHigherResolution?: number;
+  displayedRasterTiles?: number;
 }
 
 const LIMIT = 4096;

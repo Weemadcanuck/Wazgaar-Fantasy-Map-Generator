@@ -1,6 +1,33 @@
 # Relief baseline capture
 
-## Current request: cache-reuse candidate 1.153.4
+## Final candidate and validation: 1.153.5
+
+Install `release/relief-retained-coverage/azgaar-archival-fork-1.153.5-win-x64.exe` with the app closed.
+Use a copy of Jotun for edit tests. This is the last planned optimization before final validation; the cap remains 128 MiB.
+
+1. **Loading and navigation:** compare the initial wait with 1.153.4. After raster is ready, pan to an uncached area:
+   `mixed` means existing image coverage is retained while missing regions use SVG. Look for gaps, duplicated icons,
+   seams or opacity changes. Zoom closer and back out; suitable sharper cached tiles should be reused.
+2. **Performance evidence:** record `final warm relief on` and `final relief off` using the existing 22s tool, with
+   similar views/movement and no edits. Include travel into a new area and return. Report the approximate initial wait
+   separately. A DevTools trace is only needed if stalls or loading regress. Store reports in `performance optimisation`.
+3. **Individual editing:** enter the editor by clicking relief, then move, resize, copy, add, delete and reorder an icon.
+   Close the editor and confirm the raster view reflects the changes. Test entry from mixed coverage if convenient.
+4. **Bulk/style and toggles:** test bulk add/remove and relief size/set changes on the copy. Toggle relief and cross the
+   close/distant zoom boundary repeatedly, checking for stale or duplicated content. The loading badge is expected
+   after real edits; reusing an unedited cached view should not require wholesale rebuilding.
+5. **Save/reload:** save the edited copy, reload it and verify icon positions, sizes, types and order. On a separate
+   disposable copy, delete all relief, save/reload, and confirm it stays empty until explicitly regenerated.
+6. **Exports:** export a full-map SVG and viewport PNG after edits, including while tiles are warming. Confirm the
+   latest edits and relief outside the current viewport appear where expected in the full-map SVG. Check no runtime
+   badge, tile gaps or duplicated relief appears. Keep the final .map, .svg and .png in `performance optimisation`.
+
+Reports identify `relief-retained-coverage`. Display records distinguish SVG/mixed/raster, cache-ready counts,
+actually displayed raster tiles, and higher-resolution reuse. A mixed badge can show all tiles cache-ready briefly
+before the next frame publishes the completed batch. Manual checks remain pending until the user reports results.
+
+
+## Previous request: cache-reuse candidate 1.153.4
 
 Install `release/relief-raster-cache-reuse/azgaar-archival-fork-1.153.4-win-x64.exe` with the app closed.
 The bottom-left badge shows `Relief: loading tiles N/M`, `Relief: raster`, or `Relief: SVG (reason)`.

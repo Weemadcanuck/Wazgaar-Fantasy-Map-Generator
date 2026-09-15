@@ -1,6 +1,6 @@
 # Relief Performance Implementation Plan
 
-Status: 1.153.4 cache-reuse candidate implemented; target-PC cold/warm comparison pending; manual edit/save/export checks deferred by user
+Status: final optimization candidate 1.153.5 implemented; installed-app load-time and final functional validation pending
 
 Parent: [Archive Fork 2.0 Worklist](./archive-fork-2.0-worklist.md)
 Updated: 2026-09-13
@@ -477,3 +477,41 @@ invalidation, visible status/recording, small-pan coverage, symbol dependency pr
 An isolated Electron vector/raster visual comparison passed inspection for sampled shape/placement and obvious
 seams. Its runtime reported DPR 1; it is not a target-PC DPR 2.6 timing benchmark. Full-app cold/warm recordings remain
 necessary. Functional manual checks remain deferred as requested, not marked passed.
+
+
+## Retained coverage and higher-resolution reuse (1.153.5)
+
+User-approved final optimization pass, conditional on not adding visible loading time. No further performance features
+are planned before final validation. Stage: `relief-retained-coverage`. Installer directory: `release/relief-retained-coverage`.
+
+- Adequate higher-resolution cached tiles can satisfy a lower-resolution request at the same coordinates without
+  generating a replacement. Exact matches are preferred, then the smallest adequate sharper tile. Actual decoded
+  bytes count against the unchanged 128 MiB cap; oversized reuses are relinquished if they would prevent completing
+  the requested view within that cap. No prefetch or additional resolution bands are introduced.
+- Partly cached views retain their ready image nodes and render only missing regions through one clipped SVG group.
+  Source order is preserved, crossing icons are materialized once in the vector group, and tile clips are disjoint.
+  The existing terrain parent applies opacity/filter/mask once to the combined result. Clicking either raster or
+  nested vector relief still enters the full SVG editor. Export clones replace all transient coverage/clip nodes.
+- Cold views retain the existing SVG path until their batch is ready. While a mixed view is held still, its coverage
+  stays stable as missing tiles decode; those regions switch when the batch is ready. View changes can use additional
+  ready tiles naturally. The badge reports mixed mode and cache-ready progress. Diagnostics separately report
+  `displayedRasterTiles` and `reusedHigherResolution`, so cache readiness is not mistaken for displayed coverage.
+
+### Load-time gate and local verification
+
+An initial per-tile handoff design was rejected: updating clipping after every tile took 3.0-3.2 seconds versus
+1.1-1.3 seconds for the prior all-at-once path in the isolated probe. The retained implementation therefore batches
+handoffs while preserving already cached coverage, and does not schedule a new render for intermediate tile completions.
+
+The corrected local comparison includes the previous path's full SVG restoration when entering a partly cached view.
+Both variants use the same tile rasterization function, 24 requested tiles at DPR 2.6, and sequential generation.
+Cold (0 primed) totals were 1,051 ms baseline and 991 ms candidate. With 12 tiles primed, totals for completing the
+view were 584/649 ms baseline versus 418/402 ms candidate. This small isolated comparison supports proceeding with
+no observed load-time regression; it is not a guarantee or forecast for the installed application. The probe mimics
+presentation behavior rather than driving the whole application. Raw sources/results are under `work/relief-layerize`.
+A half-raster/half-vector sample showed no obvious seams or opacity doubling on visual inspection; mean absolute
+BGRA-channel difference from the vector reference was 0.547 on a 0-255 scale. Other views/styles need manual checks.
+
+Targeted tests cover immediate higher-resolution reuse without decode, budget pressure, stable image identity,
+missing-region clipping, no intermediate handoffs, map/edit cancellation, export clone cleanup and nested editor entry.
+Source detail, save schema, and vector export paths are unchanged. Final manual tests are specified in the capture guide.

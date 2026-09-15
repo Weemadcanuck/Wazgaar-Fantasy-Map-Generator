@@ -223,3 +223,36 @@ Next refinement should expose runtime mode and fallback reason, capture mode tra
 improve budget/resolution planning and cache reuse at the observed DPR without silently blurring distant relief or
 raising the memory cap. Measure cold-start and warm navigation separately. No further identical captures are needed
 before those diagnostic improvements. User confirmation of editing/save/export checks remains outstanding.
+
+
+## Cache-reuse target-PC checkpoint (2026-09-15)
+
+The user reports loading 24 tiles in less than a minute, very fast navigation afterwards, and acceptable jank when
+entering partly uncached views. Editing/save/reload/export checks remain deferred. New 1.153.4 application captures
+identify `relief-raster-cache-reuse` and now establish actual raster-mode use and return to ready cached views.
+
+| Condition | Median rAF interval | p95 | p99 | Longest |
+| --- | ---: | ---: | ---: | ---: |
+| cache warm relief on | 16.7 ms | 50.0 ms | 50.1 ms | 750.6 ms |
+| cache relief on part 2 | 16.7 ms | 99.9 ms | 533.7 ms | 684.0 ms |
+| cache relief off | 16.8 ms | 50.1 ms | 66.8 ms | 100.0 ms |
+
+The first on capture starts raster-ready with 24 tiles and ends warming in SVG (10/12 tiles ready). Display records
+include 114 raster-ready and 12 SVG-warming observations. The second starts and ends raster-ready, with 75 ready
+and 21 warming observations. These are event counts, not time shares. Ten tile completions are recorded in each on
+capture; their asynchronous wall durations total 13.0 and 12.5 seconds, with maxima 5.915 and 3.569 seconds. Do not
+interpret these as pure CPU times or as the cold loading duration of all 24 tiles.
+
+The first on capture's typical intervals closely match the off control, but isolated long stalls remain and the
+second capture's tail is worse. Different gestures and mixed ready/warming periods prevent an exact matched-mode
+speedup claim. End cache sizes are 32,188,416 and 52,435,968 bytes (~30.7 and 50.0 MiB), below the unchanged 128 MiB
+cap. There is no evidence from these endpoints that increasing the cap would address these stalls.
+
+Recommendation, not an additional implemented stage: the most directly relevant optional refinement is retaining
+cached raster coverage while drawing vector relief only in missing regions, rather than temporarily restoring SVG
+for the entire visible layer. This needs correct region clipping, source order and opacity to avoid duplicated or
+missing relief. A narrower improvement is reusing suitable higher-resolution cached tiles for lower-resolution
+requests. Idle-only neighbour prefetch could help predictable pans later, but adds scheduling complexity. The original
+spatial-index/cadence work remains optional; existing evidence does not make it a priority over these transition
+costs. Given the user's acceptable experience, completing the deferred functional checks before further rendering
+complexity is also a reasonable stopping point.

@@ -49,9 +49,19 @@ export function planReliefTiles(bounds: ViewportBounds, icons: ReliefIcon[], dpr
   return tiles.sort((a, b) => distance(a) - distance(b));
 }
 
+export interface ReadyReliefTile extends ReliefTile, RasterImage {
+  sourceKey: string;
+  sourcePixels: number;
+}
+interface CachedReliefTile {
+  tile: ReliefTile;
+  image: RasterImage;
+  bytes: number;
+}
+
 /** Sequential, latest-request cache. A discarded decode can never publish into a new map or edit revision. */
 export class ReliefRasterCache {
-  private entries = new Map<string, { image: RasterImage; bytes: number }>();
+  private entries = new Map<string, CachedReliefTile>();
   private wanted: ReliefTile[] = [];
   private running = false;
   private generation = 0;
@@ -67,24 +77,58 @@ export class ReliefRasterCache {
     return [...this.entries.values()].reduce((sum, entry) => sum + entry.bytes, 0);
   }
 
-  request(tiles: ReliefTile[]): Array<ReliefTile & RasterImage> | null {
+  get coverage(): { ready: ReadyReliefTile[]; missing: ReliefTile[] } {
+    const chosen = new Map<string, CachedReliefTile>();
+    let requiredBytes = 0;
+    for (const tile of this.wanted) {
+      let best = this.entries.get(tile.key);
+      if (!best)
+        for (const entry of this.entries.values()) {
+          if (entry.tile.x !== tile.x || entry.tile.y !== tile.y || entry.tile.pixels <= tile.pixels) continue;
+          if (!best || entry.tile.pixels < best.tile.pixels) best = entry;
+        }
+      if (best) chosen.set(tile.key, best);
+      requiredBytes += best?.bytes ?? tile.pixels * tile.pixels * 4;
+    }
+    // Do not pin oversized reuses at the expense of completing the visible view within the unchanged cap.
+    const oversized = this.wanted
+      .filter(tile => (chosen.get(tile.key)?.tile.pixels ?? 0) > tile.pixels)
+      .sort((a, b) => chosen.get(b.key)!.bytes - b.pixels ** 2 * 4 - (chosen.get(a.key)!.bytes - a.pixels ** 2 * 4));
+    for (const tile of oversized) {
+      if (requiredBytes <= CACHE_BYTES) break;
+      requiredBytes -= chosen.get(tile.key)!.bytes - tile.pixels ** 2 * 4;
+      chosen.delete(tile.key);
+    }
+    const ready: ReadyReliefTile[] = [];
+    const missing: ReliefTile[] = [];
+    for (const tile of this.wanted) {
+      const entry = chosen.get(tile.key);
+      if (entry) ready.push({ ...tile, ...entry.image, sourceKey: entry.tile.key, sourcePixels: entry.tile.pixels });
+      else missing.push(tile);
+    }
+    return { ready, missing };
+  }
+
+  request(tiles: ReliefTile[]): ReadyReliefTile[] | null {
     this.wanted = tiles;
-    // Touch requested entries in LRU order; departing tiles remain reusable until the budget needs their space.
-    for (const tile of tiles) {
-      const entry = this.entries.get(tile.key);
-      if (!entry) continue;
-      this.entries.delete(tile.key);
-      this.entries.set(tile.key, entry);
+    const coverage = this.coverage;
+    for (const tile of coverage.ready) {
+      const entry = this.entries.get(tile.sourceKey)!;
+      this.entries.delete(tile.sourceKey);
+      this.entries.set(tile.sourceKey, entry);
     }
-    if (tiles.every(tile => this.entries.has(tile.key))) {
-      return tiles.map(tile => ({ ...tile, ...this.entries.get(tile.key)!.image }));
-    }
+    if (!coverage.missing.length) return coverage.ready;
     if (!this.running && !this.failed) void this.pump();
     return null;
   }
 
-  get progress(): { ready: number; requested: number } {
-    return { ready: this.wanted.filter(tile => this.entries.has(tile.key)).length, requested: this.wanted.length };
+  get progress(): { ready: number; requested: number; reusedHigherResolution: number } {
+    const { ready } = this.coverage;
+    return {
+      ready: ready.length,
+      requested: this.wanted.length,
+      reusedHigherResolution: ready.filter(tile => tile.sourcePixels > tile.pixels).length
+    };
   }
 
   /** Suspend generation for a close view/editor without throwing away valid tiles. */
@@ -96,7 +140,7 @@ export class ReliefRasterCache {
   }
 
   private makeRoom(bytes: number): void {
-    const protectedKeys = new Set(this.wanted.map(tile => tile.key));
+    const protectedKeys = new Set(this.coverage.ready.map(tile => tile.sourceKey));
     for (const [key, entry] of this.entries) {
       if (this.bytes + bytes <= CACHE_BYTES) return;
       if (protectedKeys.has(key)) continue;
@@ -107,10 +151,7 @@ export class ReliefRasterCache {
   }
 
   clear(): void {
-    this.generation++;
-    this.controller.abort();
-    this.controller = new AbortController();
-    this.wanted = [];
+    this.pause();
     for (const entry of this.entries.values()) entry.image.dispose();
     this.entries.clear();
     this.failed = false;
@@ -121,7 +162,7 @@ export class ReliefRasterCache {
     const generation = this.generation;
     try {
       while (generation === this.generation) {
-        const tile = this.wanted.find(tile => !this.entries.has(tile.key));
+        const tile = this.coverage.missing[0];
         if (!tile) break;
         const bytes = tile.pixels * tile.pixels * 4;
         this.makeRoom(bytes);
@@ -134,7 +175,7 @@ export class ReliefRasterCache {
           image.dispose();
           throw new Error("Relief raster cache budget exceeded");
         }
-        this.entries.set(tile.key, { image, bytes });
+        this.entries.set(tile.key, { tile, image, bytes });
         this.ready();
       }
     } catch (error) {

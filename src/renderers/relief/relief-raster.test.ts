@@ -146,3 +146,39 @@ it("omits unused self-contained symbols but retains dependencies for referenced 
   defs.querySelector("#mount")!.innerHTML = '<use href="#unused" />';
   expect(reliefTileSvg(tile, source, defs)).toContain('id="unused"');
 });
+
+it("reuses the smallest adequate sharper tile immediately without decoding a lower-resolution replacement", async () => {
+  const build = vi.fn(async (tile: ReliefTile) => ({ url: tile.key, dispose: vi.fn() }));
+  const cache = new ReliefRasterCache(build, vi.fn());
+  const high = { ...tile, key: "high", pixels: 1024 };
+  const medium = { ...tile, key: "medium", pixels: 768 };
+  cache.request([high]);
+  await flush();
+  // A smaller request reuses the high tile without allocating or waiting.
+  const beforeBytes = cache.bytes;
+  expect(cache.request([medium])?.[0]).toMatchObject({ url: "high", sourcePixels: 1024 });
+  expect(cache.request([tile])?.[0].url).toBe("high");
+  expect(cache.bytes).toBe(beforeBytes);
+  expect(cache.progress.reusedHigherResolution).toBe(1);
+  expect(build).toHaveBeenCalledTimes(1);
+  cache.request([{ ...tile, key: "larger", pixels: 1280 }]);
+  await flush();
+  expect(build).toHaveBeenCalledTimes(2);
+  cache.clear();
+});
+
+it("does not pin sharper tiles that would prevent completing the visible request within budget", async () => {
+  const build = vi.fn(async (tile: ReliefTile) => ({ url: tile.key, dispose: vi.fn() }));
+  const cache = new ReliefRasterCache(build, vi.fn());
+  const high = Array.from({ length: 8 }, (_, i) => ({ ...tile, key: `high-${i}`, x: i * 256, pixels: 2048 }));
+  cache.request(high);
+  for (let i = 0; i < 10; i++) await flush();
+  const low = Array.from({ length: 9 }, (_, i) => ({ ...tile, key: `low-${i}`, x: i * 256, pixels: 1024 }));
+  expect(cache.request(low)).toBeNull();
+  for (let i = 0; i < 10; i++) await flush();
+  expect(cache.failed).toBe(false);
+  expect(cache.request(low)).toHaveLength(9);
+  expect(cache.bytes).toBeLessThanOrEqual(CACHE_BYTES);
+  expect(build.mock.calls.length).toBeLessThan(17); // reuse still avoids most of the original nine new decodes
+  cache.clear();
+});

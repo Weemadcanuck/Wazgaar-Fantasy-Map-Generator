@@ -6,10 +6,11 @@ import {
   ViewportLayers,
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
-
+import { ReliefCoverage } from "./relief/relief-coverage";
 import {
   planReliefTiles,
   ReliefRasterCache,
+  type ReliefTile,
   rasterizeReliefTile,
   reliefTileSvg,
   TILE_SIZE
@@ -32,7 +33,8 @@ let liveRoot: Element | null = null;
 let editing = false;
 let rasterVisible = false;
 let rasterDefinitions: Element | null = null;
-let rasterSignature = "";
+const coverage = new ReliefCoverage();
+let rasterMixed = false;
 let displayScale = 0;
 let rasterReason = "not drawn";
 // Reversible prototype flag. No serialized map/style fields are added.
@@ -54,9 +56,10 @@ const raster = new ReliefRasterCache(
     return result;
   },
   () => {
+    // Keep the current mixed coverage stable during decoding: repeated clip updates delay tile generation.
     reportReliefDisplay();
     const { ready, requested } = raster.progress;
-    if (ready === requested || raster.failed) ViewportLayers.invalidate("relief", "raster ready");
+    if (ready === requested || raster.failed) ViewportLayers.invalidate("relief", "raster coverage ready");
   }
 );
 const layer = ViewportLayers.register({
@@ -70,9 +73,10 @@ const layer = ViewportLayers.register({
 export function getReliefRenderStatus() {
   return {
     enabled: rasterEnabled,
-    mode: rasterVisible ? "raster" : "SVG",
+    mode: rasterVisible ? (rasterMixed ? "mixed" : "raster") : "SVG",
     editing,
     cacheBytes: raster.bytes,
+    displayedRasterTiles: rasterVisible ? coverage.imageCount : 0,
     failed: raster.failed,
     reason: rasterReason,
     ...raster.progress
@@ -88,10 +92,12 @@ export function setReliefEditing(value: boolean): void {
 function invalidateRaster(): void {
   raster.clear();
   rasterDefinitions = null;
-  rasterSignature = "";
 }
 
-function tryRaster(terrain: Element, context: ViewportRenderContext): boolean {
+function tryRaster(
+  terrain: Element,
+  context: ViewportRenderContext
+): { vectorRoot: Element; missing: ReliefTile[] } | null {
   rasterReason = !rasterEnabled
     ? "disabled"
     : editing
@@ -103,11 +109,11 @@ function tryRaster(terrain: Element, context: ViewportRenderContext): boolean {
           : raster.failed
             ? "tile failure"
             : "warming";
-  if (rasterReason !== "warming") return false;
+  if (rasterReason !== "warming") return null;
   const definitions = document.querySelector("#defs-relief");
   if (!definitions) {
     rasterReason = "missing symbols";
-    return false;
+    return null;
   }
   const dpr = window.devicePixelRatio || 1;
   if (displayScale !== dpr) {
@@ -122,32 +128,17 @@ function tryRaster(terrain: Element, context: ViewportRenderContext): boolean {
       Math.ceil(256 * Math.max(1, dpr) * Math.max(1, Math.ceil(context.bounds.scale * 2) / 2)) > 2048
         ? "tile size limit"
         : "visible viewport exceeds cache budget";
-    return false;
+    return null;
   }
   rasterDefinitions ??= definitions;
-  const ready = raster.request(tiles);
-  if (!ready) return false;
-  const signature = ready.map(tile => tile.url).join("|");
-  if (!rasterVisible || signature !== rasterSignature) {
-    const fragment = document.createDocumentFragment();
-    for (const tile of ready) {
-      const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
-      image.setAttribute("href", tile.url);
-      image.setAttribute("x", String(tile.x));
-      image.setAttribute("y", String(tile.y));
-      image.setAttribute("width", String(TILE_SIZE));
-      image.setAttribute("height", String(TILE_SIZE));
-      image.setAttribute("preserveAspectRatio", "none");
-      fragment.append(image);
-    }
-    terrain.replaceChildren(fragment);
-    nodes.clear();
-    lookup.clear();
-    rasterSignature = signature;
-  }
+  raster.request(tiles);
+  const { ready, missing } = raster.coverage;
+  if (!ready.length && tiles.length) return null;
+  const vectorRoot = coverage.render(terrain, ready, missing);
   rasterVisible = true;
-  rasterReason = "ready";
-  return true;
+  rasterMixed = missing.length > 0;
+  rasterReason = rasterMixed ? "warming" : "ready";
+  return { vectorRoot, missing };
 }
 
 export function drawRelief(): void {
@@ -182,7 +173,9 @@ function reportReliefDisplay(): void {
     }
     const { ready, requested } = raster.progress;
     const label = rasterVisible
-      ? "Relief: raster"
+      ? rasterMixed
+        ? `Relief: mixed ${ready}/${requested} tiles`
+        : "Relief: raster"
       : rasterReason === "warming"
         ? `Relief: loading tiles ${ready}/${requested}`
         : `Relief: SVG (${rasterReason})`;
@@ -195,16 +188,20 @@ function reportReliefDisplay(): void {
       reason: rasterReason,
       start: performance.now(),
       duration: 0,
-      mode: rasterVisible ? "raster" : "SVG",
+      mode: rasterVisible ? (rasterMixed ? "mixed" : "raster") : "SVG",
       cacheBytes: raster.bytes,
+      displayedRasterTiles: rasterVisible ? coverage.imageCount : 0,
       readyTiles: raster.progress.ready,
-      requestedTiles: raster.progress.requested
+      requestedTiles: raster.progress.requested,
+      reusedHigherResolution: raster.progress.reusedHigherResolution
     });
 }
 
 export function removeRelief(): void {
   invalidateRaster();
   rasterVisible = false;
+  rasterMixed = false;
+  coverage.reset();
   rasterReason = "hidden";
   reportReliefDisplay();
   document.getElementById("reliefRenderStatus")?.remove();
@@ -283,6 +280,8 @@ function reconcileRelief(context: ViewportRenderContext): void {
   if (owner !== pack || liveRoot !== terrain) {
     invalidateRaster();
     rasterVisible = false;
+    rasterMixed = false;
+    coverage.reset();
     nodes.clear();
     lookup.clear();
     terrain.replaceChildren();
@@ -290,22 +289,34 @@ function reconcileRelief(context: ViewportRenderContext): void {
     liveRoot = terrain;
   }
 
-  const ready = tryRaster(terrain, context);
-  if (ready) {
-    reportReliefDisplay();
-    return;
-  }
-  if (rasterVisible) {
+  const display = tryRaster(terrain, context);
+  if (!display && rasterVisible) {
     terrain.replaceChildren();
+    coverage.reset();
     rasterVisible = false;
-    rasterSignature = "";
+    rasterMixed = false;
   }
   if (editing || context.bounds.scale > 2) raster.pause();
   reportReliefDisplay();
 
   const start = PerformanceMetrics.active ? performance.now() : 0;
   const source = pack.relief ?? [];
-  const visible = source.filter(data => intersects(data, context.bounds));
+  const vectorRoot = display?.vectorRoot ?? terrain;
+  const missingBounds = display?.missing.map(tile => ({
+    scale: context.bounds.scale,
+    x0: tile.x,
+    y0: tile.y,
+    x1: tile.x + TILE_SIZE,
+    y1: tile.y + TILE_SIZE
+  }));
+  const visible =
+    missingBounds?.length === 0
+      ? []
+      : source.filter(
+          data =>
+            intersects(data, context.bounds) &&
+            (!missingBounds || missingBounds.some(bounds => intersects(data, bounds)))
+        );
   const visibleSet = new Set(visible);
   const queryEnd = PerformanceMetrics.active ? performance.now() : 0;
   let removed = 0;
@@ -323,7 +334,7 @@ function reconcileRelief(context: ViewportRenderContext): void {
   }
 
   // Advancing a DOM cursor retains overlapping nodes, including when new icons enter between them.
-  let cursor = terrain.firstElementChild;
+  let cursor = vectorRoot.firstElementChild;
   for (const data of visible) {
     let entry = nodes.get(data);
     const existing = Boolean(entry);
@@ -341,7 +352,7 @@ function reconcileRelief(context: ViewportRenderContext): void {
     }
     if (entry.node === cursor) cursor = cursor.nextElementSibling;
     else {
-      terrain.insertBefore(entry.node, cursor);
+      vectorRoot.insertBefore(entry.node, cursor);
       if (existing) moved++;
     }
   }
@@ -369,7 +380,7 @@ function reconcileRelief(context: ViewportRenderContext): void {
       retained,
       updated,
       moved,
-      live: terrain.childElementCount
+      live: vectorRoot.childElementCount
     });
   }
 }
