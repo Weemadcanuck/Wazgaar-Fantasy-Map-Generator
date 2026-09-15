@@ -283,6 +283,44 @@ describe("keyed relief rendering", () => {
 });
 
 describe("distant raster integration", () => {
+  it.each([
+    "unchanged",
+    "geometry",
+    "symbols",
+    "map",
+    "root"
+  ])("retains hidden tiles only when valid: %s", async change => {
+    document.querySelector("svg")!.insertAdjacentHTML("afterbegin", '<defs><g id="defs-relief" /></defs>');
+    const dispose = vi.fn();
+    const build = vi.spyOn(rasterTools, "rasterizeReliefTile").mockResolvedValue({ url: "blob:tile", dispose });
+    drawRelief();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    tick();
+    expect(getReliefRenderStatus().mode).toBe("raster");
+    const count = build.mock.calls.length;
+    const bytes = getReliefRenderStatus().cacheBytes;
+    state.active = false;
+    removeRelief();
+    expect(terrain().childElementCount).toBe(0);
+    expect(getReliefRenderStatus().cacheBytes).toBe(bytes);
+    expect(dispose).not.toHaveBeenCalled();
+    if (change === "geometry") pack.relief[0].s += 5;
+    if (change === "symbols") document.querySelector("#defs-relief")!.setAttribute("fill", "red");
+    if (change === "map") vi.stubGlobal("pack", { relief: [...pack.relief] });
+    if (change === "root") terrain().replaceWith(terrain().cloneNode());
+    state.active = true;
+    drawRelief();
+    if (change === "unchanged") {
+      expect(getReliefRenderStatus().mode).toBe("raster");
+      expect(build).toHaveBeenCalledTimes(count);
+      expect(dispose).not.toHaveBeenCalled();
+    } else {
+      expect(dispose).toHaveBeenCalled();
+      expect(build.mock.calls.length).toBeGreaterThan(count);
+    }
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+  });
+
   it("switches atomically to raster, exports vectors, and restores individual editing", async () => {
     document
       .querySelector("svg")!

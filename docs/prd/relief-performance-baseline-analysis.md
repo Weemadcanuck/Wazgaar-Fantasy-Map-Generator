@@ -256,3 +256,33 @@ requests. Idle-only neighbour prefetch could help predictable pans later, but ad
 spatial-index/cadence work remains optional; existing evidence does not make it a priority over these transition
 costs. Given the user's acceptable experience, completing the deferred functional checks before further rendering
 complexity is also a reasonable stopping point.
+
+
+## Final installed validation: 1.153.5 (2026-09-15)
+
+User reports similar initial wait, smooth navigation after approximately 20 seconds of warming,
+expected mixed badge, no duplicated icons or opacity changes, and successful editing/save/reload
+preserving every modification. Very large icons take longer to rasterize but display correctly.
+
+Final navigation recording: median 16.7 ms, p95 83.4 ms, p99 100.2 ms, maximum 717.2 ms;
+29 SVG, 65 mixed and 70 raster display observations, ending raster-ready 24/24 at 85,662,720 cached bytes.
+Relief-off control: median 17.3 ms, p95 99.9 ms, maximum 133.6 ms. These interaction recordings
+are not identical trajectories and do not establish that relief is faster than the control.
+Initial-load recording: median 584 ms, maximum 617.724 ms, ending mixed 15/20 cache-ready;
+cold/mixed loading remains the principal limitation. rAF intervals are responsiveness proxies.
+
+Artifact inspection: final map contains 12,032 relief records with only icon/x/y/s fields.
+Full-map SVG contains exactly 12,032 vector uses and no raster image or runtime coverage markers.
+PNG visually inspected without obvious tile seams or duplicate relief. The naked-relief map contains
+50 records, so it does not independently establish an entirely empty save/reload; that case remains
+covered by automated tests, while the user's overall requested-check report is recorded separately.
+
+## Final toggle follow-up: 1.153.6
+
+User requested preserving warm coverage across relief off/on. Completed tiles now remain in the
+same bounded 128 MiB cache while hidden, with generation paused and display nodes removed.
+On restoration, source relief fields/order and symbol markup are compared with the hidden snapshot;
+changed content, map/root identity, display pixel ratio or ordinary redraws still invalidate tiles.
+No extra tile jobs or prefetch are added. Cache retention is session-only and remains subject to
+normal eviction and real edits; it is not permanent storage or a guarantee that every visited area fits.
+Installed off/on confirmation is the only new manual check for this follow-up.

@@ -1,5 +1,14 @@
 # Relief baseline capture
 
+## Toggle follow-up: 1.153.6
+
+Install `release/relief-toggle-cache/azgaar-archival-fork-1.153.6-win-x64.exe` with the app closed.
+The 1.153.5 validation results are recorded in the baseline analysis. For this narrow follow-up,
+warm the usual views, toggle relief off and on, and revisit them. Unchanged cached coverage should
+return without rebuilding. Real edits and cache eviction still require fresh tiles; the cap is 128 MiB.
+No full repeat of the editing/export checklist is requested.
+
+
 ## Final candidate and validation: 1.153.5
 
 Install `release/relief-retained-coverage/azgaar-archival-fork-1.153.5-win-x64.exe` with the app closed.

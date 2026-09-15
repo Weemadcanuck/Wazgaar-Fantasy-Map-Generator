@@ -37,6 +37,7 @@ const coverage = new ReliefCoverage();
 let rasterMixed = false;
 let displayScale = 0;
 let rasterReason = "not drawn";
+let hiddenSignature: string | null = null;
 // Reversible prototype flag. No serialized map/style fields are added.
 const rasterEnabled = typeof localStorage !== "undefined" && localStorage.getItem("reliefRasterPrototype") !== "off";
 const raster = new ReliefRasterCache(
@@ -90,6 +91,7 @@ export function setReliefEditing(value: boolean): void {
 }
 
 function invalidateRaster(): void {
+  hiddenSignature = null;
   raster.clear();
   rasterDefinitions = null;
 }
@@ -143,7 +145,9 @@ function tryRaster(
 
 export function drawRelief(): void {
   if (!Layers.isOn("relief")) return void removeRelief();
-  invalidateRaster();
+  // Only an unchanged hidden layer may reuse tiles; ordinary redraws still invalidate them.
+  if (hiddenSignature === null || hiddenSignature !== reliefSignature()) invalidateRaster();
+  hiddenSignature = null;
   // An empty array is authored data. Only an absent field requests initial generation.
   if (!pack.relief) Relief.generate();
   layer.render();
@@ -198,7 +202,9 @@ function reportReliefDisplay(): void {
 }
 
 export function removeRelief(): void {
-  invalidateRaster();
+  if (owner !== pack || liveRoot !== document.querySelector("#terrain")) invalidateRaster();
+  else if (raster.bytes) hiddenSignature ??= reliefSignature();
+  raster.pause();
   rasterVisible = false;
   rasterMixed = false;
   coverage.reset();
@@ -207,10 +213,15 @@ export function removeRelief(): void {
   document.getElementById("reliefRenderStatus")?.remove();
   nodes.clear();
   lookup.clear();
-  owner = null;
-  liveRoot = null;
   document.querySelector("#terrain")?.replaceChildren();
   // No relief-specific frame: the shared scheduler skips hidden work and direct draws consume it.
+}
+
+function reliefSignature(): string {
+  return JSON.stringify([
+    pack.relief?.map(({ icon, x, y, s }) => [icon, x, y, s]),
+    document.querySelector("#defs-relief")?.outerHTML
+  ]);
 }
 
 function runtimeId(data: ReliefIcon): string {

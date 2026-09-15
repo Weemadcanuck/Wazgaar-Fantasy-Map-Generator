@@ -515,3 +515,12 @@ BGRA-channel difference from the vector reference was 0.547 on a 0-255 scale. Ot
 Targeted tests cover immediate higher-resolution reuse without decode, budget pressure, stable image identity,
 missing-region clipping, no intermediate handoffs, map/edit cancellation, export clone cleanup and nested editor entry.
 Source detail, save schema, and vector export paths are unchanged. Final manual tests are specified in the capture guide.
+
+
+### Final validation and toggle retention
+
+Installed 1.153.5 validation and artifact findings are recorded in the baseline analysis. User accepts
+the loading tradeoff and requests one narrow lifecycle change: retain valid tiles across relief off/on.
+Version 1.153.6 implements that within the existing cap, with unchanged-content checks on restoration
+and normal invalidation for edits, replacement maps/roots and pixel-ratio changes. No further
+performance features are planned; only installed toggle confirmation remains for this follow-up.
