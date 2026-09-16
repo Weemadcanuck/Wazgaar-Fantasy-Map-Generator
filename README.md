@@ -12,7 +12,9 @@ This fork adds Obsidian reference export, editable custom point layers, and reli
 | Desktop writes | `electron/archive-export-writer.ts` | Preview conflicts, preserve author edits, write the manifest last. IPC stays in `archive-export-ipc.ts`. |
 | Custom layers | `src/generators/custom-layers.ts` | Serializable `pack.customLayers`; editor and renderer are `custom-layers-editor.ts` and `draw-custom-points.ts`. |
 | Relief | `src/renderers/draw-relief-icons.ts` | SVG reconciliation, editor/export boundary, raster lifecycle. |
-| Tile cache | `src/renderers/relief/` | Sequential tile generation, bounded reuse, and clipped mixed coverage. |
+| Tile cache | `src/renderers/svg-raster.ts` | Shared bounded cache and SVG tile conversion; `relief/` owns relief planning and mixed coverage. |
+| Coastal decoration | `src/renderers/coastal-raster.ts` | Distant-view bands and waves; restore original vectors for save/export. |
+| PNG encoding | `src/renderers/png-encoder.ts` | Cancellable reusable worker, with canvas fallback. |
 | Viewport | `src/renderers/viewport/viewport-renderer.ts` | Independent per-layer invalidation and viewport scheduling. |
 
 ### Upstream integration (1.154.0)
@@ -51,9 +53,21 @@ npm run electron -- build
 
 Version comes from `src/services/versioning.ts`; run `npm run sync-version` after changing it. Keep the legacy desktop app ID, origin and profile directory stable: they preserve installed settings and local maps despite the new display name.
 
+### Rendering fixes (1.154.4)
+
+PNG encoding runs in a reusable worker instead of waiting for main-thread idle canvas encoding. Each tile builder owns its encoder; cancellation discards obsolete work. GPU drawing and decoded pixels are preserved, with a canvas fallback if workers are unavailable.
+
+Distant coastal bands and waves share a separate 128 MiB decoded-pixel cache. Their nested vector masks were a large cost even with relief hidden. Original vectors remain available for close zoom and are restored in save/export clones. Ocean redraws, coastline edits, replacement roots and display-density changes invalidate the cache. This budget is allocated on demand, in addition to the existing 512 MiB relief budget; neither is a total process-memory limit.
+
+New coastal areas initially use vectors until all visible tiles are ready, so cold navigation can still stutter. Warm navigation reuses tiles. Close zoom remains SVG. No map-format change is introduced.
+
+Validation: 1,290 application tests, 17 desktop tests and 52 script tests pass, with lint, version/assets checks and web/desktop builds. Native Jotun checks cover Pale, Ink, Cinderwood and Frostbite; off/on and close-zoom tile reuse; copy, resize and drag; exact relief/custom-layer/world-ID/legacy-note save/reload; and full-detail SVG/PNG export. Twenty-four native comparisons found identical decoded worker/canvas PNG pixels, including enlarged icons.
+
+On the tested laptop at display density 2.6, a same-session warm pan measured median frame intervals of 24/30/36 ms for cached Ink/Cinderwood/Frostbite versus 139/412/333 ms for their original coastal vectors. Pale stayed around 30 ms. These are requestAnimationFrame intervals, not presented FPS or clean single-app benchmarks: another app version was running during part of the investigation. Initial coverage and newly exposed tiles remain slower.
+
 ### Relief styles (1.154.3)
 
-Older maps can embed relief definitions that predate newer built-in symbol sets. Tile serialization resolves missing symbols from the live document, matching SVG use lookup, without changing the saved map definitions. A Cinderwood/Jotun Electron check confirms visible raster output; 1,282 application tests pass. Ocean embellishments and coastal bands remain separate vector rendering work.
+Older maps can embed relief definitions that predate newer built-in symbol sets. Tile serialization resolves missing symbols from the live document, matching SVG use lookup, without changing the saved map definitions. A Cinderwood/Jotun Electron check confirms visible raster output; 1,282 application tests pass. The later 1.154.4 changes also address ocean embellishments and coastal bands.
 
 ### Tools panel (1.154.2)
 
