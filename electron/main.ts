@@ -4,11 +4,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { MenuItemConstructorOptions } from "electron";
-import { app, BrowserWindow, dialog, Menu, nativeImage, net, protocol, screen, shell } from "electron";
-import { initUpdater } from "./updater";
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, screen, shell } from "electron";
+import { DESKTOP_QUIT_CHANNEL } from "../src/types/desktop-ipc";
+import { ARCHIVAL_APP_HOST, ARCHIVAL_USER_DATA_DIRECTORY, RENDERER_CACHE_CONTROL } from "./app-identity";
+import { registerArchiveExportHandlers } from "./archive-export-ipc";
 
 const SCHEME = "app";
-const HOST = "fmg";
+const HOST = ARCHIVAL_APP_HOST;
 const APP_URL = `${SCHEME}://${HOST}/index.html`;
 const RENDERER_DIR = path.join(__dirname, "renderer");
 const ICON_PATH = path.join(__dirname, "icon.png");
@@ -16,14 +18,11 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const WIKI_URL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
 const DISCORD_URL = "https://discord.gg/X7E84HU";
 
-/**
- * The app is named after `productName`, but its data stays in the folder the name would have
- * produced before, so a rename never strands the maps stored in localStorage and IndexedDB
- */
-app.setPath("userData", path.join(app.getPath("appData"), "fantasy-map-generator"));
+// Never share Chromium caches, IndexedDB, or local storage with the upstream desktop application.
+app.setPath("userData", path.join(app.getPath("appData"), ARCHIVAL_USER_DATA_DIRECTORY));
 
 app.setAboutPanelOptions({
-  applicationName: app.name,
+  applicationName: "Azgaar Obsidian Fork",
   applicationVersion: app.getVersion(),
   iconPath: ICON_PATH,
   copyright: "MIT License. Azgaar and Team, 2017-2026"
@@ -119,6 +118,7 @@ function serveRenderer(): void {
       const response = await net.fetch(pathToFileURL(filePath).toString());
       const headers = new Headers(response.headers);
       headers.set("Content-Security-Policy", CSP);
+      headers.set("Cache-Control", RENDERER_CACHE_CONTROL);
       return new Response(response.body, { status: response.status, headers });
     } catch {
       // net.fetch rejects on a missing file, and the rejection would reach the page as an opaque network error
@@ -210,16 +210,11 @@ function buildMenu(): void {
 }
 
 let quitting = false; // set on Cmd+Q, where closing the window alone would leave the app running
-let skipConfirmation = false; // set once the user has confirmed, and by the updater to install on restart
+let skipConfirmation = false; // set once the user has confirmed
 
 app.on("before-quit", () => {
   quitting = true;
 });
-
-/** Closes the window without the quit confirmation, so the installer can restart the app */
-function allowClose(): void {
-  skipConfirmation = true;
-}
 
 /**
  * The web app warns before navigating away via `onbeforeunload`, but Electron cancels the close
@@ -244,8 +239,8 @@ function confirmOnClose(window: BrowserWindow): void {
         defaultId: 1,
         cancelId: 1,
         title: "Quit",
-        message: "Quit the Fantasy Map Generator?",
-        detail: "The map is autosaved to the app storage, but save it to a file to be safe"
+        message: "Quit Azgaar Obsidian Fork?",
+        detail: "Autosave runs only at its configured interval. Save the map to a file before quitting to be safe"
       })
       .then(({ response }) => {
         confirming = false;
@@ -255,7 +250,7 @@ function confirmOnClose(window: BrowserWindow): void {
         }
         skipConfirmation = true;
         if (quitting) app.quit();
-        else window.close();
+        else window.destroy();
       });
   });
 
@@ -263,6 +258,10 @@ function confirmOnClose(window: BrowserWindow): void {
   window.on("closed", () => {
     skipConfirmation = false;
   });
+}
+
+function registerDesktopHandlers(): void {
+  ipcMain.on(DESKTOP_QUIT_CHANNEL, event => BrowserWindow.fromWebContents(event.sender)?.close());
 }
 
 function createWindow(): void {
@@ -310,8 +309,9 @@ if (!app.requestSingleInstanceLock()) {
     if (!app.isPackaged) app.dock?.setIcon(nativeImage.createFromPath(ICON_PATH));
     serveRenderer();
     buildMenu();
+    registerDesktopHandlers();
+    registerArchiveExportHandlers();
     createWindow();
-    initUpdater(allowClose); // app-wide, so re-opening a window on macOS does not start a second updater
     app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());
   });
 

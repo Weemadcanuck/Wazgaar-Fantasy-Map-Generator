@@ -12,22 +12,29 @@ const copyAppIcon = {
   closeBundle: () => copyFileSync(resolve("../build/icon.png"), resolve("../dist-electron/icon.png"))
 };
 
-export default {
-  plugins: [copyAppIcon],
-  publicDir: false, // public/ belongs to the renderer build, not to the main process
-  build: {
-    outDir: resolve("../dist-electron"),
-    emptyOutDir: true, // runs before the renderer build, so nothing of it is lost
-    target: "node22",
-    minify: false,
-    lib: {
-      entry: { main: resolve("main.ts"), preload: resolve("preload.ts") },
-      formats: ["cjs"],
-      fileName: (_format: string, name: string) => `${name}.js`
+export default ({ mode }: { mode: string }) => {
+  const isPreload = mode === "electron-preload";
+  const entryName = isPreload ? "preload" : "main";
+
+  return {
+    plugins: isPreload ? [] : [copyAppIcon],
+    publicDir: false, // public/ belongs to the renderer build, not to the main process
+    build: {
+      outDir: resolve("../dist-electron"),
+      // Build the main process first, then add the separately bundled preload without clearing it.
+      // A sandboxed preload cannot require Vite's shared relative chunks, so it must be a single entry.
+      emptyOutDir: !isPreload,
+      target: "node22",
+      minify: false,
+      lib: {
+        entry: { [entryName]: resolve(`${entryName}.ts`) },
+        formats: ["cjs"],
+        fileName: (_format: string, name: string) => `${name}.js`
+      },
+      rollupOptions: {
+        external: ["electron", ...builtinModules, ...builtinModules.map(name => `node:${name}`)]
+      }
     },
-    rollupOptions: {
-      external: ["electron", ...builtinModules, ...builtinModules.map(name => `node:${name}`)]
-    }
-  },
-  resolve: { conditions: ["node"] }
+    resolve: { conditions: ["node"] }
+  };
 };

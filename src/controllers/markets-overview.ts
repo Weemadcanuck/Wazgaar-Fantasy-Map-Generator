@@ -48,7 +48,7 @@ const columns: EditorColumn<MarketRow>[] = [
   { key: "market", label: "Market", width: "7em", permanent: true, sortBy: row => row.name, sortType: "alpha" },
   { key: "owner", label: "Owner", width: "7em", sortBy: row => row.owner, sortType: "alpha" },
   { key: "cells", label: "Cells", width: "4em", sortBy: row => row.cells },
-  { key: "burgs", label: "Burgs", width: "4em", sortBy: row => row.burgs },
+  { key: "burgs", label: "Settlements", width: "4em", sortBy: row => row.burgs },
   { key: "stock", label: "Stock", width: "5em", sortBy: row => row.stock },
   { key: "sales", label: "Sales", width: "5em", sortBy: row => row.sales },
   { key: "buys", label: "Buys", width: "5em", sortBy: row => row.buys },
@@ -100,7 +100,7 @@ function renderDialog(): void {
         <button id="marketsOverviewCompare" data-tip="Compare good stock across markets" class="icon-chart-bar"></button>
         <button id="marketsOverviewExport" data-tip="Save markets data as a CSV file" class="icon-download"></button>
         <button id="marketsManually" data-tip="Manually re-assign market territories" class="icon-brush"></button>
-        <button id="marketsAdd" data-tip="Add a new market. Click on a burg on the map. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="marketsAdd" data-tip="Add a new market. Click a settlement on the map. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="marketsRegenerate" data-tip="Regenerate markets and their territories" class="icon-arrows-cw"></button>
         <button id="marketsRegenerateProduction" data-tip="Regenerate production and trade deals" class="icon-retweet"></button>
       </div>
@@ -230,9 +230,9 @@ function renderMarketRow(
   return /*html*/ `<div class="states market" data-id="${market.i}">
     <div data-col="color"><fill-box fill="${market.color}"></fill-box></div>
     <div data-col="market" data-tip="Market name. Click to view details" class="marketName">${name}</div>
-    <div data-col="owner" data-tip="Owning state" class="marketOwner">${owner}</div>
+    <div data-col="owner" data-tip="Owning polity" class="marketOwner">${owner}</div>
     <div data-col="cells" data-tip="Number of cells in market territory" class="marketCells">${format("cells", cells)}</div>
-    <div data-col="burgs" data-tip="Number of burgs in market territory" class="marketBurgs">${format("burgs", burgs)}</div>
+    <div data-col="burgs" data-tip="Number of settlements in market territory" class="marketBurgs">${format("burgs", burgs)}</div>
     <div data-col="stock" data-tip="Total stock of all goods in this market" class="marketStock">${format("stock", stock)}</div>
     <div data-col="sales" data-tip="Total gross sales revenue" class="marketSales">${format("sales", sales, true)}</div>
     <div data-col="buys" data-tip="Total purchase spending" class="marketBuysCol">${format("buys", buys, true)}</div>
@@ -270,10 +270,10 @@ function renderNoMarketRow(
   const burgs = getMarketBurgs(0);
   return /*html*/ `<div class="states market" data-id="0">
     <div data-col="color"><fill-box fill="none" data-tip="Cells assigned to no market"></fill-box></div>
-    <div data-col="market" data-tip="Cells with no market; their burgs are excluded from production" class="marketName">No market</div>
+    <div data-col="market" data-tip="Cells with no market; their settlements are excluded from production" class="marketName">No market</div>
     <div data-col="owner" class="marketOwner">—</div>
     <div data-col="cells" data-tip="Number of cells with no market" class="marketCells">${format("cells", cells)}</div>
-    <div data-col="burgs" data-tip="Number of burgs with no market" class="marketBurgs">${format("burgs", burgs)}</div>
+    <div data-col="burgs" data-tip="Number of settlements with no market" class="marketBurgs">${format("burgs", burgs)}</div>
     <div data-col="stock" class="marketStock">—</div>
     <div data-col="sales" class="marketSales">—</div>
     <div data-col="buys" class="marketBuysCol">—</div>

@@ -6,6 +6,7 @@ import { drawCells } from "@/renderers/draw-cells";
 import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
 import { drawCultures } from "@/renderers/draw-cultures";
+import { drawCustomPoints } from "@/renderers/draw-custom-points";
 import { drawEmblems, removeEmblems } from "@/renderers/draw-emblems";
 import { drawGoods, removeGoods } from "@/renderers/draw-goods";
 import { drawGrid } from "@/renderers/draw-grid";
@@ -397,6 +398,7 @@ const mapLayers = [
   }),
   new Layer({ id: "military", element: "armies", parent: "viewbox", draw: drawMilitary }),
   new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
+  new Layer({ id: "customPoints", parent: "viewbox", permanent: true, draw: drawCustomPoints }),
   new Layer({ id: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, permanent: true, draw: drawFogging }),
   new Layer({ id: "journeys", parent: "viewbox", draw: drawJourneys }),
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),

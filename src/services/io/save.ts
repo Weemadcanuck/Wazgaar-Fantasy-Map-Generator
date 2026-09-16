@@ -1,3 +1,5 @@
+import { serializeForkData } from "./fork-data";
+import { serializeReliefData } from "./relief-data";
 // Save the whole .map project to storage, machine or cloud
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
@@ -8,7 +10,7 @@ import { GraphOverride } from "@/generators/graph-override";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";
-import { VERSION } from "@/services/versioning";
+import { MAP_VERSION, VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
 type Writer = (mapData: string, filename: string) => void | Promise<void>;
@@ -53,7 +55,7 @@ function prepareMapData(): string {
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
   const params = [
-    VERSION,
+    MAP_VERSION,
     license,
     dateString,
     options.map.seed,
@@ -107,7 +109,7 @@ function prepareMapData(): string {
   const religions = JSON.stringify(pack.religions);
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);
-  const relief = JSON.stringify(pack.relief || []);
+  const relief = serializeReliefData(pack.relief);
   const markers = JSON.stringify(pack.markers);
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);
@@ -192,7 +194,8 @@ function prepareMapData(): string {
     relief,
     layers,
     graphOverride,
-    journeys
+    journeys,
+    serializeForkData(pack, VERSION)
   ].join("\r\n");
   return mapData;
 }

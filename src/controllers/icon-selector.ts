@@ -120,6 +120,11 @@ function getUsedImages(): Set<string> {
   }
   for (const marker of pack.markers || []) if (isImageIcon(marker.icon)) images.add(marker.icon);
 
+  for (const layer of pack.customLayers || []) {
+    if (isImageIcon(layer.icon)) images.add(layer.icon);
+    for (const point of layer.entities) if (point.icon && isImageIcon(point.icon)) images.add(point.icon);
+  }
+
   return images;
 }
 

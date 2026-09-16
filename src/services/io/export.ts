@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
+import { renderReliefForExport } from "@/renderers/draw-relief-icons";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
@@ -367,6 +368,11 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
         });
       }
     }
+
+    renderReliefForExport(
+      cloneEl,
+      fullMap ? { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity } : undefined
+    );
 
     // add relief icons
     if (cloneEl.getElementById("terrain")) {

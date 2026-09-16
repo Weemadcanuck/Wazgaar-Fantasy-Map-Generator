@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
+vi.mock("@/renderers/draw-custom-points", () => ({ resizeCustomPoints: vi.fn() }));
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/renderers/viewport/viewport-renderer", () => ({
-  ViewportLayers: { schedule: vi.fn(), renderNow: vi.fn() }
+  ViewportLayers: { schedule: vi.fn(), flush: vi.fn() }
 }));
 
 import "@/generators/styles";
@@ -44,7 +46,7 @@ beforeEach(() => {
   );
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.mocked(ViewportLayers.schedule).mockClear();
-  vi.mocked(ViewportLayers.renderNow).mockClear();
+  vi.mocked(ViewportLayers.flush).mockClear();
   applyZoomBehavior();
 });
 
@@ -107,7 +109,7 @@ describe("viewport redraw during zoom", () => {
     setMapZoom(4);
 
     expect(ViewportLayers.schedule).toHaveBeenCalledTimes(1);
-    expect(ViewportLayers.renderNow).toHaveBeenCalledTimes(1);
+    expect(ViewportLayers.flush).toHaveBeenCalledTimes(1);
   });
 
   it("skips the per-frame redraw when set to redraw after the zoom only", () => {
@@ -115,7 +117,7 @@ describe("viewport redraw during zoom", () => {
     setMapZoom(4);
 
     expect(ViewportLayers.schedule).not.toHaveBeenCalled();
-    expect(ViewportLayers.renderNow).toHaveBeenCalledTimes(1);
+    expect(ViewportLayers.flush).toHaveBeenCalledTimes(1);
   });
 });
 

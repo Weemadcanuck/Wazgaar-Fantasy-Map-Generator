@@ -1,6 +1,7 @@
 import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
 import { setViewportTransform, viewport } from "@/components/viewport";
+import { resizeCustomPoints } from "@/renderers/draw-custom-points";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -58,6 +59,7 @@ function handleZoomPerFrame(): void {
 
   if (didPositionChange) Layers.draw("coordinates");
 
+  resizeCustomPoints();
   window.updateMinimap?.();
   redrawTracedImage();
   if (options.app.performance.viewportRedraw === "continuous") ViewportLayers.schedule();
@@ -98,7 +100,7 @@ function applyLabelsZoomSize(): void {
 
 export function invokeActiveZooming(): void {
   if (options.map.labels.resizeOnZoom) applyLabelsZoomSize();
-  ViewportLayers.renderNow();
+  ViewportLayers.flush();
 
   if (!customization && options.app.performance.stateHalos) {
     const statesHalo = select("#statesHalo");

@@ -1,3 +1,4 @@
+import "@/generators/custom-layers";
 import "./options-model";
 import "./app-info";
 import "./tooltips";

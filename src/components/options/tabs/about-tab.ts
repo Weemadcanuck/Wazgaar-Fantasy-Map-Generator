@@ -1,8 +1,11 @@
 // About tab: credits, links and the supporters list
 import { alertDialog } from "@/components/dialog/dialog-helpers";
+import { VERSION } from "@/services/versioning";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
+<p><strong>Azgaar Obsidian Fork</strong><br />Version ID: <strong id="aboutVersion">${VERSION}</strong></p>
+${window.electron ? '<button id="quitFork">Quit Azgaar Obsidian Fork</button>' : ""}
   <div class="aboutActions">
     <button
       id="startTourButton"
@@ -162,3 +165,5 @@ declare global {
   }
 }
 window.showSupporters = showSupporters;
+
+document.getElementById("quitFork")?.addEventListener("click", () => window.electron?.requestQuit());

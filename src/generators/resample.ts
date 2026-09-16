@@ -444,6 +444,17 @@ class Resampler {
     if (dropped) WARN && console.warn(`Resample: dropped ${dropped} journey segment(s) outside the new map`);
   }
 
+  private restoreCustomLayers(parentMap: ParentMapDefinition, projection: (x: number, y: number) => [number, number]) {
+    pack.customLayers = (parentMap.pack.customLayers ?? []).map(layer => ({
+      ...layer,
+      entities: layer.entities.flatMap(entity => {
+        const [x, y] = projection(entity.x, entity.y);
+        if (!this.isInMap(x, y)) return [];
+        return [{ ...entity, x: rn(x, 2), y: rn(y, 2), cell: Pack.findCell(x, y, Infinity)! }];
+      })
+    }));
+  }
+
   process(config: ResamplerProcessOptions): void {
     const { projection, inverse, scale } = config;
     const parentMap = {
@@ -482,6 +493,7 @@ class Resampler {
     this.restoreFeatureDetails(parentMap, inverse);
     this.restoreMarkers(parentMap, projection);
     this.restoreZones(parentMap, projection, scale);
+    this.restoreCustomLayers(parentMap, projection);
     this.restoreJourneys(parentMap, projection);
     this.restoreEconomy(parentMap);
     for (const state of pack.states) {

@@ -533,7 +533,7 @@ async function regenerateErasedData(): Promise<void> {
   pack.states = [];
   pack.provinces = [];
   pack.religions = [];
-  pack.relief = [];
+  delete (pack as Partial<typeof pack>).relief;
 
   const erosionAllowed = options.app.heightmapEditor.allowErosion;
   await ErasePipeline.run({ erosion: erosionAllowed });

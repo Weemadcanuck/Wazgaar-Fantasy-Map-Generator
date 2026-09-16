@@ -1,9 +1,11 @@
 // Tools tab: buttons dispatch the same commands as global search.
 import { MAP_COMMANDS } from "@/components/map-commands";
 import { tip } from "@/components/tooltips";
-import { ensureEl } from "@/utils";
+import { capturePerformance } from "@/controllers/performance-diagnostics";
+import { downloadFile, ensureEl } from "@/utils";
 
 const TEMPLATE = /* html */ `
+<div class="separator">Obsidian Fork</div><div class="grid"><button id="forkCustomLayers">Custom layers</button><button id="forkArchiveExport">Obsidian export</button><button id="forkLegacyNotes" data-tip="Download the original notes retained during migration">Original notes backup</button><button id="forkPerformance">Record performance</button></div>
   <div class="separator">Edit</div>
   <div class="grid">
     <button id="editBiomesButton" data-tip="Click to open Biomes Editor" data-shortcut="Shift + B">
@@ -229,4 +231,13 @@ ensureEl("toolsContent").addEventListener("click", event => {
   if (!["BUTTON", "I"].includes(event.target.tagName)) return;
   const command = MAP_COMMANDS.find(command => command.id === (event.target as HTMLElement).id);
   if (command) void command.run(event);
+});
+
+ensureEl("forkCustomLayers").addEventListener("click", () => void Controllers.CustomLayersEditor.open());
+ensureEl("forkArchiveExport").addEventListener("click", () => void Services.ArchiveExport.openConfiguration());
+ensureEl("forkPerformance").addEventListener("click", capturePerformance);
+
+ensureEl("forkLegacyNotes").addEventListener("click", () => {
+  if (!pack.archiveLegacyNotes?.length) return tip("This map has no legacy notes backup", false, "warn");
+  downloadFile(JSON.stringify(pack.archiveLegacyNotes, null, 2), "original-map-notes.json");
 });

@@ -53,11 +53,11 @@ function renderDialog(): void {
     <p><b>Depth:</b> <span id="infoDepth">0</span></p>
     <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
     <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
-    <p><b>State:</b> <span id="infoState">n/a</span></p>
+    <p><b>Polity:</b> <span id="infoState">n/a</span></p>
     <p><b>Province:</b> <span id="infoProvince">n/a</span></p>
     <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
     <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
-    <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
+    <p><b>Settlement:</b> <span id="infoBurg">n/a</span></p>
     <p><b>Good:</b> <span id="infoGood">n/a</span></p>
     <p><b>Market:</b> <span id="infoMarket">n/a</span></p>
     <p><b>Cell Production:</b> <span id="infoCellProduction">n/a</span></p>

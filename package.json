@@ -1,7 +1,7 @@
 {
-  "name": "fantasy-map-generator",
-  "productName": "Fantasy Map Generator",
-  "version": "1.153.0",
+  "name": "azgaar-obsidian-fork",
+  "productName": "Azgaar Obsidian Fork",
+  "version": "1.154.0",
   "description": "Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.",
   "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator#readme",
   "bugs": {
@@ -25,7 +25,9 @@
     "lint": "biome check --write",
     "sync-version": "node scripts/sync-version.js",
     "stamp-assets": "node scripts/stamp-assets.js",
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "test:electron": "vitest --config vitest.electron.config.ts",
+    "export:archive": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/export-archive.mjs"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint && node scripts/sync-version.js --stage && node scripts/stamp-assets.js --stage"

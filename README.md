@@ -1,3 +1,70 @@
+# Azgaar Obsidian Fork
+
+An Obsidian-oriented fork of Azgaar’s Fantasy Map Generator. The app displays its version in the About tab and information popup. Desktop releases retain the earlier archival-fork installation and storage identifiers for compatibility.
+
+## Maintainer overview
+
+This fork adds Obsidian reference export, editable custom point layers, and relief rendering improvements. It is a fork for review, not an official upstream release. Upstream credits and licensing remain below.
+
+| Area | Start here | Responsibility |
+| --- | --- | --- |
+| Obsidian export | `src/services/io/archive-export.ts` | Pure Markdown/manifest plan; profiles and download UI sit alongside it. |
+| Desktop writes | `electron/archive-export-writer.ts` | Preview conflicts, preserve author edits, write the manifest last. IPC stays in `archive-export-ipc.ts`. |
+| Custom layers | `src/generators/custom-layers.ts` | Serializable `pack.customLayers`; editor and renderer are `custom-layers-editor.ts` and `draw-custom-points.ts`. |
+| Relief | `src/renderers/draw-relief-icons.ts` | SVG reconciliation, editor/export boundary, raster lifecycle. |
+| Tile cache | `src/renderers/relief/` | Sequential tile generation, bounded reuse, and clipped mixed coverage. |
+| Viewport | `src/renderers/viewport/viewport-renderer.ts` | Independent per-layer invalidation and viewport scheduling. |
+
+### Upstream integration (1.154.0)
+
+The supplied upstream snapshot identifies itself as 1.153.0 in source and package metadata, despite its folder name. The fork app is 1.154.0; `.map` headers use the upstream format version, 1.153.0. Keep these version numbers separate.
+
+Journeys retain upstream slot 52. Slot 53 contains a labelled, versioned Obsidian extension for custom layers, the Archive world ID, and original legacy notes. `src/services/io/fork-data.ts` recognizes older fork saves and selects their real upstream migration baseline, 1.149.2. Original notes are retained because upstream cannot attach every old regiment note to an entity; Tools > Original notes backup downloads them.
+
+Test with copies of existing maps. New saves are not compatible with the older Obsidian fork. The integration keeps upstream settings, notes, journeys and UI changes alongside the fork features.
+
+### Relief rules worth preserving
+
+- `pack.relief` remains editable source data. Runtime IDs, clip paths and tiles are transient. Missing relief and intentionally empty relief are distinct.
+- Distant views (scale ≤ 2) use cached raster tiles; close views and editing use SVG. Exports rebuild full-detail vectors from source data.
+- While a view warms, cached tiles stay visible and SVG covers missing regions. Publish the completed batch together: updating clipping after each tile was measured to slow loading.
+- Unchanged tiles survive zoom and layer toggles. Edits, replacement maps/roots and display-density changes invalidate them. Sharper tiles can satisfy lower-resolution requests.
+- The cache is capped at 128 MiB of estimated decoded pixels, not total process memory. Old tiles can be evicted. Cold views and very large icons still take time to load.
+- The loading badge explains this wait. Tools → Record performance is opt-in and bounded. For diagnosis, set localStorage `reliefRasterPrototype` to `off` and reload for SVG only; the old key is retained for compatibility.
+
+### Build and checks
+
+Use Node.js 24 and run commands from the extracted source root:
+
+```sh
+npm ci
+npm test -- --run
+npm run test:electron -- --run
+npx biome check src electron
+node scripts/sync-version.js --check
+node scripts/stamp-assets.js --check
+npm run build
+npm run electron -- build
+```
+
+`npm run dev` starts the browser version; `npm run electron` starts the desktop version. `npm run electron -- dist --win --publish never` builds a Windows installer. Playwright is a separate, explicitly run check (`npm run test:e2e`).
+
+Version comes from `src/services/versioning.ts`; run `npm run sync-version` after changing it. Keep the legacy desktop app ID, origin and profile directory stable: they preserve installed settings and local maps despite the new display name.
+
+### Validation and limits
+
+Integration verification: 1,279 application tests, 17 desktop tests and 52 script tests passed, along with lint, version/asset checks and web/desktop builds. An isolated Electron session loaded and resaved the supplied Jotun map, then reloaded it: all 12,032 relief icons, the custom layer, world ID and 226 original notes matched the source exactly. Installed performance and visual export checks remain for user validation.
+
+Relief was manually checked for warm navigation, mixed coverage, editing, save/reload, SVG/PNG exports, and off/on reuse. Large-map cold loading remains a known cost. The completely empty save/reload case is unit-tested; the supplied sparse manual fixture still had 50 icons. Those manual checks apply to the previous stable fork. The integration candidate requires a fresh installed-app check. Automated migration checks cover legacy fork data and coexistence of journeys and custom layers. Playwright and other operating systems were not exercised in this review.
+
+Obsidian export is one-way generated reference output, not bidirectional vault synchronization. Removed notes remain on disk for review. Writes are atomic per file, not a transaction across the folder; a disk failure can leave partial output before the manifest is committed. See `docs/architecture/archive-integration.md` for ownership and identity rules.
+
+For upstream review, split relief/scheduling, Obsidian export, custom layers, and branding into focused proposals as required by `CONTRIBUTING.md`. This checkout began as a source snapshot with an exporter already present; it has no configured upstream remote or verified pristine upstream base. Establish that base before preparing mergeable PRs.
+
+A sharing folder should contain the Windows installer, this README, and a source ZIP. The ZIP includes source, tests, build configuration and licenses; it excludes dependencies, old builds, private recordings, local work, and internal performance planning notes. Extract it before following source links or running commands.
+
+## Upstream project
+
 # Fantasy Map Generator
 
 Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.

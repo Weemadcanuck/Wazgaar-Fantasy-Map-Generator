@@ -4,6 +4,7 @@ import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import { Population } from "@/generators/population-generator";
 import type { GridGraph } from "@/types/GridGraph";
 import { Coordinates } from "./coordinates";
+import { CustomLayers } from "./custom-layers";
 
 const generationPipelineSteps = [
   { id: "grid", run: ({ graph }) => Grid.prepare(graph) },
@@ -49,6 +50,7 @@ const generationPipelineSteps = [
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
+  { id: "customLayers", run: () => CustomLayers.initiate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
   { id: "journeys", run: () => Journeys.generate() }
 ] as const satisfies PipelineStep<string, GenerationContext>[];

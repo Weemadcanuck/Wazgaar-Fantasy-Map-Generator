@@ -32,3 +32,6 @@ jobs:
 
       - name: Run script tests
         run: npm run test:scripts
+
+      - name: Run desktop tests
+        run: npm run test:electron -- --run

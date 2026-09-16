@@ -68,6 +68,9 @@ function getMinimalDataJson(): string {
     routes: pack.routes,
     zones: pack.zones,
     measurers: pack.measurers,
+    customLayers: pack.customLayers ?? [],
+    archiveWorldId: pack.archiveWorldId,
+    archiveLegacyNotes: pack.archiveLegacyNotes,
     journeys: pack.journeys
   };
   return JSON.stringify({
@@ -194,6 +197,9 @@ function getPackCellsData() {
     routes: pack.routes,
     zones: pack.zones,
     measurers: pack.measurers,
+    customLayers: pack.customLayers ?? [],
+    archiveWorldId: pack.archiveWorldId,
+    archiveLegacyNotes: pack.archiveLegacyNotes,
     journeys: pack.journeys
   };
 }

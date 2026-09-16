@@ -10,14 +10,24 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
+import { CustomLayers } from "@/generators/custom-layers";
 import { GraphOverride } from "@/generators/graph-override";
 import { onLegendClick } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
-import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
+import {
+  clearCache,
+  compareVersions,
+  isValidVersion,
+  MAP_VERSION,
+  parseMapVersion,
+  VERSION
+} from "@/services/versioning";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
+import { readForkData } from "./fork-data";
+import { restoreReliefData } from "./relief-data";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -148,16 +158,22 @@ function uploadMap(file: Blob, callback?: () => void): void {
     const isInvalid = !mapData || !isValidVersion(mapVersion!) || mapData.length < 10 || !mapData[5];
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
 
-    const isUpdated = compareVersions(mapVersion!, VERSION).isEqual;
+    let schemaVersion: string;
+    try {
+      schemaVersion = readForkData(mapData, mapVersion!).migrationVersion;
+    } catch {
+      return showUploadMessage("invalid", mapData, mapVersion);
+    }
+    const isUpdated = compareVersions(schemaVersion, MAP_VERSION).isEqual;
     if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
 
     const isAncient = compareVersions(mapVersion!, "0.70.0").isOlder;
     if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
 
-    const isNewer = compareVersions(mapVersion!, VERSION).isNewer;
+    const isNewer = compareVersions(schemaVersion, MAP_VERSION).isNewer;
     if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
 
-    const isOutdated = compareVersions(mapVersion!, VERSION).isOlder;
+    const isOutdated = compareVersions(schemaVersion, MAP_VERSION).isOlder;
     if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
@@ -257,7 +273,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     customization = 0;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
-    migrateLegacySettings(mapVersion!, data);
+    const fork = readForkData(data, mapVersion!);
+    mapVersion = fork.migrationVersion;
+    migrateLegacySettings(mapVersion, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
@@ -359,8 +377,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
-    pack.relief = data[49] ? JSON.parse(data[49]) : [];
-    pack.journeys = data[52] ? JSON.parse(data[52]) : [];
+    restoreReliefData(pack, data[49]);
+    pack.journeys = fork.journeys;
+    pack.customLayers = fork.customLayers;
+    pack.archiveWorldId = fork.archiveWorldId;
+    pack.archiveLegacyNotes = fork.legacyNotes;
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -386,6 +407,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     if (data[50]) Layers.restore(JSON.parse(data[50]));
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
+    CustomLayers.restore(pack.customLayers ?? []);
 
     Goods.sync();
     Markets.sync();

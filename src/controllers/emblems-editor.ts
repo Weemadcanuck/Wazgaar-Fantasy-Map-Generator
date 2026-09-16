@@ -84,16 +84,16 @@ function renderDialog(): void {
           <b id="emblemArmiger"></b>
         </div>
         <hr />
-        <div data-tip="Select state">
-          <div class="label">State:</div>
+        <div data-tip="Select polity">
+          <div class="label">Polity:</div>
           <select id="emblemStates"></select>
         </div>
-        <div data-tip="Select province in state">
+        <div data-tip="Select province in polity">
           <div class="label">Province:</div>
           <select id="emblemProvinces"></select>
         </div>
-        <div data-tip="Select burg in province or state">
-          <div class="label">Burg:</div>
+        <div data-tip="Select settlement in province or polity">
+          <div class="label">Settlement:</div>
           <select id="emblemBurgs"></select>
         </div>
         <hr />
@@ -585,7 +585,7 @@ async function downloadGallery(): Promise<void> {
 
   const back = `<a href="javascript:history.back()">Go Back</a>`;
 
-  const stateSection = `<div><h2>States</h2>${validStates
+  const stateSection = `<div><h2>Polities</h2>${validStates
     .map(state => {
       const el = document.getElementById(`stateCOA${state.i}`)!;
       return `<figure id="state_${state.i}"><a href="#provinces_${state.i}"><figcaption>${state.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;

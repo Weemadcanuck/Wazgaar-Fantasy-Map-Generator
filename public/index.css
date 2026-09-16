@@ -1,4 +1,5 @@
 :root {
+  --ui-font: "Spectral", Georgia, serif;
   --monospace: Consolas, monospace;
   --serif: Georgia, serif;
   --sans-serif: Helvetica, Arial, sans-serif;
@@ -155,7 +156,7 @@ a {
 }
 
 #temperature {
-  font-family: var(--sans-serif);
+  font-family: var(--ui-font);
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
@@ -198,7 +199,7 @@ t,
   text-shadow: 0 0 4px #000;
   dominant-baseline: central;
   text-anchor: middle;
-  font-family: var(--sans-serif);
+  font-family: var(--ui-font);
   fill-opacity: 1;
 }
 
@@ -291,7 +292,7 @@ i.icon-lock {
 
 .chartInfo {
   text-align: center;
-  font-family: var(--sans-serif);
+  font-family: var(--ui-font);
   font-style: italic;
   font-size: 12px;
 }
@@ -436,7 +437,7 @@ button.ui-button:disabled:hover {
 
 div.tab > button#optionsHide {
   width: auto;
-  font-family: var(--sans-serif);
+  font-family: var(--ui-font);
   padding: 0.6em 0.45em;
 }
 
@@ -1842,7 +1843,7 @@ div.editorLine {
   fill: #f8ffff;
   font-size: 12px;
   font-weight: bold;
-  font-family: var(--sans-serif);
+  font-family: var(--ui-font);
   cursor: move !important;
 }
 
@@ -1855,7 +1856,7 @@ div.editorLine {
 #pickerCloseText {
   fill: #f8ffff;
   font-size: 10px;
-  font-family: var(--sans-serif);
+  font-family: var(--ui-font);
   pointer-events: none;
 }
 
@@ -2381,7 +2382,7 @@ svg.button {
 #promptText {
   padding: 0 0 0.6em 0;
   font-weight: bold;
-  font-family: var(--sans-serif);
+  font-family: var(--ui-font);
 }
 
 #mapOverlay {
@@ -2736,4 +2737,75 @@ body.tour-free-roam * {
     animation: none;
     transition: none;
   }
+}
+
+.custom-layers-toolbar,
+.custom-layer-summary,
+.custom-point-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+}
+
+.custom-layers-toolbar select {
+  flex: 1;
+}
+
+.custom-layer-summary {
+  padding: 0.6em 0;
+  border-bottom: 1px solid #bbb;
+}
+
+.custom-layer-summary > span:nth-child(2) {
+  flex: 1;
+}
+
+.custom-layer-swatch,
+.custom-point-icon {
+  font-size: 1.25em;
+  font-weight: bold;
+}
+
+#customPointsBody {
+  max-height: 24em;
+  overflow-y: auto;
+}
+
+.custom-point-row {
+  padding: 0.3em;
+  border-bottom: 1px solid #ddd;
+}
+
+.custom-point-row:hover {
+  background: #eee;
+}
+
+.custom-point-name {
+  flex: 1;
+}
+
+.custom-point-authority,
+.custom-point-id {
+  color: #666;
+  font-style: italic;
+}
+
+.custom-layers-empty {
+  padding: 1em;
+  text-align: center;
+  color: #666;
+}
+
+.custom-point-fields input:not([type="checkbox"]) {
+  width: 18em;
+}
+
+#toolsContent > .archive-tool-action-select {
+  width: calc(100% - 0.24em);
+  height: auto;
+  padding: 0.35em 0.5em;
+  margin: 0.16em 0.12em;
+  border: 0;
+  background-color: var(--bg-lighter);
+  color: inherit;
 }

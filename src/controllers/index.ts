@@ -14,6 +14,7 @@ export const Controllers = createRegistry({
   ColorPicker: () => import("@/controllers/color-picker").then(m => m.ColorPicker),
   ComparePrices: () => import("@/controllers/compare-prices").then(m => m.ComparePrices),
   CulturesEditor: () => import("@/controllers/cultures-editor").then(m => m.CulturesEditor),
+  CustomLayersEditor: () => import("@/controllers/custom-layers-editor").then(m => m.CustomLayersEditor),
   DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),
   DistributionEditor: () => import("@/controllers/goods-distribution-editor").then(m => m.DistributionEditor),
   ElevationProfile: () => import("@/controllers/elevation-profile").then(m => m.ElevationProfile),

@@ -96,7 +96,7 @@ function renderDialog(): void {
         />
         <span
           id="marketOverviewNameReset"
-          data-tip="Reset to the default name (center burg name)"
+          data-tip="Reset to the default name (center settlement name)"
           class="icon-ccw pointer"
           style="margin-left: 0.3em"
         ></span>
@@ -108,7 +108,7 @@ function renderDialog(): void {
         ${Notes.getButton("marketOverviewLegend", "this market")}
         <button
           id="marketOverviewRelocate"
-          data-tip="Relocate market. Click on a burg on the map to move the market center"
+          data-tip="Relocate market. Click a settlement on the map to move the market center"
           class="icon-map-pin"
         ></button>
         <button id="marketOverviewExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>

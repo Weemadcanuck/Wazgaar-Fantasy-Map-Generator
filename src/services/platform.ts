@@ -1,5 +1,8 @@
+import type { ArchiveDirectoryRequest, ArchiveDirectoryResult } from "@/types/archive-export-ipc";
 export type ElectronBridge = {
   isElectron: true;
+  requestQuit: () => void;
+  archiveExport: { writeDirectory: (request: ArchiveDirectoryRequest) => Promise<ArchiveDirectoryResult> };
   platform: string;
   versions: { electron: string; chrome: string; node: string };
 };
