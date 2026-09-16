@@ -1,5 +1,11 @@
 import { select } from "d3";
-import { closeDialogs, confirmationDialog, refreshEditors, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  refreshEditors,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -9,11 +15,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
+import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { ColorPicker } from "@/controllers/color-picker";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
@@ -40,7 +48,7 @@ const columns: EditorColumn<MarketRow>[] = [
   { key: "market", label: "Market", width: "7em", permanent: true, sortBy: row => row.name, sortType: "alpha" },
   { key: "owner", label: "Owner", width: "7em", sortBy: row => row.owner, sortType: "alpha" },
   { key: "cells", label: "Cells", width: "4em", sortBy: row => row.cells },
-  { key: "burgs", label: "Settlements", width: "4em", sortBy: row => row.burgs },
+  { key: "burgs", label: "Burgs", width: "4em", sortBy: row => row.burgs },
   { key: "stock", label: "Stock", width: "5em", sortBy: row => row.stock },
   { key: "sales", label: "Sales", width: "5em", sortBy: row => row.sales },
   { key: "buys", label: "Buys", width: "5em", sortBy: row => row.buys },
@@ -52,7 +60,8 @@ const columns: EditorColumn<MarketRow>[] = [
     defaultSort: "desc",
     tip: "Market value: net trading flow plus unsold inventory value minus tax. Click to sort"
   },
-  { key: "actions", width: "1.4em", permanent: true, align: "right" }
+  { key: "note", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpdate: renderMarketsPage });
@@ -75,7 +84,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("marketsOverview")?.remove();
+  destroyDialog("marketsOverview");
   const editorHtml = /* html */ `<div id="marketsOverview" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
@@ -91,7 +100,7 @@ function renderDialog(): void {
         <button id="marketsOverviewCompare" data-tip="Compare good stock across markets" class="icon-chart-bar"></button>
         <button id="marketsOverviewExport" data-tip="Save markets data as a CSV file" class="icon-download"></button>
         <button id="marketsManually" data-tip="Manually re-assign market territories" class="icon-brush"></button>
-        <button id="marketsAdd" data-tip="Add a new market. Click a settlement on the map. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="marketsAdd" data-tip="Add a new market. Click on a burg on the map. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="marketsRegenerate" data-tip="Regenerate markets and their territories" class="icon-arrows-cw"></button>
         <button id="marketsRegenerateProduction" data-tip="Regenerate production and trade deals" class="icon-retweet"></button>
       </div>
@@ -124,6 +133,12 @@ function renderDialog(): void {
       const marketId = row ? +row.dataset.id! : 0;
       // marketId 0 is the "No market" row — it has no color to edit
       if (marketId) marketChangeFill(fillBox, marketId);
+      return;
+    }
+
+    if (target.classList.contains("icon-book")) {
+      const row = target.closest<HTMLElement>(".states.market");
+      if (row) void Controllers.NotesEditor.open({ type: "market", id: +row.dataset.id! });
       return;
     }
 
@@ -215,14 +230,15 @@ function renderMarketRow(
   return /*html*/ `<div class="states market" data-id="${market.i}">
     <div data-col="color"><fill-box fill="${market.color}"></fill-box></div>
     <div data-col="market" data-tip="Market name. Click to view details" class="marketName">${name}</div>
-    <div data-col="owner" data-tip="Owning polity" class="marketOwner">${owner}</div>
+    <div data-col="owner" data-tip="Owning state" class="marketOwner">${owner}</div>
     <div data-col="cells" data-tip="Number of cells in market territory" class="marketCells">${format("cells", cells)}</div>
-    <div data-col="burgs" data-tip="Number of settlements in market territory" class="marketBurgs">${format("burgs", burgs)}</div>
+    <div data-col="burgs" data-tip="Number of burgs in market territory" class="marketBurgs">${format("burgs", burgs)}</div>
     <div data-col="stock" data-tip="Total stock of all goods in this market" class="marketStock">${format("stock", stock)}</div>
     <div data-col="sales" data-tip="Total gross sales revenue" class="marketSales">${format("sales", sales, true)}</div>
     <div data-col="buys" data-tip="Total purchase spending" class="marketBuysCol">${format("buys", buys, true)}</div>
     <div data-col="value" data-tip="Market value: net trading flow plus unsold inventory value minus tax" class="marketValue">${format("value", value, true)}</div>
-    <div data-col="actions"><span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span></div>
+    ${Notes.getIcon("this market")}
+    <span data-col="remove" data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
   </div>`;
 }
 
@@ -254,15 +270,16 @@ function renderNoMarketRow(
   const burgs = getMarketBurgs(0);
   return /*html*/ `<div class="states market" data-id="0">
     <div data-col="color"><fill-box fill="none" data-tip="Cells assigned to no market"></fill-box></div>
-    <div data-col="market" data-tip="Cells with no market; their settlements are excluded from production" class="marketName">No market</div>
+    <div data-col="market" data-tip="Cells with no market; their burgs are excluded from production" class="marketName">No market</div>
     <div data-col="owner" class="marketOwner">—</div>
     <div data-col="cells" data-tip="Number of cells with no market" class="marketCells">${format("cells", cells)}</div>
-    <div data-col="burgs" data-tip="Number of settlements with no market" class="marketBurgs">${format("burgs", burgs)}</div>
+    <div data-col="burgs" data-tip="Number of burgs with no market" class="marketBurgs">${format("burgs", burgs)}</div>
     <div data-col="stock" class="marketStock">—</div>
     <div data-col="sales" class="marketSales">—</div>
     <div data-col="buys" class="marketBuysCol">—</div>
     <div data-col="value" class="marketValue">—</div>
-    <div data-col="actions"></div>
+        <div data-col="note"></div>
+        <div data-col="remove"></div>
   </div>`;
 }
 
@@ -467,8 +484,9 @@ function downloadMarketsCsv(): void {
 
 function closeMarketsOverview(): void {
   if (customization === 16) exitAddMarketMode();
+  ColorPicker.close();
   $("#marketsOverview").dialog("destroy");
   ensureEl("marketsOverview").remove();
 }
 
-export const MarketsOverview = { open };
+export const MarketsOverview = { open, exportCsv: downloadMarketsCsv };

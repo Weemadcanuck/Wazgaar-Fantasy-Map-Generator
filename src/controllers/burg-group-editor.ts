@@ -14,7 +14,7 @@ function editBurgGroups(): void {
   addRows();
 
   $("#burgGroupsEditor").dialog({
-    title: "Configure Settlement groups",
+    title: "Configure Burg groups",
     resizable: false,
     position: { my: "center", at: "center", of: "svg" },
     close: closeBurgGroupsEditor,
@@ -23,7 +23,7 @@ function editBurgGroups(): void {
         ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
       },
       Add: () => {
-        const maxOrder = Math.max(0, ...options.burgs.groups.map(({ order }) => order));
+        const maxOrder = Math.max(0, ...options.map.burgs.groups.map(({ order }) => order));
         const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
         ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
       },
@@ -48,16 +48,16 @@ function renderDialog(): void {
           <tr>
             <th data-tip="Rendering order: higher values are rendered on top">Order</th>
             <th data-tip="Type group name">Name</th>
-            <th data-tip="Settlement preview generator">Preview generator</th>
+            <th data-tip="Burg preview generator">Preview generator</th>
             <th data-tip="Set min and max population constraint in population points (see the multiplier in Units Editor)" colspan="3">Population</th>
             <th data-tip="Select allowed biomes">Biomes</th>
-            <th data-tip="Select allowed polities">Polities</th>
+            <th data-tip="Select allowed states">States</th>
             <th data-tip="Select allowed cultures">Cultures</th>
             <th data-tip="Select allowed religions">Religions</th>
             <th data-tip="Select allowed features">Features</th>
-            <th data-tip="Number of settlements in group">Count</th>
+            <th data-tip="Number of burgs in group">Count</th>
             <th data-tip="Activate/deactivate group">Active</th>
-            <th data-tip="Select the group assigned when a settlement does not meet other group criteria">
+            <th data-tip="Select group to be assigned if burg doesn't pass the criteria for other groups">
               Default
             </th>
           </tr>
@@ -66,8 +66,8 @@ function renderDialog(): void {
       </table>
     </form>
     <div style="padding: 0.5em 0; font-style: italic;">
-      Settlement population is calculated as <code style="font-size: smaller;">value * population_point * urbanization_rate</code>, see the <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">Units Editor</a>.
-      <br>Applying changes reclassifies settlements, but label groups are not affected. Reconcile label groups in <a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">Label Group Configurator</a>.
+      Burg population is calculated as <code style="font-size: smaller;">value * population_point * urbanization_rate</code>, see the <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">Units Editor</a>.
+      <br>Applying changes reclassifies Burgs, but label groups are not affected. Reconcile label groups in <a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">Label Group Configurator</a>.
     </div>
   </div>`;
 
@@ -110,7 +110,7 @@ function closeBurgGroupsEditor(): void {
   ensureEl("burgGroupsEditor").remove();
 }
 
-function addRows(groups: BurgGroup[] = options.burgs.groups): void {
+function addRows(groups: BurgGroup[] = options.map.burgs.groups): void {
   const rows = groups.map(createRow);
   ensureEl("burgGroupsBody").innerHTML = rows.join("");
 }
@@ -121,7 +121,7 @@ function createRow(group: BurgGroup): string {
   return /* html */ `<tr name="${group.name}">
       <td data-tip="Rendering order: higher values are rendered on top"><input type="number" name="order" min="1" max="999" step="1" required value="${group.order || ""}" /></td>
       <td data-tip="Type group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes. Spaces are not allowed"><input type="text" name="name" value="${group.name}" required /></td>
-      <td data-tip="Settlement preview generator">
+      <td data-tip="Burg preview generator">
         <select name="preview">
           <option value="" ${!group.preview ? "selected" : ""}>no</option>
           <option value="watabou-city" ${group.preview === "watabou-city" ? "selected" : ""}>Watabou City</option>
@@ -131,12 +131,12 @@ function createRow(group: BurgGroup): string {
       </td>
       <td data-tip="Set min population constraint in population points (see the multiplier in Units Editor)"><input type="number" name="min" min="0" step="any" value="${group.min || ""}" /></td>
       <td data-tip="Set max population constraint in population points (see the multiplier in Units Editor)"><input type="number" name="max" min="0" step="any" value="${group.max || ""}" /></td>
-      <td data-tip="Set population percentile: 0-100, where 90 means the settlement must have a population higher than 90% of all settlements"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ""}" /></td>
+      <td data-tip="Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ""}" /></td>
       <td data-tip="Select allowed biomes">
         <input type="hidden" name="biomes" value="${group.biomes || ""}">
         <button type="button" name="biomes">${group.biomes ? "some" : "all"}</button>
       </td>
-      <td data-tip="Select allowed polities">
+      <td data-tip="Select allowed states">
         <input type="hidden" name="states" value="${group.states || ""}">
         <button type="button" name="states">${group.states ? "some" : "all"}</button>
       </td>
@@ -152,7 +152,7 @@ function createRow(group: BurgGroup): string {
         <input type="hidden" name="features" value='${JSON.stringify(group.features || {})}'>
         <button type="button" name="features">${Object.keys(group.features || {}).length ? "some" : "any"}</button>
       </td>
-      <td data-tip="Number of settlements in group">${count}</td>
+      <td data-tip="Number of burgs in group">${count}</td>
       <td data-tip="Activate/deactivate group"><input type="checkbox" name="active" class="native" ${group.active && "checked"} /></td>
       <td data-tip="Select group to be assigned if other groups are not passed"><input type="radio" name="isDefault" ${group.isDefault && "checked"}></td>
       <td data-tip="Assignment order: move group up"><button type="button" name="up" class="icon-up-big"></button></td>
@@ -228,7 +228,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
   const features = [
     { name: "capital", icon: "icon-star" },
     { name: "port", icon: "icon-anchor" },
-    { name: "citadel", icon: "icon-chess-rook" },
+    { name: "palace", icon: "icon-chess-rook" },
     { name: "walls", icon: "icon-fort-awesome" },
     { name: "plaza", icon: "icon-store" },
     { name: "temple", icon: "icon-chess-bishop" },
@@ -238,7 +238,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
   const rows = features.map(
     // prettier-ignore
     ({ name, icon }) => /* html */ `
-        <tr data-tip="Select limitation for settlement feature: ${name}">
+        <tr data-tip="Select limitation for burg feature: ${name}">
           <td>
             <span class="${icon}"></span>
             <span style="margin-left:.2em">${name}</span>
@@ -304,7 +304,7 @@ function removeRow(row: HTMLElement): void {
   confirmationDialog({
     title: "Remove group",
     message:
-      "Are you sure you want to remove the group? <br>This WON'T change settlements unless the changes are applied",
+      "Are you sure you want to remove the group? <br>This WON'T change the burgs unless the changes are applied",
     confirm: "Remove",
     onConfirm: () => {
       row.remove();
@@ -412,13 +412,15 @@ function submitForm(event: Event): void {
     return;
   }
 
-  options.burgs.groups = rows.map(rowToGroup);
-  localStorage.setItem("burg-groups", JSON.stringify(options.burgs.groups));
+  options.map.burgs.groups = rows.map(rowToGroup);
+  Options.save(); // the set is this map's, and what the next map starts from
 
   // put burgs to new groups
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
   const populations = validBurgs.map(b => b.population!).sort((a, b) => a - b);
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
+  window.Labels.ensureBurgLabelGroups();
+  window.Burgs.ensureBurgGroupStyles();
 
   Layers.draw("burgIcons");
   Layers.draw("labels");

@@ -1,7 +1,6 @@
 // The "About" dialog: what the generator is, where to get help and how to support it.
 // A component, not a controller — it is opened over the map but knows nothing about it
 
-import { VERSION } from "@/services/versioning";
 import { ensureEl, link } from "@/utils";
 
 const COMMUNITY = {
@@ -32,10 +31,7 @@ const LINKS = [
 ];
 
 function render(): string {
-  const platform = window.electron?.isElectron ? "Desktop" : "Web";
-  return /* html */ `<p><strong>Azgaar Obsidian Fork</strong><br />Version ID: <strong>${VERSION}</strong> · ${platform}</p>
-
-    <b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
+  return /* html */ `<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
     you wish.
 
     <p>
@@ -78,5 +74,3 @@ export function showInfo(): void {
 }
 
 export const AppInfo = { open: showInfo };
-
-window.showInfo = showInfo;

@@ -2,7 +2,7 @@ import type { AddedLabel } from "@/generators/added-labels";
 import type { Biome } from "@/generators/biomes-generator";
 import type { Burg } from "@/generators/burgs-generator";
 import type { Culture } from "@/generators/cultures-generator";
-import type { Feature } from "@/generators/features";
+import type { Feature } from "@/generators/features-generator";
 import type { Good } from "@/generators/goods-generator";
 import type { Ice } from "@/generators/ice-generator";
 import type { Marker } from "@/generators/markers-generator";
@@ -15,7 +15,7 @@ import type { River } from "@/generators/river-generator";
 import type { Route } from "@/generators/routes-generator";
 import type { State } from "@/generators/states-generator";
 import type { Zone } from "@/generators/zones-generator";
-import type { CustomLayer } from "@/types/custom-layers";
+import type { Journey } from "./Journey";
 
 export type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;
 
@@ -74,6 +74,5 @@ export interface PackedGraph {
   deals: Deal[];
   measurers: Measurer[];
   addedLabels: AddedLabel[];
-  customLayers: CustomLayer[];
-  archiveWorldId?: string;
+  journeys: Journey[];
 }

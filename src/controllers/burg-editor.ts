@@ -1,6 +1,7 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -15,6 +16,7 @@ import type { PromptOptions } from "../utils/commonUtils";
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 let selected: Selection<any, any, any, any> | null = null;
+let selectedId: number | null = null;
 let previewTransform: PanZoom = { ...PAN_ZOOM_IDENTITY };
 let previewMaxZoom = MAX_ZOOM;
 let previewCommittedK = 1;
@@ -26,6 +28,7 @@ function open(id: number | string): void {
   closeDialogs(".stable");
   Layers.show("burgIcons", "labels");
 
+  selectedId = +id;
   selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
 
@@ -34,7 +37,7 @@ function open(id: number | string): void {
   updateBurgValues();
 
   $("#burgEditor").dialog({
-    title: "Edit Settlement",
+    title: "Edit Burg",
     resizable: false,
     close: closeBurgEditor,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
@@ -46,7 +49,7 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="burgEditor" class="dialog" data-burg-id="${getSelectedId()}">
       <div id="burgBody" style="padding-bottom: 0.3em">
         <div style="display: flex; align-items: center">
-          <svg data-tip="Settlement emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em">
+          <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em">
             <use id="burgEmblem"></use>
           </svg>
           <div style="display: grid; grid-auto-rows: minmax(1.6em, auto)">
@@ -55,7 +58,7 @@ function renderDialog(): void {
               <div class="label">Name:</div>
               <input
                 id="burgName"
-                data-tip="Type to rename the settlement"
+                data-tip="Type to rename the burg"
                 autocorrect="off"
                 spellcheck="false"
                 style="width: 9em"
@@ -63,16 +66,16 @@ function renderDialog(): void {
               <span id="burgNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
               <span
                 id="burgNameReRandom"
-                data-tip="Generate random name for the settlement"
+                data-tip="Generate random name for the burg"
                 class="icon-globe pointer"
               ></span>
             </div>
-            <div data-tip="Select settlement group. Groups define settlement icon, label size and style">
+            <div data-tip="Select burg group. Groups defines burg icon, label size and style">
               <div class="label">Group:</div>
               <select id="burgGroup" style="width: 9em"></select>
-              <span id="burgGroupConfigure" data-tip="Configure settlement groups" class="icon-cog pointer"></span>
+              <span id="burgGroupConfigure" data-tip="Configure burg groups" class="icon-cog pointer"></span>
             </div>
-            <div data-tip="Select settlement type. Type slightly affects emblem generation">
+            <div data-tip="Select burg type. Type slightly affects emblem generation">
               <div class="label">Type:</div>
               <select id="burgType" style="width: 9em">
                 <option value="Generic">Generic</option>
@@ -89,15 +92,15 @@ function renderDialog(): void {
               <select id="burgCulture" style="width: 9em"></select>
               <span
                 id="burgNameReCulture"
-                data-tip="Generate culture-specific name for the settlement"
+                data-tip="Generate culture-specific name for the burg"
                 class="icon-book pointer"
               ></span>
             </div>
-            <div data-tip="Set settlement population">
+            <div data-tip="Set burg population">
               <div class="label">Population:</div>
               <input id="burgPopulation" type="number" min="0" step="1" style="width: 9em" />
             </div>
-            <div data-tip="Settlement average yearly temperature" style="display: flex; justify-content: space-between">
+            <div data-tip="Burg average yearly temperature" style="display: flex; justify-content: space-between">
               <div>
                 <div class="label">Temperature:</div>
                 <span id="burgTemperature"></span>
@@ -106,12 +109,12 @@ function renderDialog(): void {
                 <i class="icon-info-circled" id="burgTemperatureLikeIn"></i>
                 <i
                   id="burgTemperatureGraph"
-                  data-tip="Show temperature graph for the settlement"
+                  data-tip="Show temperature graph for the burg"
                   class="icon-chart-area pointer"
                 ></i>
               </div>
             </div>
-            <div data-tip="Settlement height above mean sea level">
+            <div data-tip="Burg height above mean sea level">
               <div class="label">Elevation:</div>
               <span id="burgElevation"></span> above sea level
             </div>
@@ -119,52 +122,52 @@ function renderDialog(): void {
               <div class="label">Features:</div>
               <span
                 id="burgCapital"
-                data-tip="Shows whether the settlement is a polity capital. Click to toggle"
+                data-tip="Shows whether the burg is a state capital. Click to toggle"
                 data-feature="capital"
                 class="burgFeature icon-star"
               ></span>
               <span
                 id="burgPort"
-                data-tip="Shows whether the settlement is a port. Click to toggle"
+                data-tip="Shows whether the burg is a port. Click to toggle"
                 data-feature="port"
                 class="burgFeature icon-anchor"
               ></span>
               <span
                 id="burgCitadel"
-                data-tip="Shows whether the settlement has a citadel (castle). Click to toggle"
-                data-feature="citadel"
+                data-tip="Shows whether the burg has a citadel (castle). Click to toggle"
+                data-feature="palace"
                 class="burgFeature icon-chess-rook"
                 style="font-size: 1.1em"
               ></span>
               <span
                 id="burgWalls"
-                data-tip="Shows whether the settlement is walled. Click to toggle"
+                data-tip="Shows whether the burg is walled. Click to toggle"
                 data-feature="walls"
                 class="burgFeature icon-fort-awesome"
               ></span>
               <span
                 id="burgPlaza"
-                data-tip="Shows whether the settlement is a trade center (market center). Click to toggle"
+                data-tip="Shows whether the burg is a trade center (market center). Click to toggle"
                 data-feature="plaza"
                 class="burgFeature icon-store"
                 style="font-size: 1em"
               ></span>
               <span
                 id="burgTemple"
-                data-tip="Shows whether the settlement is a religious center. Click to toggle"
+                data-tip="Shows whether the burg is a religious center. Click to toggle"
                 data-feature="temple"
                 class="burgFeature icon-chess-bishop"
                 style="font-size: 1.1em; margin-left: 3px"
               ></span>
               <span
                 id="burgShanty"
-                data-tip="Shows whether the settlement has a shanty town. Click to toggle"
+                data-tip="Shows whether the burg has a shanty town. Click to toggle"
                 data-feature="shanty"
                 class="burgFeature icon-campground"
                 style="font-size: 1em"
               ></span>
             </div>
-            <div data-tip="Settlement average daily production">
+            <div data-tip="Burg average daily production">
               <div class="label">Production:</div>
               <span id="burgProduction" style="display: inline-flex; flex-wrap: wrap; column-gap: 0.3em; max-width: 110px;"></span>
             </div>
@@ -172,18 +175,18 @@ function renderDialog(): void {
               <div class="label">Wealth</div>
               <span id="burgWealth"></span>
             </div>
-            <div data-tip="Treasury balance after production, purchases, and sales">
-              <div class="label">Treasury</div>
-              <span id="burgTreasury"></span>
+            <div data-tip="Set treasury balance. Production won't be changed automatically">
+              <div class="label"><label for="burgTreasury">Treasury:</label></div>
+              <input id="burgTreasury" type="number" step="0.01" style="width: 9em" /> 🟡
             </div>
           </div>
         </div>
-        <div id="burgPreviewSection" data-tip="Settlement map preview: scroll to zoom, drag to pan" style="display: flex; flex-direction: column">
+        <div id="burgPreviewSection" data-tip="Burg map preview: scroll to zoom, drag to pan" style="display: flex; flex-direction: column">
           <div style="display: flex; justify-content: space-between">
-            <span>Settlement preview:</span>
+            <span>Burg preview:</span>
             <div style="display: flex; gap: 0.5em">
               <i id="burgPreviewReset" data-tip="Reset preview zoom" class="icon-ccw pointer"></i>
-              <i id="burgLinkOpen" data-tip="Open settlement map in a new tab" class="icon-link-ext pointer"></i>
+              <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
             </div>
           </div>
           <div
@@ -198,39 +201,39 @@ function renderDialog(): void {
           <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
           <button
             id="burgEditLabelStyle"
-            data-tip="Edit label style for settlement group in Style Editor"
+            data-tip="Edit label style for burg group in Style Editor"
             class="icon-font"
           ></button>
           <button
             id="burgEditIconStyle"
-            data-tip="Edit icon style for settlement group in Style Editor"
+            data-tip="Edit icon style for burg group in Style Editor"
             class="icon-dot-circled"
           ></button>
           <button
             id="burgEditAnchorStyle"
-            data-tip="Edit port icon (anchor) style for settlement group in Style Editor"
+            data-tip="Edit port icon (anchor) style for burg group in Style Editor"
             class="icon-anchor"
           ></button>
         </div>
-        <button id="burgEditLabel" data-tip="Edit this settlement label" class="icon-font"></button>
+        <button id="burgEditLabel" data-tip="Edit this burg label" class="icon-font"></button>
         <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
-        <button id="burgSetPreviewLink" data-tip="Set custom settlement map URL" class="icon-map-o"></button>
-        <button id="burgLocate" data-tip="Zoom map and center view on the settlement" class="icon-target"></button>
+        <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
+        <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
         <button
           id="burgProductionOverview"
-          data-tip="Show production overview for this settlement"
+          data-tip="Show production overview for this burg"
           class="icon-chart-bar"
         ></button>
         <button
           id="burgRelocate"
-          data-tip="Relocate settlement. Click on map to move the settlement"
+          data-tip="Relocate burg. Click on map to move the burg"
           class="icon-map-pin"
         ></button>
-        <button id="burglLegend" data-tip="Edit free text notes (legend) for this settlement" class="icon-edit"></button>
+        ${Notes.getButton("burglLegend", "this burg")}
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button
           id="burgRemove"
-          data-tip="Remove non-capital settlement"
+          data-tip="Remove non-capital burg"
           data-shortcut="Delete"
           class="icon-trash fastDelete"
         ></button>
@@ -247,6 +250,7 @@ function renderDialog(): void {
   ensureEl("burgCulture").addEventListener("change", changeCulture);
   ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
+  ensureEl("burgTreasury").addEventListener("change", changeTreasury);
   ensureEl("burgBody")
     .querySelectorAll<HTMLElement>(".burgFeature")
     .forEach(el => void el.addEventListener("click", toggleFeature));
@@ -276,13 +280,13 @@ function renderDialog(): void {
 }
 
 function getSelectedId(): number {
-  return +selected!.attr("data-id");
+  return selectedId ?? +selected!.attr("data-id");
 }
 
 function updateGroupsList(): void {
   const groupSelect = ensureEl<HTMLSelectElement>("burgGroup");
   groupSelect.options.length = 0; // remove all options
-  for (const { name } of options.burgs.groups) {
+  for (const { name } of options.map.burgs.groups) {
     groupSelect.options.add(new Option(name, name));
   }
 }
@@ -298,9 +302,11 @@ function updateBurgValues(): void {
   ensureEl<HTMLInputElement>("burgName").value = b.name!;
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
   ensureEl<HTMLSelectElement>("burgType").value = b.type || "Generic";
-  ensureEl<HTMLInputElement>("burgPopulation").value = String(rn(b.population! * populationRate * urbanization));
+  ensureEl<HTMLInputElement>("burgPopulation").value = String(
+    rn(b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate)
+  );
   ensureEl("burgWealth").innerHTML = `🟡 ${rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)}`;
-  ensureEl("burgTreasury").innerHTML = `🟡 ${rn(b.treasury || 0, 2)}`;
+  ensureEl<HTMLInputElement>("burgTreasury").value = String(rn(b.treasury || 0, 2));
   ensureEl("burgEditAnchorStyle").style.display = +b.port! ? "inline-block" : "none";
 
   // update list and select culture
@@ -379,10 +385,20 @@ function changePopulation(): void {
   const burg = pack.burgs[id];
 
   pack.burgs[id].population = rn(
-    ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber / populationRate / urbanization,
+    ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber /
+      options.map.units.population.scale /
+      options.map.units.population.urbanization.rate,
     4
   );
   updateBurgPreview(burg);
+}
+
+function changeTreasury(this: HTMLInputElement): void {
+  const burg = pack.burgs[getSelectedId()];
+  const treasury = this.valueAsNumber;
+  if (Number.isFinite(treasury)) burg.treasury = rn(treasury, 2);
+  else tip("Enter a valid treasury amount", false, "error");
+  this.value = String(rn(burg.treasury || 0, 2));
 }
 
 function toggleFeature(this: HTMLElement): void {
@@ -406,9 +422,6 @@ function togglePort(burgId: number): void {
   const burg = pack.burgs[burgId];
   if (burg.port) {
     burg.port = 0;
-
-    const anchor = document.querySelector(`#anchors [data-id='${burgId}']`);
-    if (anchor) anchor.remove();
   } else {
     const { cells, features } = pack;
     const haven = cells.haven[burg.cell];
@@ -430,23 +443,15 @@ function togglePort(burgId: number): void {
     }
 
     burg.port = portFeatureId;
-
-    select("#anchors")
-      .select(`#${burg.group}`)
-      .append("use")
-      .attr("href", "#icon-anchor")
-      .attr("id", `anchor${burg.i}`)
-      .attr("data-id", burg.i)
-      .attr("x", burg.x)
-      .attr("y", burg.y);
   }
+  Layers.draw("burgIcons");
 }
 
 function toggleCapital(burgId: number): void {
   const { burgs, states } = pack;
 
   if (burgs[burgId].capital) {
-    tip("To change the capital, assign capital status to another settlement in this polity", false, "error");
+    tip("To change capital please assign a capital status to another burg of this state", false, "error");
     return;
   }
 
@@ -504,10 +509,11 @@ function hideStyleSection(): void {
   ensureEl("burgStyleSection").style.display = "none";
 }
 
+// the style editor selects groups by bare name, never by the DOM id of the rendered node
 function editGroupLabelStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
+  const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("labels", g.id);
+  editStyle("labels", burg.label?.group || burg.group);
 }
 
 function editBurgLabel(): void {
@@ -517,15 +523,15 @@ function editBurgLabel(): void {
 }
 
 function editGroupIconStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
+  const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("burgIcons", g.id);
+  editStyle("burgIcons", burg.group);
 }
 
 function editGroupAnchorStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
+  const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("anchors", g.id);
+  editStyle("anchors", burg.group);
 }
 
 function getPreviewViewport(): { width: number; height: number } {
@@ -683,7 +689,7 @@ function setCustomPreview(): void {
   const burg = pack.burgs[id];
 
   prompt(
-    "Provide a custom URL for the settlement map. It can link to a generator or an image. Leave it empty to use the default preview",
+    "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
     { default: Burgs.getPreview(burg).link || "", required: false },
     link => {
       if (link) burg.link = String(link);
@@ -711,7 +717,7 @@ function toggleRelocateBurg(): void {
   ensureEl("burgRelocate").classList.toggle("pressed");
   if (ensureEl("burgRelocate").classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateBurgOnClick);
-    tip("Click on the map to relocate the settlement. Hold Shift for continuous movement", true);
+    tip("Click on map to relocate burg. Hold Shift for continuous move", true);
     if (!Layers.isOn("cells")) {
       Layers.show("cells");
       isCellsLayerForced = true;
@@ -734,34 +740,23 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const burg = pack.burgs[id];
 
   if (cells.h[cellId] < 20) {
-    tip("Cannot place a settlement in the water. Select a land cell", false, "error");
+    tip("Cannot place burg into the water! Select a land cell", false, "error");
     return;
   }
   if (cells.burg[cellId] && cells.burg[cellId] !== id) {
-    tip("There is already a settlement in this cell. Please select a free cell", false, "error");
+    tip("There is already a burg in this cell. Please select a free cell", false, "error");
     return;
   }
 
   const newState = cells.state[cellId];
   const oldState = burg.state;
   if (newState !== oldState && burg.capital) {
-    tip("A capital cannot be relocated into another polity", false, "error");
+    tip("Capital cannot be relocated into another state!", false, "error");
     return;
   }
 
-  // change UI
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
-
-  select("#burgIcons").select(`#burg${id}`).attr("x", x).attr("y", y);
-
-  const anchor = select("#anchors").select(`use[data-id='${id}']`);
-  if (anchor.size()) {
-    const size = +anchor.attr("width");
-    const xa = rn(x - size * 0.47, 2);
-    const ya = rn(y - size * 0.47, 2);
-    anchor.attr("transform", null).attr("x", xa).attr("y", ya);
-  }
 
   // change data
   cells.burg[burg.cell] = 0;
@@ -774,19 +769,17 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
 
   // the label snaps back to the relocated burg, so its custom path is no longer valid
   if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined });
-  Layers.draw("labels");
+  Layers.draw("burgIcons", "labels");
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }
 
 function editBurgLegend(): void {
-  const id = selected!.attr("data-id");
-  const name = selected!.text();
-  void Controllers.NotesEditor.open(`burg${id}`, name);
+  void Controllers.NotesEditor.open({ type: "burg", id: getSelectedId() });
 }
 
 function showTemperatureGraph(): void {
-  const id = +selected!.attr("data-id");
+  const id = getSelectedId();
   void Controllers.TemperatureGraph.open(id);
 }
 
@@ -800,10 +793,10 @@ function removeSelectedBurg(): void {
   const burg = pack.burgs[burgId];
 
   if (burg.capital) {
-    alertMessage.innerHTML = /* html */ `You cannot remove the capital. You must change the polity capital first`;
+    alertMessage.innerHTML = /* html */ `You cannot remove the capital. You must change the state capital first`;
     $("#alert").dialog({
       resizable: false,
-      title: "Remove settlement",
+      title: "Remove burg",
       buttons: {
         Ok: function (this: HTMLElement) {
           $(this).dialog("close");
@@ -811,10 +804,10 @@ function removeSelectedBurg(): void {
       }
     });
   } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
-    alertMessage.innerHTML = /* html */ `You cannot remove a market-center settlement. Please remove the market first`;
+    alertMessage.innerHTML = /* html */ `You cannot remove a market center burg. Please remove the market first`;
     $("#alert").dialog({
       resizable: false,
-      title: "Remove settlement",
+      title: "Remove burg",
       buttons: {
         Ok: function (this: HTMLElement) {
           $(this).dialog("close");
@@ -823,8 +816,8 @@ function removeSelectedBurg(): void {
     });
   } else {
     confirmationDialog({
-      title: "Remove settlement",
-      message: "Are you sure you want to remove the settlement? <br>This action cannot be reverted",
+      title: "Remove burg",
+      message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
         Burgs.remove(burgId);
@@ -841,6 +834,7 @@ function editBurgGroups(): void {
 }
 
 function closeBurgEditor(): void {
+  clearTimeout(previewSettleTimer);
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
   selected = null;
   $("#burgEditor").dialog("destroy");

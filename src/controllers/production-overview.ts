@@ -342,8 +342,8 @@ function open(burgId: number): void {
       <div>
         <span data-tip="Gross Product is local sale revenue minus purchased ingredient costs during the production."><b>Product:</b> <span style="${styles.positive}">${formatPrice(grossProduct)}</span></span>
         <span data-tip="Product per capita: gross product divided by population."><b>Wealth:</b> <span style="${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
-        <span data-tip="Sales tax is paid by the seller on local sales. It is deducted from gross value and transferred to the polity treasury."><b>Total Tax:</b> <span style="${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
-        <span data-tip="Net settlement treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="${treasuryAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(treasuryAfter)}</span></span>
+        <span data-tip="Sales Tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury."><b>Total Tax:</b> <span style="${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
+        <span data-tip="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="${treasuryAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(treasuryAfter)}</span></span>
       </div>
     </div>`;
 

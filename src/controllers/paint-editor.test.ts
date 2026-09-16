@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
 import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
@@ -86,6 +86,10 @@ beforeEach(() => {
   $(parentDialog).dialog({ close: () => parentDialog.remove() });
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("PaintEditor", () => {
   it("reopens its destroyed parent through the close callback", () => {
     const onClose = vi.fn(() => {
@@ -142,11 +146,12 @@ describe("PaintEditor", () => {
     expect(options.map(option => option.textContent)).toEqual(["Neutral", "North", "South"]);
   });
 
-  it("shows the hovered item from the value getter", () => {
+  it("shows the hovered item from the value getter", async () => {
     PaintEditor.open(getOptions({ getValue: () => 2 }));
     document
       .getElementById("viewbox")
       ?.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 2, clientY: 2 }));
+    await new Promise(requestAnimationFrame); // the brush answers pointer moves once per frame
 
     expect(document.getElementById("tooltip")?.textContent).toBe("South");
   });
@@ -166,6 +171,31 @@ describe("PaintEditor", () => {
     expect([...changes]).toEqual([[3, 1]]);
     expect(calls).toEqual(["apply", "close"]);
     expect(globalThis.customization).toBe(0);
+  });
+
+  it("paints the whole path of a fast swipe, not only where the pointer events landed", async () => {
+    vi.spyOn(Pack, "findAll").mockImplementation(x => [Math.floor(x / 10)]); // one cell per 10px column
+    pack.cells.h = new Uint8Array(7).fill(30);
+    pack.cells.v = Array.from({ length: 7 }, () => [0, 1, 2]);
+    pack.cells.p = Array.from({ length: 7 }, () => [2, 2]);
+    const onApply = vi.fn();
+    PaintEditor.open(getOptions({ onApply })); // default radius 12: stamps every 6px
+
+    const viewbox = document.getElementById("viewbox")!;
+    const eventView = document.defaultView!;
+    const mouseEvent = (type: string, init: MouseEventInit) => {
+      const event = new eventView.MouseEvent(type, init);
+      Object.defineProperty(event, "view", { value: eventView });
+      return event;
+    };
+    viewbox.dispatchEvent(mouseEvent("mousedown", { bubbles: true, button: 0, clientX: 1, clientY: 1 }));
+    eventView.dispatchEvent(mouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 61, clientY: 1 })); // one event
+    eventView.dispatchEvent(mouseEvent("mouseup", { bubbles: true, button: 0, clientX: 61, clientY: 1 }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    document.getElementById("paintEditorApply")?.click();
+
+    const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, number>;
+    expect([...changes.keys()].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
   it("owns stroke history", async () => {

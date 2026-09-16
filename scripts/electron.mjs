@@ -11,7 +11,6 @@
  */
 
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
 import { build as viteBuild, createServer } from "vite";
 
 const TSC = "node_modules/typescript/bin/tsc";
@@ -30,13 +29,7 @@ function run(script, args, env) {
 /** Main process and preload: typechecked by tsc, bundled to CommonJS by Vite */
 async function buildMain() {
   await run(TSC, ["-p", "electron"]);
-  await viteBuild({ configFile: "electron/vite.config.ts", mode: "electron-main" });
-  await viteBuild({ configFile: "electron/vite.config.ts", mode: "electron-preload" });
-
-  const preload = await readFile("dist-electron/preload.js", "utf8");
-  if (/require\(["']\.\//.test(preload)) {
-    throw new Error("Sandboxed preload bundle contains a relative require and will not initialize in Electron");
-  }
+  await viteBuild({ configFile: "electron/vite.config.ts" });
 }
 
 /** The renderer is the same code the web build ships, and `vite build` alone would not typecheck it */

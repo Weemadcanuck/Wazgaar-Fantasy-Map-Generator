@@ -35,11 +35,11 @@ const GRAND_EDITORS: Record<string, Opener> = {
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
   routes: target => Controllers.RouteEditor.open(target.id),
   burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
+  journeys: (_target, parent) => Controllers.JourneyEditor.open(Number(parent.id.replace("journey", ""))),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
   goodsIcons: () => Controllers.GoodsEditor.open(),
   goodsBurgs: (_target, parent) => Controllers.ProductionOverview.open(Number(parent.dataset.id)),
-  coastline: target => Controllers.CoastlineVertexEditor.open(target),
   lakes: target => Controllers.LakesEditor.open(target),
   markets: (target, parent) => {
     if (target.tagName !== "path") Controllers.MarketOverview.open(Number(parent.dataset.id));
@@ -55,15 +55,6 @@ const GREAT_EDITORS: Record<string, Opener> = {
 /** Handle a click on the map: open the editor for the clicked element */
 function onClick(event: MouseEvent): void {
   const target = event?.target as SVGElement | null;
-  const customPoint = target?.closest<SVGElement>("[data-custom-point-id]");
-  if (customPoint?.dataset.customLayerId && customPoint.dataset.customPointId) {
-    void Controllers.CustomLayersEditor.openPoint(customPoint.dataset.customLayerId, customPoint.dataset.customPointId);
-    return;
-  }
-  if (target?.closest("#terrain")) {
-    Controllers.ReliefEditor.open(target);
-    return;
-  }
   const parent = target?.parentElement as SVGElement | null;
   const grand = parent?.parentElement as SVGElement | null;
   const great = grand?.parentElement as SVGElement | null;
@@ -86,5 +77,3 @@ function onClick(event: MouseEvent): void {
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);
 }
-
-window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;

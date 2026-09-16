@@ -357,6 +357,14 @@ body .ui-dialog {
   border: 1px solid #5d4651;
 }
 
+.ui-dialog .ui-dialog-titlebar-reset {
+  font-size: 0.62em;
+}
+
+.ui-dialog .ui-dialog-titlebar-reset[hidden] {
+  display: none;
+}
+
 .ui-dialog .ui-dialog-content {
   position: relative;
   border: 0;
@@ -425,13 +433,13 @@ body .ui-dialog {
 /* Component containers
 ----------------------------------*/
 .ui-widget {
-  font-family: var(--ui-font);
+  font-family: var(--sans-serif);
 }
 .ui-widget input,
 .ui-widget select,
 .ui-widget textarea,
 .ui-widget button {
-  font-family: var(--ui-font);
+  font-family: var(--sans-serif);
   font-size: 1em;
 }
 .ui-widget button[class^="icon-"] {

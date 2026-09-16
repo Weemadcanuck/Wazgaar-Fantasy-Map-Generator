@@ -1,5 +1,5 @@
 import { pack as packLayout, select, stratify } from "d3";
-import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
@@ -17,7 +17,7 @@ import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
-import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
+import { convertTemperature, createFileInput, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 type FilterState = { search: string; stateId: number; cultureId: number };
@@ -25,12 +25,13 @@ type FilterState = { search: string; stateId: number; cultureId: number };
 const dialogId = "burgsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: FilterState;
+let burgNamesInput: HTMLInputElement | null = null;
 
 const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
   {
     key: "name",
-    label: "Settlement",
+    label: "Burg",
     width: "8em",
     permanent: true,
     sortBy: b => b.name || "",
@@ -50,7 +51,7 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "state",
-    label: "Polity",
+    label: "State",
     width: "8em",
     sortBy: b => pack.states[b.state!]?.name || "",
     sortType: "alpha"
@@ -76,7 +77,7 @@ const columns: EditorColumn<Burg>[] = [
     label: "Population",
     width: "7em",
     defaultSort: "desc",
-    sortBy: b => b.population! * populationRate * urbanization
+    sortBy: b => b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
     key: "grossproduct",
@@ -91,7 +92,7 @@ const columns: EditorColumn<Burg>[] = [
     label: "Wealth",
     width: "6.5em",
     mobileHidden: true,
-    tip: "Click to sort by settlement wealth (gross product per capita)",
+    tip: "Click to sort by burg wealth (gross product per capita)",
     sortBy: b => rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)
   },
   {
@@ -109,7 +110,9 @@ const columns: EditorColumn<Burg>[] = [
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },
-  { key: "actions", width: "3.2em", permanent: true, align: "right" }
+  { key: "edit", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
 ];
 
 const burgsTable = initEditorTable<Burg>({
@@ -131,7 +134,7 @@ function open(filters: Filters = {}): void {
   burgsTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Settlements Overview",
+    title: "Burgs Overview",
     resizable: false,
     close: closeBurgsOverview,
     width: "fit-content",
@@ -140,15 +143,15 @@ function open(filters: Filters = {}): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("burgsOverview")?.remove();
+  destroyDialog("burgsOverview");
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
-        <label for="burgsSearch" data-tip="Filter by name, province, polity, culture, or group"
+        <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
           >Search: <input id="burgsSearch" type="search"
         /></label>
         <label for="burgsFilterState"
-          >Polity:
+          >State:
           <select id="burgsFilterState"></select
         ></label>
         <label for="burgsFilterCulture"
@@ -157,8 +160,8 @@ function renderDialog(): void {
         ></label>
       </div>
       <div id="burgsFooter" class="totalLine">
-        <div data-tip="Settlements displayed" style="margin-left: 5px">
-          Settlements:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
+        <div data-tip="Burgs displayed" style="margin-left: 5px">
+          Burgs:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
         </div>
         <div data-tip="Average population" style="margin-left: 12px" data-col="population">
           Avg population:&nbsp;<span id="burgsFooterPopulation">0</span>
@@ -175,24 +178,24 @@ function renderDialog(): void {
       </div>
       <div id="burgsBottom" class="editorToolbar">
         <button id="burgsOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="burgsGroupsEditorButton" data-tip="Edit settlement groups" class="icon-cog"></button>
-        <button id="burgsChart" data-tip="Show settlements bubble chart" class="icon-chart-area"></button>
+        <button id="burgsGroupsEditorButton" data-tip="Edit burg groups" class="icon-cog"></button>
+        <button id="burgsChart" data-tip="Show burgs bubble chart" class="icon-chart-area"></button>
         <button
           id="regenerateBurgNames"
-          data-tip="Regenerate settlement names based on assigned culture"
+          data-tip="Regenerate burg names based on assigned culture"
           class="icon-retweet"
         ></button>
-        <button id="addNewBurg" data-tip="Add a new settlement. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
         <button
           id="burgsExport"
-          data-tip="Save settlement-related data as a text file (.csv)"
+          data-tip="Save burgs-related data as a text file (.csv)"
           class="icon-download"
         ></button>
-        <button id="burgNamesImport" data-tip="Rename settlements in bulk" class="icon-upload"></button>
-        <button id="burgsLockAll" data-tip="Lock or unlock all settlements" class="icon-lock"></button>
+        <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
+        <button id="burgsLockAll" data-tip="Lock or unlock all burgs" class="icon-lock"></button>
         <button
           id="burgsRemoveAll"
-          data-tip="Remove all unlocked settlements except capitals. To remove a capital, remove its polity first"
+          data-tip="Remove all unlocked burgs except for capitals. To remove a capital remove its state first"
           class="icon-trash"
         ></button>
       </div>
@@ -223,9 +226,6 @@ function renderDialog(): void {
   ensureEl("addNewBurg").addEventListener("click", () => void Controllers.BurgCreator.toggle());
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
   ensureEl("burgNamesImport").addEventListener("click", renameBurgsInBulk);
-  ensureEl("burgsListToLoad").addEventListener("change", function (this: HTMLInputElement) {
-    uploadFile(this, importBurgNames);
-  });
   ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
   ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 }
@@ -316,7 +316,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   let totalTreasury = 0;
 
   for (const b of view.all) {
-    const population = b.population! * populationRate * urbanization;
+    const population =
+      b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -327,7 +328,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   }
 
   for (const b of view.rows) {
-    const population = b.population! * populationRate * urbanization;
+    const population =
+      b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
@@ -352,14 +354,14 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-features="${features}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer" data-col="locate"></span>
-        <input data-tip="Settlement name" class="burgName" value="${b.name}" data-col="name" disabled />
-        <input data-tip="Settlement province" value="${province}" data-col="province" disabled />
-        <input data-tip="Settlement polity" value="${state}" data-col="state" disabled />
+        <input data-tip="Burg name" class="burgName" value="${b.name}" data-col="name" disabled />
+        <input data-tip="Burg province" value="${province}" data-col="province" disabled />
+        <input data-tip="Burg state" value="${state}" data-col="state" disabled />
         <input data-tip="Dominant culture" value="${culture}" data-col="culture" disabled />
-        <input data-tip="Settlement group" value="${b.group}" data-col="group" disabled />
+        <input data-tip="Burg group" value="${b.group}" data-col="group" disabled />
         <div data-col="population">
-          <span data-tip="Settlement population" class="icon-male"></span>
-          <input data-tip="Settlement population" value=${si(population)} disabled />
+          <span data-tip="Burg population" class="icon-male"></span>
+          <input data-tip="Burg population" value=${si(population)} disabled />
         </div>
         <div data-col="grossproduct">
           <span data-tip="Gross Product: local sale revenue minus purchased ingredient costs during the production.">🟡</span>
@@ -375,18 +377,16 @@ function renderBurgsPage(view: TableView<Burg>): void {
         </div>
         <div data-col="features">
           <span
-          data-tip="${b.capital ? "This settlement is a polity capital" : "This settlement is not a polity capital"}"
+            data-tip="${b.capital ? " This burg is a state capital" : "This burg is a NOT state capital"}"
             class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
-        <span data-tip="${b.port ? "This settlement is a port" : "This settlement is not a port"}"
+          <span data-tip="${b.port ? " This burg is a port" : "This burg is NOT a port"}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
-        <div data-col="actions">
-        <span data-tip="Edit settlement" class="icon-pencil"></span>
-          <span class="locks pointer ${
-            b.lock ? "icon-lock" : "icon-lock-open inactive"
-          }" onmouseover="showElementLockTip(event)"></span>
-        <span data-tip="Remove settlement" class="icon-trash-empty"></span>
-        </div>
+        <span data-col="edit" data-tip="Edit burg" class="icon-pencil"></span>
+        <span data-col="lock" class="locks pointer ${
+          b.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
+        <span data-col="remove" data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -453,13 +453,13 @@ function openBurgEditor(this: HTMLElement): void {
 function triggerBurgRemove(this: HTMLElement): void {
   const burgId = +(this.closest(".states") as HTMLElement).dataset.id!;
   if (pack.burgs[burgId].capital) {
-    tip("You cannot remove the capital. Please change the polity capital first", false, "error");
+    tip("You cannot remove the capital. Please change the state capital first", false, "error");
     return;
   }
 
   confirmationDialog({
-    title: "Remove settlement",
-    message: "Are you sure you want to remove the settlement? <br>This action cannot be reverted",
+    title: "Remove burg",
+    message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
       Burgs.remove(burgId);
@@ -513,7 +513,7 @@ function showBurgsChart(): void {
     });
   const data: any[] = (states as any[]).concat(burgs);
   if (data.length < 2) {
-    tip("No settlements to show", false, "error");
+    tip("No burgs to show", false, "error");
     return;
   }
 
@@ -532,9 +532,9 @@ function showBurgsChart(): void {
 
   // prepare svg
   alertMessage.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
-          <option value="states" selected>Group by polity</option>
+      <option value="states" selected>Group by state</option>
       <option value="cultures">Group by culture</option>
-          <option value="parent">Group by province and polity</option>
+      <option value="parent">Group by province and state</option>
       <option value="provinces">Group by province</option>
     </select>`;
   alertMessage.innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
@@ -566,7 +566,9 @@ function showBurgsChart(): void {
     select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
     const name = d.data.name;
     const parent = d.parent.data.name;
-    const population = si(d.value * populationRate * urbanization);
+    const population = si(
+      d.value * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
 
     ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. Population: ${population}`;
     burgHighlightOn(ev);
@@ -654,7 +656,7 @@ function showBurgsChart(): void {
   }
 
   $("#alert").dialog({
-    title: "Settlements bubble chart",
+    title: "Burgs bubble chart",
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
@@ -663,7 +665,7 @@ function showBurgsChart(): void {
 }
 
 function downloadBurgsData(): void {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
+  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${options.map.units.height.unit}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
   const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
   valid.forEach(b => {
@@ -677,13 +679,13 @@ function downloadBurgsData(): void {
     data += `${pack.cultures[b.culture!].name},`;
     data += `${pack.religions[pack.cells.religion[b.cell]].name},`;
     data += `${b.group},`;
-    data += `${rn(b.population! * populationRate * urbanization)},`;
+    data += `${rn(b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},`;
 
     // add geography data
     data += `${b.x},`;
     data += `${b.y},`;
-    data += `${getLatitude(b.y, mapCoordinates, graphHeight, 2)},`;
-    data += `${getLongitude(b.x, mapCoordinates, graphWidth, 2)},`;
+    data += `${getLatitude(b.y, options.map.geography.coordinates, options.map.graph.height, 2)},`;
+    data += `${getLongitude(b.x, options.map.geography.coordinates, options.map.graph.width, 2)},`;
     data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
     data += `${convertTemperature(temperature)},`;
@@ -712,7 +714,7 @@ function renameBurgsInBulk(): void {
     name on its own line (the dilimiter is CRLF). If you do not want to change the name, just leave it as is`;
 
   $("#alert").dialog({
-    title: "Settlements bulk renaming",
+    title: "Burgs bulk renaming",
     width: "22em",
     position: { my: "center", at: "center", of: "svg" },
     buttons: {
@@ -724,12 +726,19 @@ function renameBurgsInBulk(): void {
         const name = `${getFileName("Burg names")}.txt`;
         downloadFile(data, name);
       },
-      Upload: () => ensureEl("burgsListToLoad").click(),
+      Upload: pickBurgNamesFile,
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
   });
+}
+
+/** Own the burg-names file input here so repeat opens cannot stack listeners on a shared element */
+function pickBurgNamesFile(): void {
+  burgNamesInput ??= createFileInput(".txt,.csv");
+  burgNamesInput.onchange = () => uploadFile(burgNamesInput!, importBurgNames);
+  burgNamesInput.click();
 }
 
 function importBurgNames(dataLoaded: string): void {
@@ -747,7 +756,7 @@ function importBurgNames(dataLoaded: string): void {
   }
 
   const change: { id: number; name: string }[] = [];
-  let message = `Settlements to be renamed as below:`;
+  let message = `Burgs to be renamed as below:`;
   message += `<table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
 
   const burgs = pack.burgs.filter(b => b.i && !b.removed);
@@ -772,7 +781,7 @@ function importBurgNames(dataLoaded: string): void {
   };
 
   confirmationDialog({
-    title: "Settlements bulk renaming",
+    title: "Burgs bulk renaming",
     message,
     confirm: "Rename",
     onConfirm
@@ -782,10 +791,10 @@ function importBurgNames(dataLoaded: string): void {
 function triggerAllBurgsRemove(): void {
   const number = pack.burgs.filter(b => b.i && !b.removed && !b.capital && !b.lock).length;
   confirmationDialog({
-    title: `Remove ${number} settlements`,
+    title: `Remove ${number} burgs`,
     message: `
-      Are you sure you want to remove all <i>unlocked</i> settlements except for capitals?
-      <br><i>To remove a capital you have to remove its polity first</i>`,
+        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals?
+        <br><i>To remove a capital you have to remove its state first</i>`,
     confirm: "Remove",
     onConfirm: () => {
       pack.burgs
@@ -817,4 +826,4 @@ function updateLockAllIcon(): void {
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
 }
 
-export const BurgsOverview = { open };
+export const BurgsOverview = { open, showChart: showBurgsChart, exportCsv: downloadBurgsData };

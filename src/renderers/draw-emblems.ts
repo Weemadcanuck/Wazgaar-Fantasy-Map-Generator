@@ -51,12 +51,7 @@ const scenes: Record<EmblemType, Scene<EmblemData>> = {
   province: new Scene(),
   state: new Scene()
 };
-const layer = ViewportLayers.register({
-  id: "emblems",
-  render: reconcileEmblems,
-  isActive: () => Layers.isOn("emblems"),
-  scaleSensitive: true
-});
+const layer = ViewportLayers.register({ id: "emblems", render: reconcileEmblems });
 const sizes: Record<EmblemType, number> = { burg: 0, province: 0, state: 0 };
 const reconcileListeners = new Set<() => void>();
 // unreferenced shields tolerated before a sweep is worth scanning the document for
@@ -68,9 +63,9 @@ let needsFullRedraw = false;
 // emblems shrink as their number grows, so that a crowded map does not turn into a wall of shields
 function getEmblemSize(type: EmblemType, count: number): number {
   const { extent, min, max, expected, countDivisor, deficitDivisor } = SIZING[type];
-  const startSize = minmax((graphHeight + graphWidth) / extent, min, max);
+  const startSize = minmax((options.map.graph.height + options.map.graph.width) / extent, min, max);
   const countMod = 1 + count / countDivisor - (expected - count) / deficitDivisor;
-  const sizeMod = Number(ensureEl(GROUPS[type]).getAttribute("data-size")) || 1;
+  const sizeMod = styles.emblems[`${type}Emblems`].options.size || 1;
   return rn((startSize / countMod) * sizeMod);
 }
 
@@ -405,7 +400,7 @@ function isVisible({ x, y, shift }: EmblemData, { bounds }: ViewportRenderContex
 
 function isGroupHidden(type: EmblemType, scale: number): boolean {
   const screenSize = sizes[type] * scale;
-  return !options.emblems.showAll && (screenSize < 25 || screenSize > 300);
+  return !options.app.emblems.showAll && (screenSize < 25 || screenSize > 300);
 }
 
 function getId(type: EmblemType, i: number): string {

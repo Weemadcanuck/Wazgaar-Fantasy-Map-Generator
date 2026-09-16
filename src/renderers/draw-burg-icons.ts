@@ -1,83 +1,67 @@
-import { select } from "d3";
+import { Layers } from "@/components/layers";
+import type { Burg } from "@/generators/burgs-generator";
+import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { escapeHtml } from "@/utils/stringUtils";
+
+const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
 export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");
-  createIconGroups();
-
-  for (const { name } of options.burgs.groups) {
-    const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
-    if (!burgsInGroup.length) continue;
-
-    const iconsGroup = document.querySelector<SVGGElement>(`#burgIcons > g#${name}`);
-    if (!iconsGroup) continue;
-
-    const icon = iconsGroup.dataset.icon || "#icon-circle";
-    iconsGroup.innerHTML = burgsInGroup
-      .map(b => `<use id="burg${b.i}" data-id="${b.i}" href="${icon}" x="${b.x}" y="${b.y}"></use>`)
-      .join("");
-
-    const portsInGroup = burgsInGroup.filter(b => b.port);
-    if (!portsInGroup.length) continue;
-
-    const portGroup = document.querySelector<SVGGElement>(`#anchors > g#${name}`);
-    if (!portGroup) continue;
-
-    portGroup.innerHTML = portsInGroup
-      .map(b => `<use id="anchor${b.i}" data-id="${b.i}" href="#icon-anchor" x="${b.x}" y="${b.y}"></use>`)
-      .join("");
-  }
-
+  layer.render();
   TIME && console.timeEnd("drawBurgIcons");
 };
 
-/** drop the icons, keeping the burg groups: they carry the styles edited in the Style editor */
-export const removeBurgIcons = (): void => {
-  for (const icon of Array.from(document.querySelectorAll("#icons use, #icons circle"))) icon.remove();
-};
+function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
+  if (!Layers.isOn("burgIcons")) return;
 
-export const removeBurgIcon = (burgId: number): void => {
-  const existingIcon = document.getElementById(`burg${burgId}`);
-  if (existingIcon) existingIcon.remove();
+  const burgsByGroup = new Map<string, Burg[]>();
+  for (const burg of pack.burgs) {
+    if (!burg.i || burg.removed || !burg.group) continue;
+    const group = burgsByGroup.get(burg.group);
+    if (group) group.push(burg);
+    else burgsByGroup.set(burg.group, [burg]);
+  }
 
-  const existingAnchor = document.getElementById(`anchor${burgId}`);
-  if (existingAnchor) existingAnchor.remove();
-};
+  const groups = [...options.map.burgs.groups].sort((a, b) => a.order - b.order);
+  for (const type of ["burgIcons", "anchors"] as const) {
+    const container = root.querySelector<SVGGElement>(`#${type}`);
+    if (!container) continue;
+    const groupStyles = styles.burgIcons[type].groups;
+    const defaultStyle = groupStyles.town || Object.values(groupStyles)[0];
+    const isAnchor = type === "anchors";
 
-function createIconGroups(): void {
-  // save existing styles and remove all groups
-  document.querySelectorAll("g#burgIcons > g").forEach(group => {
-    style.burgIcons[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
-    group.remove();
-  });
+    const markup: string[] = [];
 
-  document.querySelectorAll("g#anchors > g").forEach(group => {
-    style.anchors[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
-    group.remove();
-  });
+    for (const { name } of groups) {
+      const groupStyle = groupStyles[name] || defaultStyle;
+      const groupName = escapeHtml(name);
+      const icon = escapeHtml(groupStyle?.options.icon || (isAnchor ? "#icon-anchor" : "#icon-circle"));
+      const size = groupStyle?.options.size ?? 1;
+      const dx = isAnchor ? (groupStyle?.options.dx ?? 0) * size : 0;
+      const dy = isAnchor ? (groupStyle?.options.dy ?? 0) * size : 0;
+      markup.push(`<g id="${groupName}" data-group="${groupName}"`);
+      if (groupStyle) {
+        for (const [key, value] of Object.entries(groupStyle.attrs)) {
+          if (value !== null && value !== undefined) markup.push(` ${key}="${escapeHtml(String(value))}"`);
+        }
+        markup.push(` font-size="${groupStyle.options.size}"`);
+      }
+      markup.push(` data-icon="${icon}"`);
+      markup.push(">");
 
-  // create groups for each burg group and apply stored or default style
-  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
-  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0] || {};
-  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
-  for (const { name } of sortedGroups) {
-    const burgGroup = select("#burgIcons").append("g");
-    const iconStyles = style.burgIcons[name] || defaultIconStyle;
-    Object.entries(iconStyles).forEach(([key, value]) => {
-      burgGroup.attr(key, value);
-    });
-    burgGroup.attr("id", name);
+      // Symbols overflow their viewBox; the tallest burg artwork reaches two em above its anchor.
+      const padding = 2 * (Math.abs(groupStyle?.options.size ?? 1) + (groupStyle?.attrs["stroke-width"] ?? 0));
+      const { x0, y0, x1, y1 } = bounds;
+      for (const { i, x: burgX, y: burgY, port } of burgsByGroup.get(name) || []) {
+        if (isAnchor && !port) continue;
+        const x = burgX + dx;
+        const y = burgY + dy;
+        if (x + padding < x0 || x - padding > x1 || y + padding < y0 || y - padding > y1) continue;
+        markup.push(`<use id="${isAnchor ? "anchor" : "burg"}${i}" data-id="${i}" href="${icon}" x="${x}" y="${y}"/>`);
+      }
+      markup.push("</g>");
+    }
 
-    const anchorGroup = select("#anchors").append("g");
-    const anchorStyles = style.anchors[name] || defaultAnchorStyle;
-    Object.entries(anchorStyles).forEach(([key, value]) => {
-      anchorGroup.attr(key, value);
-    });
-    anchorGroup.attr("id", name);
+    container.innerHTML = markup.join("");
   }
 }

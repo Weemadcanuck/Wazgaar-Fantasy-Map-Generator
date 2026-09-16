@@ -4,13 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { MenuItemConstructorOptions } from "electron";
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, screen, shell } from "electron";
-import { DESKTOP_QUIT_CHANNEL } from "../src/types/desktop-ipc";
-import { ARCHIVAL_APP_HOST, ARCHIVAL_USER_DATA_DIRECTORY, RENDERER_CACHE_CONTROL } from "./app-identity";
-import { registerArchiveExportHandlers } from "./archive-export-ipc";
+import { app, BrowserWindow, dialog, Menu, nativeImage, net, protocol, screen, shell } from "electron";
+import { initUpdater } from "./updater";
 
 const SCHEME = "app";
-const HOST = ARCHIVAL_APP_HOST;
+const HOST = "fmg";
 const APP_URL = `${SCHEME}://${HOST}/index.html`;
 const RENDERER_DIR = path.join(__dirname, "renderer");
 const ICON_PATH = path.join(__dirname, "icon.png");
@@ -18,11 +16,14 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const WIKI_URL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
 const DISCORD_URL = "https://discord.gg/X7E84HU";
 
-// Never share Chromium caches, IndexedDB, or local storage with the upstream desktop application.
-app.setPath("userData", path.join(app.getPath("appData"), ARCHIVAL_USER_DATA_DIRECTORY));
+/**
+ * The app is named after `productName`, but its data stays in the folder the name would have
+ * produced before, so a rename never strands the maps stored in localStorage and IndexedDB
+ */
+app.setPath("userData", path.join(app.getPath("appData"), "fantasy-map-generator"));
 
 app.setAboutPanelOptions({
-  applicationName: "Azgaar Obsidian Fork",
+  applicationName: app.name,
   applicationVersion: app.getVersion(),
   iconPath: ICON_PATH,
   copyright: "MIT License. Azgaar and Team, 2017-2026"
@@ -84,16 +85,13 @@ protocol.registerSchemesAsPrivileged([
 
 /**
  * A .map file is shared like a document, and the app builds markup out of what is inside it, so the one
- * directive that matters is `script-src`: no origin but the build itself may supply code, save for the
- * Assistant widget the user opts into. The rest stays permissive, because maps embed data/blob images and
- * fonts and the AI providers are fetched over https. `unsafe-eval` is required by the goods distribution
- * formulas, which compile to `new Function`
+ * directive that matters is `script-src`: no external origin may supply code. The rest stays permissive,
+ * because maps embed data/blob images and fonts and the AI providers are fetched over https. `unsafe-eval`
+ * is required by the goods distribution formulas, which compile to `new Function`
  */
-const ASSISTANT_ORIGINS = "https://*.openwidget.com";
-
 const CSP = [
   "default-src 'self' data: blob:",
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ASSISTANT_ORIGINS}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
   "style-src 'self' 'unsafe-inline' https:",
   "font-src 'self' data: https:",
   "img-src 'self' data: blob: https:",
@@ -121,7 +119,6 @@ function serveRenderer(): void {
       const response = await net.fetch(pathToFileURL(filePath).toString());
       const headers = new Headers(response.headers);
       headers.set("Content-Security-Policy", CSP);
-      headers.set("Cache-Control", RENDERER_CACHE_CONTROL);
       return new Response(response.body, { status: response.status, headers });
     } catch {
       // net.fetch rejects on a missing file, and the rejection would reach the page as an opaque network error
@@ -181,7 +178,11 @@ function buildMenu(): void {
   const isMac = process.platform === "darwin";
 
   const template: MenuItemConstructorOptions[] = [
-    ...(isMac ? ([{ role: "appMenu" }] satisfies MenuItemConstructorOptions[]) : []),
+    ...(isMac
+      ? ([{ role: "appMenu" }] satisfies MenuItemConstructorOptions[])
+      : // the app menu carries Quit on macOS; elsewhere there is otherwise no way to leave the app
+        // from the UI at all, which a window manager that draws no titlebar leaves with none
+        ([{ label: "File", submenu: [{ role: "quit" }] }] satisfies MenuItemConstructorOptions[])),
     { role: "editMenu" },
     {
       label: "View",
@@ -209,21 +210,32 @@ function buildMenu(): void {
 }
 
 let quitting = false; // set on Cmd+Q, where closing the window alone would leave the app running
-let skipConfirmation = false; // set once the user has confirmed
+let skipConfirmation = false; // set once the user has confirmed, and by the updater to install on restart
 
 app.on("before-quit", () => {
   quitting = true;
 });
+
+/** Closes the window without the quit confirmation, so the installer can restart the app */
+function allowClose(): void {
+  skipConfirmation = true;
+}
 
 /**
  * The web app warns before navigating away via `onbeforeunload`, but Electron cancels the close
  * silently instead of prompting, which would make the window unclosable. Ask natively instead
  */
 function confirmOnClose(window: BrowserWindow): void {
+  let confirming = false;
+
   window.on("close", event => {
     saveState(window);
     if (skipConfirmation) return;
     event.preventDefault();
+    // Cmd+Q reaches the window through before-quit as well as the close itself, and a window
+    // manager binding can deliver it more than once; without this the dialog stacks on itself
+    if (confirming) return;
+    confirming = true;
 
     dialog
       .showMessageBox(window, {
@@ -232,17 +244,18 @@ function confirmOnClose(window: BrowserWindow): void {
         defaultId: 1,
         cancelId: 1,
         title: "Quit",
-        message: "Quit Azgaar Obsidian Fork?",
-        detail: "Autosave runs only at its configured interval. Save the map to a file before quitting to be safe"
+        message: "Quit the Fantasy Map Generator?",
+        detail: "The map is autosaved to the app storage, but save it to a file to be safe"
       })
       .then(({ response }) => {
+        confirming = false;
         if (response !== 0) {
           quitting = false;
           return;
         }
         skipConfirmation = true;
         if (quitting) app.quit();
-        else window.destroy();
+        else window.close();
       });
   });
 
@@ -250,10 +263,6 @@ function confirmOnClose(window: BrowserWindow): void {
   window.on("closed", () => {
     skipConfirmation = false;
   });
-}
-
-function registerDesktopHandlers(): void {
-  ipcMain.on(DESKTOP_QUIT_CHANNEL, event => BrowserWindow.fromWebContents(event.sender)?.close());
 }
 
 function createWindow(): void {
@@ -301,9 +310,8 @@ if (!app.requestSingleInstanceLock()) {
     if (!app.isPackaged) app.dock?.setIcon(nativeImage.createFromPath(ICON_PATH));
     serveRenderer();
     buildMenu();
-    registerDesktopHandlers();
-    registerArchiveExportHandlers();
     createWindow();
+    initUpdater(allowClose); // app-wide, so re-opening a window on macOS does not start a second updater
     app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());
   });
 
