@@ -1,6 +1,7 @@
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
+import { getCoastalRenderStatus } from "@/renderers/coastal-raster";
 import { getReliefRenderStatus } from "@/renderers/draw-relief-icons";
 import { PerformanceMetrics } from "@/renderers/viewport/performance-metrics";
 import { VERSION } from "@/services/versioning";
@@ -12,6 +13,7 @@ function snapshot() {
     mapId: mapHistory.at(-1)?.created,
     reliefCount: pack.relief?.length ?? 0,
     reliefRendering: getReliefRenderStatus(),
+    coastalRendering: getCoastalRenderStatus(),
     layers: Layers.state,
     reliefStyle: { ...styles.relief },
     viewport: { ...viewport },
@@ -66,7 +68,7 @@ function beginCapture(label: string): void {
     };
     document.addEventListener("visibilitychange", onVisibility);
     PerformanceMetrics.start();
-    tip("Recording performance for 22 seconds…", true);
+    tip("Recording performance for 22 secondsâ€¦", true);
     window.setTimeout(() => {
       const metrics = PerformanceMetrics.stop();
       document.removeEventListener("visibilitychange", onVisibility);

@@ -1,3 +1,4 @@
+import { restoreCoastalVectors } from "@/renderers/coastal-raster";
 import { serializeForkData } from "./fork-data";
 import { serializeReliefData } from "./relief-data";
 // Save the whole .map project to storage, machine or cloud
@@ -78,6 +79,7 @@ function prepareMapData(): string {
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  restoreCoastalVectors(cloneEl);
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(options.map.graph.width));

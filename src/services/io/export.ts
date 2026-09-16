@@ -3,6 +3,7 @@ import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
+import { restoreCoastalVectors } from "@/renderers/coastal-raster";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { renderReliefForExport } from "@/renderers/draw-relief-icons";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
@@ -257,6 +258,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     fullMap = false
   } = config;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  restoreCoastalVectors(cloneEl);
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);

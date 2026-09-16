@@ -1,11 +1,10 @@
 /** One encoder for the sequential tile builder. Unsupported workers fall back to canvas.toBlob. */
-export class ReliefPngEncoder {
+export class PngEncoder {
   private worker: Worker | null = null;
   private failed = false;
 
   constructor(
-    private readonly createWorker = () =>
-      new Worker(new URL("./relief-png-worker.ts", import.meta.url), { type: "module" })
+    private readonly createWorker = () => new Worker(new URL("./png-worker.ts", import.meta.url), { type: "module" })
   ) {}
 
   async encode(

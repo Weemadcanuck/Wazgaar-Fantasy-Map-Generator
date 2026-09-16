@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ReliefPngEncoder } from "./relief-png";
+import { PngEncoder } from "./png-encoder";
 
 function setup() {
   const workers: Worker[] = [];
@@ -10,7 +10,7 @@ function setup() {
   });
   const context = { getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(16) })) };
   return {
-    encoder: new ReliefPngEncoder(create),
+    encoder: new PngEncoder(create),
     workers,
     create,
     context: context as unknown as CanvasRenderingContext2D
@@ -75,7 +75,7 @@ describe("relief PNG worker", () => {
     await vi.advanceTimersByTimeAsync(10000);
     expect(await pending).toBeNull();
     expect(workers[0].terminate).toHaveBeenCalledOnce();
-    const unsupported = new ReliefPngEncoder(() => {
+    const unsupported = new PngEncoder(() => {
       throw new Error("Unsupported");
     });
     expect(await unsupported.encode(context, 2, new AbortController().signal)).toBeNull();
