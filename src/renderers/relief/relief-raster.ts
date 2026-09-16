@@ -1,7 +1,9 @@
 import type { ReliefIcon } from "@/generators/relief-generator";
 import type { ViewportBounds } from "../viewport/viewport-renderer";
+import { ReliefPngEncoder } from "./relief-png";
 
 const NS = "http://www.w3.org/2000/svg";
+const pngEncoder = new ReliefPngEncoder();
 export const TILE_SIZE = 256;
 export const CACHE_BYTES = 512 * 1024 * 1024;
 export interface ReliefTile {
@@ -294,12 +296,15 @@ export async function rasterizeReliefTile(
     if (!context) throw new Error("Relief canvas unavailable");
     context.drawImage(image, 2, 2, pixels, pixels, 0, 0, pixels, pixels);
     measured("canvas draw");
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(blob => {
-        if (blob) resolve(blob);
-        else reject(new Error("Relief PNG encoding failed"));
-      })
-    );
+    const encoded = await pngEncoder.encode(context, pixels, signal, () => measured("pixel readback"));
+    const blob =
+      encoded ??
+      (await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error("Relief PNG encoding failed"));
+        })
+      ));
     if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
     measured("PNG encode");
     const url = URL.createObjectURL(blob);
