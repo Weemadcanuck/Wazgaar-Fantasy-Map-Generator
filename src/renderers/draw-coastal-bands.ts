@@ -1,5 +1,6 @@
 import type { Styles } from "@/generators/styles-schema";
 import { createEl, ensureEl } from "@/utils/nodeUtils";
+import { invalidateCoastalRaster } from "./coastal-raster";
 
 type CoastalBands = Styles["ocean"]["options"]["bands"];
 
@@ -12,6 +13,7 @@ function bandRadius(bands: CoastalBands, index: number): number {
 }
 
 export function removeCoastalBands(): void {
+  invalidateCoastalRaster();
   ensureEl("oceanBands").replaceChildren();
   for (const id of ["coastal-bands-mask", "coastal-bands-lines", "coastal-bands-shade"]) {
     document.getElementById(id)?.remove();

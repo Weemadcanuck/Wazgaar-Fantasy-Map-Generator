@@ -55,6 +55,10 @@ const GREAT_EDITORS: Record<string, Opener> = {
 /** Handle a click on the map: open the editor for the clicked element */
 function onClick(event: MouseEvent): void {
   const target = event?.target as SVGElement | null;
+  if (target?.closest("#terrain")) {
+    Controllers.ReliefEditor.open(target);
+    return;
+  }
   const parent = target?.parentElement as SVGElement | null;
   const grand = parent?.parentElement as SVGElement | null;
   const great = grand?.parentElement as SVGElement | null;

@@ -5,7 +5,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
 import { getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
-import { getSceneReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
+import { getSceneReliefIcon, redrawRelief, setReliefEditing } from "@/renderers/draw-relief-icons";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { ReliefSet } from "@/types/relief";
 import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
@@ -45,6 +45,7 @@ const setIconsHtml = (set: ReliefSet): string =>
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
+  setReliefEditing(true);
   Layers.show("relief");
 
   selectedIcon = getIconData(element);
@@ -165,7 +166,7 @@ function dragReliefIcon(event: any): void {
   event.on("drag", (dragEvent: any) => {
     icon.x = rn(dx + dragEvent.x, 2);
     icon.y = rn(dy + dragEvent.y, 2);
-    redrawRelief();
+    redrawRelief({ type: "geometry", icon });
   });
 }
 
@@ -380,7 +381,7 @@ function changeIconSize(): void {
   selectedIcon.s = size;
   selectedIcon.x = rn(selectedIcon.x - shift, 2);
   selectedIcon.y = rn(selectedIcon.y - shift, 2);
-  redrawRelief();
+  redrawRelief({ type: "geometry", icon: selectedIcon });
 }
 
 function changeIconsSet(): void {
@@ -404,7 +405,7 @@ function changeIcon(this: SVGElement): void {
 
   if (ensureEl("reliefIndividual").classList.contains("pressed") && selectedIcon) {
     selectedIcon.icon = this.dataset.type!;
-    redrawRelief();
+    redrawRelief({ type: "appearance", icon: selectedIcon });
   }
 }
 
@@ -433,7 +434,7 @@ function moveIcon(direction: "front" | "back"): void {
   pack.relief.splice(index, 1);
   if (direction === "front") pack.relief.push(selectedIcon);
   else pack.relief.unshift(selectedIcon);
-  redrawRelief();
+  redrawRelief({ type: "order" });
 }
 
 function removeIcon(): void {
@@ -483,6 +484,7 @@ function closeReliefEditor(): void {
   clearMainTip();
   $("#reliefEditor").dialog("destroy");
   ensureEl("reliefEditor").remove();
+  setReliefEditing(false);
 }
 
 export const ReliefEditor = { open };

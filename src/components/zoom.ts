@@ -1,6 +1,7 @@
 import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
 import { setViewportTransform, viewport } from "@/components/viewport";
+import { PerformanceMetrics } from "@/renderers/viewport/performance-metrics";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -26,6 +27,7 @@ function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   isViewChanged = true;
 
   setViewportTransform(k, x, y);
+  PerformanceMetrics.view(k, x, y);
 
   pendingScaleChange = pendingScaleChange || isScaleChanged;
   pendingPositionChange = pendingPositionChange || isPositionChanged;
@@ -39,6 +41,7 @@ function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
 
 /** Per-frame view tracking. Keep this cheap */
 function handleZoomPerFrame(): void {
+  const start = PerformanceMetrics.active ? performance.now() : 0;
   const didScaleChange = pendingScaleChange;
   const didPositionChange = pendingPositionChange;
   pendingScaleChange = false;
@@ -61,6 +64,14 @@ function handleZoomPerFrame(): void {
   window.updateMinimap?.();
   redrawTracedImage();
   if (options.app.performance.viewportRedraw === "continuous") ViewportLayers.schedule();
+  if (PerformanceMetrics.active)
+    PerformanceMetrics.record({
+      layer: "viewport",
+      phase: "zoom update",
+      reason: "pan/zoom",
+      start,
+      duration: performance.now() - start
+    });
 }
 
 /** Rewrite map content once zoom gesture settles */
@@ -98,7 +109,7 @@ function applyLabelsZoomSize(): void {
 
 export function invokeActiveZooming(): void {
   if (options.map.labels.resizeOnZoom) applyLabelsZoomSize();
-  ViewportLayers.renderNow();
+  ViewportLayers.flush();
 
   if (!customization && options.app.performance.stateHalos) {
     const statesHalo = select("#statesHalo");

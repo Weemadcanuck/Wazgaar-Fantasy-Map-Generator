@@ -2,6 +2,7 @@ import type { Layer } from "@/components/layers";
 import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features-generator";
 import { ensureEl, findEl } from "@/utils";
+import { invalidateCoastalRaster } from "./coastal-raster";
 
 /**
  * The landmass is a plain rect shown through the land mask. The layer also owns the shared feature
@@ -32,6 +33,7 @@ export function drawLandmass(layer: Layer): void {
   ensureEl("featurePaths").innerHTML = paths.join("");
   ensureEl("land").innerHTML = landMask.join("");
   ensureEl("water").innerHTML = waterMask.join("");
+  invalidateCoastalRaster();
 
   layer.getEl().innerHTML = /* html */ `<rect x="0" y="0" width="${options.map.graph.width}" height="${options.map.graph.height}" />`;
 
@@ -41,4 +43,5 @@ export function drawLandmass(layer: Layer): void {
 /** Rebuild one feature's shared path; every layer referencing it follows */
 export function drawFeaturePath(feature: Feature): void {
   findEl(`feature_${feature.i}`)?.setAttribute("d", Coastline.getFeaturePath(feature));
+  invalidateCoastalRaster();
 }

@@ -51,7 +51,12 @@ const scenes: Record<EmblemType, Scene<EmblemData>> = {
   province: new Scene(),
   state: new Scene()
 };
-const layer = ViewportLayers.register({ id: "emblems", render: reconcileEmblems });
+const layer = ViewportLayers.register({
+  id: "emblems",
+  render: reconcileEmblems,
+  isActive: () => Layers.isOn("emblems"),
+  scaleSensitive: true
+});
 const sizes: Record<EmblemType, number> = { burg: 0, province: 0, state: 0 };
 const reconcileListeners = new Set<() => void>();
 // unreferenced shields tolerated before a sweep is worth scanning the document for
