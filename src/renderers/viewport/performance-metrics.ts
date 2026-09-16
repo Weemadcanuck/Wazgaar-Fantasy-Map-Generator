@@ -16,6 +16,13 @@ export interface RenderMetric {
   live?: number;
   mode?: "raster" | "mixed" | "SVG";
   cacheBytes?: number;
+  cacheLimitBytes?: number;
+  cacheHits?: number;
+  cacheMisses?: number;
+  tilesBuilt?: number;
+  tilesEvicted?: number;
+  tileKey?: string;
+  tilePixels?: number;
   readyTiles?: number;
   requestedTiles?: number;
   reusedHigherResolution?: number;

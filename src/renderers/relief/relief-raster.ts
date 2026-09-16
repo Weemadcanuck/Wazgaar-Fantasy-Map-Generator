@@ -3,7 +3,7 @@ import type { ViewportBounds } from "../viewport/viewport-renderer";
 
 const NS = "http://www.w3.org/2000/svg";
 export const TILE_SIZE = 256;
-export const CACHE_BYTES = 128 * 1024 * 1024;
+export const CACHE_BYTES = 512 * 1024 * 1024;
 export interface ReliefTile {
   key: string;
   x: number;
@@ -67,10 +67,16 @@ export class ReliefRasterCache {
   private generation = 0;
   private controller = new AbortController();
   failed = false;
+  private counters = { cacheHits: 0, cacheMisses: 0, tilesBuilt: 0, tilesEvicted: 0 };
+
+  get diagnostics() {
+    return { cacheLimitBytes: this.limitBytes, ...this.counters };
+  }
 
   constructor(
     private readonly build: (tile: ReliefTile, signal: AbortSignal) => Promise<RasterImage>,
-    private readonly ready: () => void
+    private readonly ready: () => void,
+    private readonly limitBytes = CACHE_BYTES
   ) {}
 
   get bytes(): number {
@@ -90,12 +96,12 @@ export class ReliefRasterCache {
       if (best) chosen.set(tile.key, best);
       requiredBytes += best?.bytes ?? tile.pixels * tile.pixels * 4;
     }
-    // Do not pin oversized reuses at the expense of completing the visible view within the unchanged cap.
+    // Do not pin oversized reuses at the expense of completing the visible view within the cap.
     const oversized = this.wanted
       .filter(tile => (chosen.get(tile.key)?.tile.pixels ?? 0) > tile.pixels)
       .sort((a, b) => chosen.get(b.key)!.bytes - b.pixels ** 2 * 4 - (chosen.get(a.key)!.bytes - a.pixels ** 2 * 4));
     for (const tile of oversized) {
-      if (requiredBytes <= CACHE_BYTES) break;
+      if (requiredBytes <= this.limitBytes) break;
       requiredBytes -= chosen.get(tile.key)!.bytes - tile.pixels ** 2 * 4;
       chosen.delete(tile.key);
     }
@@ -112,6 +118,9 @@ export class ReliefRasterCache {
   request(tiles: ReliefTile[]): ReadyReliefTile[] | null {
     this.wanted = tiles;
     const coverage = this.coverage;
+    this.counters.cacheHits += coverage.ready.length;
+    this.counters.cacheMisses += coverage.missing.length;
+    // Map insertion order tracks last requested use, including sharper-tile reuse.
     for (const tile of coverage.ready) {
       const entry = this.entries.get(tile.sourceKey)!;
       this.entries.delete(tile.sourceKey);
@@ -142,12 +151,13 @@ export class ReliefRasterCache {
   private makeRoom(bytes: number): void {
     const protectedKeys = new Set(this.coverage.ready.map(tile => tile.sourceKey));
     for (const [key, entry] of this.entries) {
-      if (this.bytes + bytes <= CACHE_BYTES) return;
+      if (this.bytes + bytes <= this.limitBytes) return;
       if (protectedKeys.has(key)) continue;
       entry.image.dispose();
       this.entries.delete(key);
+      this.counters.tilesEvicted++;
     }
-    if (this.bytes + bytes > CACHE_BYTES) throw new Error("Relief raster cache budget exceeded");
+    if (this.bytes + bytes > this.limitBytes) throw new Error("Relief raster cache budget exceeded");
   }
 
   clear(): void {
@@ -155,6 +165,7 @@ export class ReliefRasterCache {
     for (const entry of this.entries.values()) entry.image.dispose();
     this.entries.clear();
     this.failed = false;
+    this.counters = { cacheHits: 0, cacheMisses: 0, tilesBuilt: 0, tilesEvicted: 0 };
   }
 
   private async pump(): Promise<void> {
@@ -171,11 +182,12 @@ export class ReliefRasterCache {
           image.dispose();
           continue;
         }
-        if (this.bytes + bytes > CACHE_BYTES) {
+        if (this.bytes + bytes > this.limitBytes) {
           image.dispose();
           throw new Error("Relief raster cache budget exceeded");
         }
         this.entries.set(tile.key, { tile, image, bytes });
+        this.counters.tilesBuilt++;
         this.ready();
       }
     } catch (error) {
@@ -233,7 +245,18 @@ export function reliefTileSvg(tile: ReliefTile, icons: ReliefIcon[], definitions
   return new XMLSerializer().serializeToString(svg);
 }
 
-export async function rasterizeReliefTile(svg: string, pixels: number, signal: AbortSignal): Promise<RasterImage> {
+export async function rasterizeReliefTile(
+  svg: string,
+  pixels: number,
+  signal: AbortSignal,
+  measure?: (phase: string, start: number, duration: number) => void
+): Promise<RasterImage> {
+  let started = performance.now();
+  const measured = (phase: string) => {
+    const now = performance.now();
+    measure?.(phase, started, now - started);
+    started = now;
+  };
   const source = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
   const image = new Image();
   const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas") as HTMLCanvasElement;
@@ -260,10 +283,12 @@ export async function rasterizeReliefTile(svg: string, pixels: number, signal: A
       image.src = source;
     });
     if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    measured("SVG load");
     canvas.width = canvas.height = pixels;
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Relief canvas unavailable");
     context.drawImage(image, 2, 2, pixels, pixels, 0, 0, pixels, pixels);
+    measured("canvas draw");
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(blob => {
         if (blob) resolve(blob);
@@ -271,6 +296,7 @@ export async function rasterizeReliefTile(svg: string, pixels: number, signal: A
       })
     );
     if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    measured("PNG encode");
     const url = URL.createObjectURL(blob);
     return { url, dispose: () => URL.revokeObjectURL(url) };
   } finally {

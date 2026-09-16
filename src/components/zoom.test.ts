@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { PerformanceMetrics } from "@/renderers/viewport/performance-metrics";
+
 vi.mock("@/renderers/draw-custom-points", () => ({ resizeCustomPoints: vi.fn() }));
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -133,4 +135,15 @@ describe("invokeActiveZooming", () => {
     const halo = document.getElementById("statesHalo")!;
     expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
   });
+});
+
+it("records the applied pan and zoom path during a performance capture", () => {
+  PerformanceMetrics.start();
+  try {
+    setMapZoom(4);
+    const report = PerformanceMetrics.stop();
+    expect(report.views.at(-1)).toMatchObject({ scale: viewport.scale, x: viewport.x, y: viewport.y });
+  } finally {
+    if (PerformanceMetrics.active) PerformanceMetrics.stop();
+  }
 });

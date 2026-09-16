@@ -44,8 +44,21 @@ const rasterEnabled = typeof localStorage !== "undefined" && localStorage.getIte
 const raster = new ReliefRasterCache(
   async (tile, signal) => {
     const start = performance.now();
+    const measure = PerformanceMetrics.active
+      ? (phase: string, start: number, duration: number) =>
+          PerformanceMetrics.record({
+            layer: "relief",
+            reason: "tile generation",
+            phase,
+            start,
+            duration,
+            tileKey: tile.key,
+            tilePixels: tile.pixels
+          })
+      : undefined;
     const svg = reliefTileSvg(tile, pack.relief ?? [], rasterDefinitions!);
-    const result = await rasterizeReliefTile(svg, tile.pixels, signal);
+    measure?.("SVG prepare", start, performance.now() - start);
+    const result = await rasterizeReliefTile(svg, tile.pixels, signal, measure);
     if (PerformanceMetrics.active)
       PerformanceMetrics.record({
         layer: "relief",
@@ -53,6 +66,8 @@ const raster = new ReliefRasterCache(
         phase: "raster tile",
         start,
         duration: performance.now() - start,
+        tileKey: tile.key,
+        tilePixels: tile.pixels,
         created: 1
       });
     return result;
@@ -78,6 +93,7 @@ export function getReliefRenderStatus() {
     mode: rasterVisible ? (rasterMixed ? "mixed" : "raster") : "SVG",
     editing,
     cacheBytes: raster.bytes,
+    ...raster.diagnostics,
     displayedRasterTiles: rasterVisible ? coverage.imageCount : 0,
     failed: raster.failed,
     reason: rasterReason,
@@ -195,6 +211,7 @@ function reportReliefDisplay(): void {
       duration: 0,
       mode: rasterVisible ? (rasterMixed ? "mixed" : "raster") : "SVG",
       cacheBytes: raster.bytes,
+      ...raster.diagnostics,
       displayedRasterTiles: rasterVisible ? coverage.imageCount : 0,
       readyTiles: raster.progress.ready,
       requestedTiles: raster.progress.requested,

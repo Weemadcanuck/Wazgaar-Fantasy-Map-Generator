@@ -16,6 +16,8 @@ function snapshot() {
     reliefStyle: { ...styles.relief },
     viewport: { ...viewport },
     map: { ...options.map.graph },
+    devicePixelRatio: window.devicePixelRatio,
+    performanceSettings: { ...options.app?.performance },
     hidden: document.hidden
   };
 }
@@ -70,7 +72,7 @@ function beginCapture(label: string): void {
       document.removeEventListener("visibilitychange", onVisibility);
       const report = {
         schemaVersion: 1,
-        stage: "relief-retained-coverage",
+        stage: "relief-cache-512",
         version: VERSION,
         capturedAt: new Date().toISOString(),
         label,

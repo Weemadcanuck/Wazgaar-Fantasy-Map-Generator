@@ -106,7 +106,7 @@ describe("relief raster lifecycle", () => {
   });
 });
 
-it("fits the observed distant high-DPR viewport without undersampling or raising the cap", () => {
+it("fits the observed distant high-DPR viewport without undersampling", () => {
   const view = { scale: 1, x0: 398, y0: 176, x1: 1629, y1: 946 };
   const source = [{ icon: "x", x: 0, y: 0, s: 2048 }];
   const tiles = planReliefTiles(view, source, 2.6)!;
@@ -123,13 +123,14 @@ it("evicts least-recently-used unrequested tiles only when allocation requires i
   const freed: string[] = [];
   const build = vi.fn(async (tile: ReliefTile) => ({ url: tile.key, dispose: () => freed.push(tile.key) }));
   const cache = new ReliefRasterCache(build, vi.fn());
-  const tiles = Array.from({ length: 8 }, (_, i) => ({ ...tile, key: String(i), pixels: 2048 }));
+  const count = CACHE_BYTES / (2048 ** 2 * 4);
+  const tiles = Array.from({ length: count }, (_, i) => ({ ...tile, key: String(i), pixels: 2048 }));
   cache.request(tiles);
-  for (let i = 0; i < 10; i++) await flush();
+  for (let i = 0; i < count + 2; i++) await flush();
   expect(cache.bytes).toBe(CACHE_BYTES);
   cache.pause();
   expect(cache.request([tiles[0]])).toHaveLength(1);
-  expect(build).toHaveBeenCalledTimes(8);
+  expect(build).toHaveBeenCalledTimes(count);
   cache.request([tiles[0], { ...tiles[0], key: "new" }]);
   await flush();
   expect(freed).toEqual(["1"]);
@@ -169,7 +170,7 @@ it("reuses the smallest adequate sharper tile immediately without decoding a low
 
 it("does not pin sharper tiles that would prevent completing the visible request within budget", async () => {
   const build = vi.fn(async (tile: ReliefTile) => ({ url: tile.key, dispose: vi.fn() }));
-  const cache = new ReliefRasterCache(build, vi.fn());
+  const cache = new ReliefRasterCache(build, vi.fn(), 128 * 1024 * 1024);
   const high = Array.from({ length: 8 }, (_, i) => ({ ...tile, key: `high-${i}`, x: i * 256, pixels: 2048 }));
   cache.request(high);
   for (let i = 0; i < 10; i++) await flush();
@@ -178,7 +179,28 @@ it("does not pin sharper tiles that would prevent completing the visible request
   for (let i = 0; i < 10; i++) await flush();
   expect(cache.failed).toBe(false);
   expect(cache.request(low)).toHaveLength(9);
-  expect(cache.bytes).toBeLessThanOrEqual(CACHE_BYTES);
+  expect(cache.bytes).toBeLessThanOrEqual(128 * 1024 * 1024);
   expect(build.mock.calls.length).toBeLessThan(17); // reuse still avoids most of the original nine new decodes
   cache.clear();
+});
+
+it("keeps a recently revisited tile after leaving its view and reports eviction", async () => {
+  const disposed: string[] = [];
+  const build = vi.fn(async (tile: ReliefTile) => ({ url: tile.key, dispose: () => disposed.push(tile.key) }));
+  const cache = new ReliefRasterCache(build, vi.fn(), 2 * 512 ** 2 * 4);
+  const a = { ...tile, key: "a", x: 0 };
+  const b = { ...tile, key: "b", x: 256 };
+  const c = { ...tile, key: "c", x: 512 };
+  cache.request([a, b]);
+  await flush();
+  cache.request([a]);
+  cache.pause();
+  cache.request([c]);
+  await flush();
+  expect(disposed).toEqual(["b"]);
+  expect(cache.request([a])).toHaveLength(1);
+  expect(build).toHaveBeenCalledTimes(3);
+  expect(cache.diagnostics).toMatchObject({ tilesBuilt: 3, tilesEvicted: 1, cacheHits: 2, cacheMisses: 3 });
+  cache.clear();
+  expect(cache.diagnostics).toMatchObject({ tilesBuilt: 0, tilesEvicted: 0, cacheHits: 0, cacheMisses: 0 });
 });

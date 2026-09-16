@@ -29,7 +29,7 @@ Test with copies of existing maps. New saves are not compatible with the older O
 - Distant views (scale ≤ 2) use cached raster tiles; close views and editing use SVG. Exports rebuild full-detail vectors from source data.
 - While a view warms, cached tiles stay visible and SVG covers missing regions. Publish the completed batch together: updating clipping after each tile was measured to slow loading.
 - Unchanged tiles survive zoom and layer toggles. Edits, replacement maps/roots and display-density changes invalidate them. Sharper tiles can satisfy lower-resolution requests.
-- The cache is capped at 128 MiB of estimated decoded pixels, not total process memory. Old tiles can be evicted. Cold views and very large icons still take time to load.
+- The cache is capped at 512 MiB of estimated decoded pixels, not total process memory. Least-recently-used tiles outside the requested coverage can be evicted. The budget is allocated on demand. Cold views and very large icons still take time to load.
 - The loading badge explains this wait. Tools → Record performance is opt-in and bounded. For diagnosis, set localStorage `reliefRasterPrototype` to `off` and reload for SVG only; the old key is retained for compatibility.
 
 ### Build and checks
@@ -50,6 +50,12 @@ npm run electron -- build
 `npm run dev` starts the browser version; `npm run electron` starts the desktop version. `npm run electron -- dist --win --publish never` builds a Windows installer. Playwright is a separate, explicitly run check (`npm run test:e2e`).
 
 Version comes from `src/services/versioning.ts`; run `npm run sync-version` after changing it. Keep the legacy desktop app ID, origin and profile directory stable: they preserve installed settings and local maps despite the new display name.
+
+### Performance retest (1.154.1)
+
+Use the same screen, window size and application zoom for each capture. Record a loading view, then a fully warmed pan/zoom route, relief off, and the same route after relief is re-enabled. Diagnostics include pan/zoom history, per-frame zoom-handler time, tile resolution and SVG preparation/load, canvas drawing and PNG encoding times. Cache counters are cumulative since the last invalidation; hits and misses count tiles per view request, not unique tiles. Compare initial and final counters within each capture.
+
+The larger cache reduces eviction pressure; it does not claim to speed up first-time decoding. Keep native display density and full-detail export. The 1.154.1 changes pass 1,281 application tests and a real Electron diagnostic capture plus Jotun save/reload checks. Asynchronous tile timings include scheduling waits and should not be read as CPU time.
 
 ### Validation and limits
 
