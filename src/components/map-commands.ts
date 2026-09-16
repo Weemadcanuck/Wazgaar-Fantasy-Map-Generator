@@ -39,6 +39,12 @@ export interface MapCommand {
 /** Ordered by priority: the omnibar breaks score ties by definition order */
 export const MAP_COMMANDS: MapCommand[] = [
   {
+    id: "recordPerformance",
+    name: "Record map performance",
+    aliases: "diagnostics rendering relief benchmark",
+    run: () => import("@/controllers/performance-diagnostics").then(module => module.capturePerformance())
+  },
+  {
     id: "helpAssistant",
     name: "Ask AI: Azgaar Assistant",
     aliases: "help chat question ask faq support how why what ?",

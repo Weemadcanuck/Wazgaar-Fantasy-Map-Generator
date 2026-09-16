@@ -213,6 +213,10 @@ const TEMPLATE = /* html */ `
       Minimap
     </button>
   </div>
+  <div class="separator">Diagnostics</div>
+  <div class="grid">
+    <button id="recordPerformance" data-tip="Record map responsiveness and tile loading in a JSON report">Record performance</button>
+  </div>
   <div class="separator">Create</div>
   <div class="grid">
     <button id="openSubmapTool" data-tip="Click to generate a submap from the current viewport">Submap</button>
