@@ -31,7 +31,7 @@ const LINKS = [
 ];
 
 function render(): string {
-  return /* html */ `<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
+  return /* html */ `<p><b>R&amp;R testing build 1.153.0-rr.1</b> — relief and coastal viewport performance. Updates are installed manually from the fork's Releases page.</p><b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
     you wish.
 
     <p>

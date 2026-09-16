@@ -5,7 +5,6 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { MenuItemConstructorOptions } from "electron";
 import { app, BrowserWindow, dialog, Menu, nativeImage, net, protocol, screen, shell } from "electron";
-import { initUpdater } from "./updater";
 
 const SCHEME = "app";
 const HOST = "fmg";
@@ -16,11 +15,8 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const WIKI_URL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
 const DISCORD_URL = "https://discord.gg/X7E84HU";
 
-/**
- * The app is named after `productName`, but its data stays in the folder the name would have
- * produced before, so a rename never strands the maps stored in localStorage and IndexedDB
- */
-app.setPath("userData", path.join(app.getPath("appData"), "fantasy-map-generator"));
+// Testing builds use a separate profile and never offer upstream automatic updates.
+app.setPath("userData", path.join(app.getPath("appData"), "azgaar-rr-testing"));
 
 app.setAboutPanelOptions({
   applicationName: app.name,
@@ -210,16 +206,11 @@ function buildMenu(): void {
 }
 
 let quitting = false; // set on Cmd+Q, where closing the window alone would leave the app running
-let skipConfirmation = false; // set once the user has confirmed, and by the updater to install on restart
+let skipConfirmation = false; // set once the user has confirmed
 
 app.on("before-quit", () => {
   quitting = true;
 });
-
-/** Closes the window without the quit confirmation, so the installer can restart the app */
-function allowClose(): void {
-  skipConfirmation = true;
-}
 
 /**
  * The web app warns before navigating away via `onbeforeunload`, but Electron cancels the close
@@ -311,7 +302,6 @@ if (!app.requestSingleInstanceLock()) {
     serveRenderer();
     buildMenu();
     createWindow();
-    initUpdater(allowClose); // app-wide, so re-opening a window on macOS does not start a second updater
     app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());
   });
 

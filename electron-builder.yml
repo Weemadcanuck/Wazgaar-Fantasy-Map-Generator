@@ -1,4 +1,6 @@
-appId: com.azgaar.fantasy-map-generator
+appId: com.weemadcanuck.azgaar-rr-testing
+extraMetadata:
+  version: 1.153.0-rr.1
 copyright: Copyright © 2017-2026 Azgaar and contributors
 directories:
   output: release
@@ -9,7 +11,7 @@ files:
   - "!node_modules/**/*" # the renderer is bundled by Vite, the main process only needs Electron itself
 asar: true
 afterPack: ./scripts/adhoc-sign.mjs
-artifactName: fmg-${version}-${os}-${arch}.${ext}
+artifactName: azgaar-rr-${version}-${os}-${arch}.${ext}
 mac:
   category: public.app-category.graphics-design
   target:
@@ -20,7 +22,7 @@ mac:
 win:
   target:
     - target: nsis
-      arch: [x64, arm64]
+      arch: [x64]
 linux:
   category: Graphics
   maintainer: Azgaar <azgaar.fmg@yandex.com>
@@ -38,4 +40,6 @@ nsis:
   buildUniversalInstaller: false
 publish:
   provider: github
-  releaseType: draft
+  owner: Weemadcanuck
+  repo: Wazgaar-Fantasy-Map-Generator
+  releaseType: prerelease
