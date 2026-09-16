@@ -35,9 +35,9 @@ beforeEach(() => {
   bounds.scale = 1;
   document.body.innerHTML = `<svg><defs><g id="featurePaths"><path id="feature_1" d="M0 0L20 0L20 20Z" /></g>
     <mask id="coastal-bands-mask"><use href="#feature_1" /></mask><mask id="coastal-bands-lines" />
-    <mask id="coastal-bands-shade" /></defs><g id="oceanBands" mask="url(#coastal-bands-mask)" opacity="0.7">
+    <mask id="coastal-bands-shade" /><mask id="waves-mask" /></defs><g id="ocean"><g id="oceanWaves" opacity="0.6"><path d="M0 0L20 20" mask="url(#waves-mask)" /></g><g id="oceanBands" mask="url(#coastal-bands-mask)" opacity="0.7">
     <rect data-band="shade" width="512" height="512" mask="url(#coastal-bands-shade)" />
-    <rect width="512" height="512" mask="url(#coastal-bands-lines)" /></g></svg>`;
+    <rect width="512" height="512" mask="url(#coastal-bands-lines)" /></g></g></svg>`;
 });
 
 describe("coastal raster cache", () => {
@@ -48,16 +48,20 @@ describe("coastal raster cache", () => {
     await flush();
     render();
     const group = document.getElementById("oceanBands")!;
-    expect(group.querySelector("image")?.getAttribute("href")).toBe("blob:coast");
+    expect(document.querySelector("[data-coastal-raster] image")?.getAttribute("href")).toBe("blob:coast");
     expect(group.getAttribute("opacity")).toBe("0.7");
-    expect(group.hasAttribute("mask")).toBe(false);
+    expect(group.hasAttribute("mask")).toBe(true);
     const source = vi.mocked(rasterizeSvgTile).mock.calls[0][0];
     expect(source).toContain('id="feature_1"');
-    expect(source).not.toContain('opacity="0.7"');
+    expect(source).toContain('opacity="0.7"');
+    expect(source).toContain('opacity="0.6"');
+    expect(source).toContain('id="waves-mask"');
     const clone = document.querySelector("svg")!.cloneNode(true) as Element;
     restoreCoastalVectors(clone);
     expect(clone.querySelector("#oceanBands")!.isEqualNode(original)).toBe(true);
-    expect(group.querySelector("image")).not.toBeNull();
+    expect(clone.querySelector("#oceanWaves")?.parentElement?.id).toBe("ocean");
+    expect(clone.querySelector("#oceanWaves path")).not.toBeNull();
+    expect(document.querySelector("[data-coastal-raster] image")).not.toBeNull();
     expect(getCoastalRenderStatus().mode).toBe("raster");
   });
 

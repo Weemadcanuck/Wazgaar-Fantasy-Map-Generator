@@ -10,11 +10,11 @@ let source = "";
 let density = 0;
 const cache = new RasterTileCache(
   (tile, signal) => rasterizeSvgTile(coastalTileSvg(tile, source), tile.pixels, signal, undefined, encoder),
-  () => ViewportLayers.invalidate("coastalBands", "coastal tiles ready"),
+  () => ViewportLayers.invalidate("coastalDecoration", "coastal tiles ready"),
   CACHE_BYTES
 );
 ViewportLayers.register({
-  id: "coastalBands",
+  id: "coastalDecoration",
   render,
   scaleSensitive: true,
   viewportSensitive: () => true
@@ -22,11 +22,9 @@ ViewportLayers.register({
 
 /** Runtime images never enter a saved map or export; the original vector children remain available. */
 export function restoreCoastalVectors(root: ParentNode): void {
-  const group = root.querySelector("#oceanBands");
+  const group = root.querySelector("[data-coastal-raster]");
   const vectors = group?.querySelector("[data-coastal-vectors]");
-  if (!group || !vectors) return;
-  group.replaceChildren(...vectors.childNodes);
-  group.setAttribute("mask", "url(#coastal-bands-mask)");
+  if (group && vectors) group.replaceWith(...vectors.childNodes);
 }
 
 export function invalidateCoastalRaster(): void {
@@ -34,7 +32,7 @@ export function invalidateCoastalRaster(): void {
   restoreCoastalVectors(document);
   owner = null;
   source = "";
-  ViewportLayers.invalidate("coastalBands", "coastline changed");
+  ViewportLayers.invalidate("coastalDecoration", "coastline changed");
 }
 
 export function getCoastalRenderStatus() {
@@ -54,8 +52,11 @@ export function coastalTileSvg(tile: RasterTile, content: string): string {
 
 function render({ root, bounds }: ViewportRenderContext): void {
   if (root !== document) return void restoreCoastalVectors(root);
-  const group = document.getElementById("oceanBands");
-  if (!group?.hasChildNodes()) {
+  const group = document.getElementById("ocean");
+  const originals = [document.getElementById("oceanWaves"), document.getElementById("oceanBands")].filter(
+    (element): element is HTMLElement => element !== null
+  );
+  if (!group || !originals.some(element => element.hasChildNodes())) {
     if (owner) invalidateCoastalRaster();
     return;
   }
@@ -64,13 +65,10 @@ function render({ root, bounds }: ViewportRenderContext): void {
     invalidateCoastalRaster();
     owner = group;
     density = dpr;
-    const copy = group.cloneNode(true) as Element;
-    copy.removeAttribute("opacity");
-    copy.removeAttribute("filter");
-    const defs = ["featurePaths", "coastal-bands-mask", "coastal-bands-lines", "coastal-bands-shade"]
+    const defs = ["featurePaths", "waves-mask", "coastal-bands-mask", "coastal-bands-lines", "coastal-bands-shade"]
       .map(id => document.getElementById(id)?.outerHTML ?? "")
       .join("");
-    source = `<defs>${defs}</defs>${copy.outerHTML}`;
+    source = `<defs>${defs}</defs>${originals.map(element => element.outerHTML).join("")}`;
   }
   if (bounds.scale > 2 || customization || cache.failed) {
     cache.pause();
@@ -91,17 +89,19 @@ function render({ root, bounds }: ViewportRenderContext): void {
   }
   const ready = cache.request(tiles);
   if (!ready) return void restoreCoastalVectors(document);
-  let vectors = group.querySelector<SVGGElement>("[data-coastal-vectors]");
-  if (!vectors) {
-    vectors = document.createElementNS(NS, "g");
+  let raster = group.querySelector<SVGGElement>("[data-coastal-raster]");
+  if (!raster) {
+    raster = document.createElementNS(NS, "g");
+    raster.dataset.coastalRaster = "";
+    const vectors = document.createElementNS(NS, "g");
     vectors.dataset.coastalVectors = "";
     vectors.style.display = "none";
-    vectors.append(...group.childNodes);
-    group.append(vectors);
-    group.removeAttribute("mask");
+    originals[0].before(raster);
+    vectors.append(...originals);
+    raster.append(vectors);
   }
   const images = new Map(
-    Array.from(group.querySelectorAll<SVGImageElement>("[data-coastal-tile]")).map(image => [
+    Array.from(raster.querySelectorAll<SVGImageElement>("[data-coastal-tile]")).map(image => [
       image.dataset.coastalTile,
       image
     ])
@@ -117,7 +117,7 @@ function render({ root, bounds }: ViewportRenderContext): void {
       image.setAttribute("y", String(tile.y));
       image.setAttribute("width", String(TILE_SIZE));
       image.setAttribute("height", String(TILE_SIZE));
-      group.append(image);
+      raster.append(image);
     }
     if (image.getAttribute("href") !== tile.url) image.setAttribute("href", tile.url);
   }
