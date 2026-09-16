@@ -753,7 +753,39 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   background-color: var(--header-active);
 }
 
-#toolsContent > .grid {
+#toolsContent {
+  max-height: calc(100dvh - 8em);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#toolsContent .tools-groups {
+  display: flex;
+  gap: 0.4em;
+  padding-top: 0.3em;
+}
+
+#toolsContent .tools-groups button {
+  flex: 1;
+}
+
+#toolsContent details {
+  border-bottom: 1px solid var(--dark-solid);
+  padding-block: 0.25em;
+}
+
+#toolsContent summary {
+  cursor: pointer;
+  padding: 0.35em 0;
+  font-weight: bold;
+}
+
+#toolsContent summary:hover,
+#toolsContent summary:focus-visible {
+  background: var(--bg-lighter);
+}
+
+#toolsContent .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin: 0.2em 0;

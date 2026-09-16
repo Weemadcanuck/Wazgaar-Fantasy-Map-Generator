@@ -5,9 +5,13 @@ import { capturePerformance } from "@/controllers/performance-diagnostics";
 import { downloadFile, ensureEl } from "@/utils";
 
 const TEMPLATE = /* html */ `
-<div class="separator">Obsidian Fork</div><div class="grid"><button id="forkCustomLayers">Custom layers</button><button id="forkArchiveExport">Obsidian export</button><button id="forkLegacyNotes" data-tip="Download the original notes retained during migration">Original notes backup</button><button id="forkPerformance">Record performance</button></div>
-  <div class="separator">Edit</div>
+  <div class="tools-groups">
+    <button type="button" id="toolsExpandAll">Expand all</button>
+    <button type="button" id="toolsCollapseAll">Collapse all</button>
+  </div>
+  <details open><summary>Edit</summary>
   <div class="grid">
+    <button id="forkCustomLayers">Custom layers</button>
     <button id="editBiomesButton" data-tip="Click to open Biomes Editor" data-shortcut="Shift + B">
       Biomes
     </button>
@@ -91,7 +95,8 @@ const TEMPLATE = /* html */ `
     <button id="editUnitsButton" data-tip="Click to open Units Editor" data-shortcut="Shift + Q">Units</button>
     <button id="editZonesButton" data-tip="Click to open Zones Editor" data-shortcut="Shift + Z">Zones</button>
   </div>
-  <div class="separator">Regenerate</div>
+  </details>
+  <details><summary>Regenerate</summary>
   <div id="regenerateFeature" class="grid">
     <button
       id="regenerateBurgs"
@@ -166,7 +171,8 @@ const TEMPLATE = /* html */ `
       Zones
     </button>
   </div>
-  <div class="separator">Add</div>
+  </details>
+  <details open><summary>Add</summary>
   <div id="addFeature" class="grid">
     <button
       id="addBurgTool"
@@ -199,8 +205,10 @@ const TEMPLATE = /* html */ `
     </button>
     <button id="addRoute" data-tip="Open route creation dialog" data-shortcut="Shift + 5">Route</button>
   </div>
-  <div class="separator">Show</div>
+  </details>
+  <details><summary>Inspect</summary>
   <div class="grid">
+    <button id="forkPerformance">Record performance</button>
     <button id="overviewCellsButton" data-tip="Click to open Cell details view" data-shortcut="Shift + E">
       Cells
     </button>
@@ -215,20 +223,33 @@ const TEMPLATE = /* html */ `
       Minimap
     </button>
   </div>
-  <div class="separator">Create</div>
+  </details>
+  <details><summary>Create</summary>
   <div class="grid">
     <button id="openSubmapTool" data-tip="Click to generate a submap from the current viewport">Submap</button>
     <button id="openTransformTool" data-tip="Click to transform the map">Transform</button>
     <button id="openWrapTool" data-tip="Adjust cell shapes with a brush">Wrap</button>
   </div>
+  </details>
+  <details><summary>Export</summary>
+    <div class="grid">
+      <button id="forkArchiveExport">Obsidian export</button>
+      <button id="forkLegacyNotes" data-tip="Download the original notes retained during migration">Original notes backup</button>
+    </div>
+  </details>
 `;
 
 ensureEl("toolsContent").innerHTML = TEMPLATE;
 
 ensureEl("toolsContent").addEventListener("click", event => {
-  if (customization) return tip("Please exit the customization mode first", false, "error");
   if (!(event instanceof MouseEvent) || !(event.target instanceof HTMLElement)) return;
   if (!["BUTTON", "I"].includes(event.target.tagName)) return;
+  if (event.target.id === "toolsExpandAll" || event.target.id === "toolsCollapseAll") {
+    const open = event.target.id === "toolsExpandAll";
+    for (const group of ensureEl("toolsContent").querySelectorAll("details")) group.open = open;
+    return;
+  }
+  if (customization) return tip("Please exit the customization mode first", false, "error");
   const command = MAP_COMMANDS.find(command => command.id === (event.target as HTMLElement).id);
   if (command) void command.run(event);
 });

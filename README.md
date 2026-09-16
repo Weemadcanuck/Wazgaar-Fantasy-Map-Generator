@@ -51,6 +51,10 @@ npm run electron -- build
 
 Version comes from `src/services/versioning.ts`; run `npm run sync-version` after changing it. Keep the legacy desktop app ID, origin and profile directory stable: they preserve installed settings and local maps despite the new display name.
 
+### Tools panel (1.154.2)
+
+Tools uses native collapsible categories with Expand all / Collapse all controls. Edit and Add start open. Content controls the panel height; the Tools area scrolls when necessary to keep the footer on screen. Height limits are recalculated on section toggles, panel opening/tab changes, drag completion and window resizing, with no polling or map-frame work.
+
 ### Performance retest (1.154.1)
 
 Use the same screen, window size and application zoom for each capture. Record a loading view, then a fully warmed pan/zoom route, relief off, and the same route after relief is re-enabled. Diagnostics include pan/zoom history, per-frame zoom-handler time, tile resolution and SVG preparation/load, canvas drawing and PNG encoding times. Cache counters are cumulative since the last invalidation; hits and misses count tiles per view request, not unique tiles. Compare initial and final counters within each capture.

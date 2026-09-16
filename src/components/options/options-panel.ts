@@ -25,6 +25,7 @@ export function showOptions(event?: Event): void {
   ensureEl("regenerate").style.display = "none";
   ensureEl("options").style.display = "block";
   ensureEl("optionsTrigger").style.display = "none";
+  fitToolsPanel();
   event?.stopPropagation();
 }
 
@@ -59,6 +60,15 @@ function selectTab(id: string): void {
   const shown = id === "toolsTab" && customization === 1 ? "customizationMenu" : TAB_CONTENT[id];
   if (shown) ensureEl(shown).style.display = "block";
   if (id === "styleTab") window.selectStyleElement?.();
+  fitToolsPanel();
+}
+
+/** Let content set the height, reserving screen space for the footer. */
+function fitToolsPanel(): void {
+  const tools = ensureEl("toolsContent");
+  if (tools.offsetParent === null) return;
+  const available = window.innerHeight - tools.getBoundingClientRect().top - ensureEl("sticked").offsetHeight - 16;
+  tools.style.maxHeight = `${Math.max(64, available)}px`;
 }
 
 /** Keep every `<x>Input` and its `<x>Output` showing the same value */
@@ -77,7 +87,9 @@ function onPanelInput(event: Event): void {
 }
 
 function initialize(): void {
-  $("#optionsContainer").draggable({ handle: ".drag-trigger", snap: "svg", snapMode: "both" });
+  ensureEl("toolsContent").addEventListener("toggle", fitToolsPanel, true);
+  window.addEventListener("resize", fitToolsPanel);
+  $("#optionsContainer").draggable({ handle: ".drag-trigger", snap: "svg", snapMode: "both", stop: fitToolsPanel });
   $("#exitCustomization").draggable({ handle: "div" });
   $("#mapLayers").disableSelection();
 
