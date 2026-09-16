@@ -223,13 +223,18 @@ export function reliefTileSvg(tile: ReliefTile, icons: ReliefIcon[], definitions
   );
   const ids = new Set(visible.map(icon => icon.icon));
   const children = Array.from(definitions.children);
-  const selected = children.filter(child => ids.has(child.id));
+  // Older maps embed their own definitions; newer built-ins may live in the app's separate SVG.
+  const extra = [...ids]
+    .filter(id => !children.some(child => child.id === id))
+    .map(id => doc.getElementById(id))
+    .filter(element => element !== null);
+  const selected = [...children, ...extra].filter(child => ids.has(child.id));
   // Built-in relief symbols are self-contained. Preserve the full definitions for unfamiliar referenced artwork.
   const independent =
     children.every(child => child.localName === "symbol") &&
     selected.every(child => !child.querySelector("use") && !/url\(/.test(child.outerHTML));
   const subset = definitions.cloneNode(!independent) as Element;
-  if (independent) for (const child of selected) subset.append(child.cloneNode(true));
+  for (const child of independent ? selected : extra) subset.append(child.cloneNode(true));
   const defs = doc.createElementNS(NS, "defs");
   defs.append(subset);
   svg.append(defs);

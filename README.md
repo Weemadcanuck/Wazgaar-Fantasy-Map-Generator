@@ -51,6 +51,10 @@ npm run electron -- build
 
 Version comes from `src/services/versioning.ts`; run `npm run sync-version` after changing it. Keep the legacy desktop app ID, origin and profile directory stable: they preserve installed settings and local maps despite the new display name.
 
+### Relief styles (1.154.3)
+
+Older maps can embed relief definitions that predate newer built-in symbol sets. Tile serialization resolves missing symbols from the live document, matching SVG use lookup, without changing the saved map definitions. A Cinderwood/Jotun Electron check confirms visible raster output; 1,282 application tests pass. Ocean embellishments and coastal bands remain separate vector rendering work.
+
 ### Tools panel (1.154.2)
 
 Tools uses native collapsible categories with Expand all / Collapse all controls. Edit and Add start open. Content controls the panel height; the Tools area scrolls when necessary to keep the footer on screen. Height limits are recalculated on section toggles, panel opening/tab changes, drag completion and window resizing, with no polling or map-frame work.

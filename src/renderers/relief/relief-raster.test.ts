@@ -204,3 +204,14 @@ it("keeps a recently revisited tile after leaving its view and reports eviction"
   cache.clear();
   expect(cache.diagnostics).toMatchObject({ tilesBuilt: 0, tilesEvicted: 0, cacheHits: 0, cacheMisses: 0 });
 });
+
+it("includes newer built-in symbols when an older map supplies its own relief definitions", () => {
+  document.body.innerHTML = `<svg id="map"><defs><g id="defs-relief"><symbol id="old-tree"><path /></symbol></g></defs></svg>
+    <svg><defs><g id="defs-relief"><symbol id="new-tree-illustrated" viewBox="0 0 10 10"><path d="M0 0L10 10" /></symbol></g></defs></svg>`;
+  const definitions = document.querySelector("#map #defs-relief")!;
+  const source = [{ icon: "new-tree-illustrated", x: 10, y: 10, s: 20 }];
+  const svg = new DOMParser().parseFromString(reliefTileSvg(tile, source, definitions), "image/svg+xml");
+  expect(svg.querySelector("#new-tree-illustrated path")?.getAttribute("d")).toBe("M0 0L10 10");
+  expect(svg.querySelector("use")?.getAttribute("href")).toBe("#new-tree-illustrated");
+  expect(definitions.querySelector("#new-tree-illustrated")).toBeNull();
+});
