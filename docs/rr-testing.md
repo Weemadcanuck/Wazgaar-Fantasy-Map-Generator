@@ -1,10 +1,16 @@
-# R&R testing prerelease 1.153.0-rr.1
+# R&R testing prerelease 1.153.1-rr.2
 
-Windows x64 test build of the relief and coastal viewport performance changes. Performance source: `ed3a43c`; official upstream base: `bf32ac7`. This release does not include the Obsidian integration, custom layers, Tools redesign or experimental pre-rendered symbols.
+Windows x64 test build of the relief and coastal viewport performance changes. Performance source: `ed3a43c`; official upstream base: `04072d4`. This release does not include the Obsidian integration, custom layers, Tools redesign or experimental pre-rendered symbols.
+
+## Maintenance changes
+
+- Repair broken ocean-pattern references in older and previously resaved maps (upstream #1879).
+- Make assignment paint brushes follow short pointer movements and turns (upstream #1881).
+- Retain the existing R&R rendering implementation and testing scope.
 
 ## Install
 
-Download and run `azgaar-rr-1.153.0-rr.1-win-x64.exe`. The application is named **Azgaar RR Testing**, has its own installation identity, and stores settings/local maps in `%APPDATA%/azgaar-rr-testing`. Keep the installer's separate default destination. Load a copy of your map file; existing apps' local maps are not imported automatically.
+Download and run `azgaar-rr-1.153.1-rr.2-win-x64.exe`. The application is named **Azgaar RR Testing**, has its own installation identity, and stores settings/local maps in `%APPDATA%/azgaar-rr-testing`. Keep the installer's separate default destination. Load a copy of your map file; existing apps' local maps are not imported automatically.
 
 This test build updates manually from this repository's Releases page. It does not download or install upstream app updates. No trusted publisher certificate is included, so Windows may display its usual unknown-publisher warning.
 
@@ -20,6 +26,8 @@ Distant relief, coastal bands and waves use reusable raster tiles. Close views r
 
 ## Version and validation
 
-`1.153.0-rr.1` is the first R&R prerelease in a separate testing line. The base follows the source's version metadata; the map format remains `1.153.0`. Later test builds increment the numeric prerelease identifier. Published installers are immutable; changes receive a new version. See [Semantic Versioning](https://semver.org/).
+`1.153.1-rr.2` is the second R&R prerelease. The base and renderer/map version follow upstream `1.153.1`. Later test builds increment the numeric prerelease identifier. Published installers are immutable; changes receive a new version. See [Semantic Versioning](https://semver.org/).
 
-The performance extraction passed 1,251 application tests, lint and builds, with native four-style checks for cache reuse, editing, save/reload and exports. The packaging branch changes only desktop identity, update behaviour and visible test-build labelling. Build it with `npm ci` and `npm run electron -- dist --win --x64 --publish never`. Package metadata applies the prerelease version through `electron-builder.yml`; it deliberately leaves the renderer/map version unchanged.
+The original performance extraction passed 1,251 application tests, lint and builds, with native four-style checks for cache reuse, editing, save/reload and exports. The packaging branch changes only desktop identity, update behaviour and visible test-build labelling. Build it with `npm ci` and `npm run electron -- dist --win --x64 --publish never`. Package metadata applies the prerelease version through `electron-builder.yml`; it deliberately leaves the renderer/map version unchanged.
+
+Maintenance release validation: 1,261 application tests, 52 script tests, and 18 Chromium map-loading/zoom tests passed. Lint, version synchronization, asset stamps, and Windows x64 packaging passed. The packaged application reports `1.153.1-rr.2`.

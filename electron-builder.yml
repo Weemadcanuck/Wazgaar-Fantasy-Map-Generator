@@ -1,6 +1,6 @@
 appId: com.weemadcanuck.azgaar-rr-testing
 extraMetadata:
-  version: 1.153.0-rr.1
+  version: 1.153.1-rr.2
 copyright: Copyright © 2017-2026 Azgaar and contributors
 directories:
   output: release
