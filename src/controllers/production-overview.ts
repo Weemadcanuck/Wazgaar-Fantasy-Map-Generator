@@ -13,19 +13,19 @@ function open(burgId: number): void {
   if (customization) return;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {
-    tip("Invalid burg. The selected burg does not exist or was removed.", true, "error", 5000);
+    tip("Invalid settlement. The selected settlement does not exist or was removed.", true, "error", 5000);
     return;
   }
 
   const market = Markets.get(burg.market);
   if (!market) {
-    tip("No market. This burg is not connected to any market.", true, "error", 5000);
+    tip("No market. This settlement is not connected to any market.", true, "error", 5000);
     return;
   }
 
   const data = burg.production;
   if (!data) {
-    tip("No production data for this burg.", true, "error", 5000);
+    tip("No production data for this settlement.", true, "error", 5000);
     return;
   }
 
@@ -368,8 +368,8 @@ function open(burgId: number): void {
   alertMessage.innerHTML = /*html*/ `
     <div id="productionOverviewContent">
       ${statsHtml}
-      ${renderSection("Manufactured Goods", producedTable, "Goods manufactured by this burg in this production cycle.")}
-      ${renderSection("Production and Trade history", jobsTable, "Chronological local production, market purchases, sales, and demand-fill operations for this burg.")}
+      ${renderSection("Manufactured Goods", producedTable, "Goods manufactured by this settlement in this production cycle.")}
+      ${renderSection("Production and Trade history", jobsTable, "Chronological local production, market purchases, sales, and demand-fill operations for this settlement.")}
     </div>
   `;
 

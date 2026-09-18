@@ -710,7 +710,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
     b.name = Names.getCulture(cultureId);
   });
   Layers.draw("labels");
-  tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
+  tip(`Names for ${cultureBurgs.length} settlements are regenerated`, false, "success");
 }
 
 function removeCulture(cultureId: number): void {

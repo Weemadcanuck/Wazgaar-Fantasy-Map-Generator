@@ -80,7 +80,7 @@ function renderDialog(): void {
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
         <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${options.map.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
         <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.app.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
-        <div style="padding: 0.5em 0; font-style: italic;">To change Burg Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Burg Group Configurator</a>.</div>
+        <div style="padding: 0.5em 0; font-style: italic;">To change Settlement Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Settlement Group Configurator</a>.</div>
       </div>
     </form>
   </div>`;
@@ -137,7 +137,7 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
   const modeApplicable = isModeApplicable(group.type);
   const modeTip = modeApplicable
     ? "Name display mode: auto picks the best fit, short/full force a specific name form"
-    : "Name display mode is only applicable to States and Provinces";
+    : "Name display mode is only applicable to Polities and Provinces";
 
   const layers = [...LAYER_TOGGLES.keys()].sort();
 

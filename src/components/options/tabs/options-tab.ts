@@ -295,17 +295,17 @@ const TEMPLATE = /* html */ `
       </td>
       <td></td>
     </tr>
-    <tr data-tip="Define how many states and capitals should be generated">
+    <tr data-tip="Define how many polities and capitals should be generated">
       <td>
         <i data-locked="0" id="lock_statesNumber" class="icon-lock-open"></i>
       </td>
-      <td>States number</td>
+      <td>Polities number</td>
       <td colspan="2">
         <slider-input id="statesNumber" data-option="statesNumber" min="0" max="100"></slider-input>
       </td>
     </tr>
     <tr
-      data-tip="Set what share of eligible burgs in each state will become province centers. Higher values create more provinces"
+      data-tip="Set what share of eligible settlements in each polity become province centers. Higher values create more provinces"
     >
       <td>
         <i data-locked="0" id="lock_provincesRatio" class="icon-lock-open"></i>
@@ -315,7 +315,7 @@ const TEMPLATE = /* html */ `
         <slider-input id="provincesRatio" data-option="provincesRatio" min="0" max="100"></slider-input>
       </td>
     </tr>
-    <tr data-tip="Define how much states and cultures can vary in size. Defines expansionism value">
+    <tr data-tip="Define how much polities and cultures can vary in size. This defines expansionism">
       <td>
         <i data-locked="0" id="lock_sizeVariety" class="icon-lock-open"></i>
       </td>
@@ -324,7 +324,7 @@ const TEMPLATE = /* html */ `
         <slider-input id="sizeVariety" data-option="sizeVariety" min="0" max="10" step=".1"></slider-input>
       </td>
     </tr>
-    <tr data-tip="Set the growth rate of states and cultures. Determines how much land stays neutral">
+    <tr data-tip="Set the growth rate of polities and cultures. Determines how much land stays neutral">
       <td>
         <i data-locked="0" id="lock_growthRate" class="icon-lock-open"></i>
       </td>
@@ -337,7 +337,7 @@ const TEMPLATE = /* html */ `
       <td>
         <i data-locked="0" id="lock_manors" class="icon-lock-open"></i>
       </td>
-      <td>Burgs number</td>
+      <td>Settlements number</td>
       <td>
         <input id="manorsInput" data-option="manors" type="range" min="0" max="1000" step="1" value="1000" />
       </td>
@@ -483,7 +483,7 @@ const TEMPLATE = /* html */ `
           <optgroup label="Diversiform">
             <option value="culture" selected>Culture-specific</option>
             <option value="random">Culture-random</option>
-            <option value="state">State-specific</option>
+            <option value="state">Polity-specific</option>
           </optgroup>
           <optgroup label="Basic">
             <option value="heater">Heater</option>

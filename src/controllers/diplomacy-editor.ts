@@ -33,34 +33,34 @@ const relations: Record<string, Relation> = {
   Friendly: {
     inText: "is friendly to",
     color: "#d4f8aa",
-    tip: "State is friendly to anouther state when they share some common interests"
+    tip: "A polity is friendly to another polity when they share some common interests"
   },
   Neutral: {
     inText: "is neutral to",
     color: "#edeee8",
-    tip: "Neutral means states relations are neither positive nor negative"
+    tip: "Neutral means relations between polities are neither positive nor negative"
   },
   Suspicion: {
     inText: "is suspicious of",
     color: "#eeafaa",
-    tip: "Suspicion means state has a cautious distrust of another state"
+    tip: "Suspicion means a polity has a cautious distrust of another polity"
   },
-  Enemy: { inText: "is at war with", color: "#e64b40", tip: "Enemies are states at war with each other" },
+  Enemy: { inText: "is at war with", color: "#e64b40", tip: "Enemies are polities at war with each other" },
   Unknown: {
     inText: "does not know about",
     color: "#a9a9a9",
-    tip: "Relations are unknown if states do not have enough information about each other"
+    tip: "Relations are unknown if polities do not have enough information about each other"
   },
   Rival: {
     inText: "is a rival of",
     color: "#ad5a1f",
     tip: "Rivalry is a state of competing for dominance in the region"
   },
-  Vassal: { inText: "is a vassal of", color: "#87CEFA", tip: "Vassal is a state having obligation to its suzerain" },
+  Vassal: { inText: "is a vassal of", color: "#87CEFA", tip: "Vassal is a polity having obligation to its suzerain" },
   Suzerain: {
     inText: "is suzerain to",
     color: "#00008B",
-    tip: "Suzerain is a state having some control over its vassals"
+    tip: "Suzerain is a polity having some control over its vassals"
   }
 };
 
@@ -71,7 +71,7 @@ let selectedDiplomacyId = 0;
 const columns: EditorColumn<State>[] = [
   {
     key: "name",
-    label: "State",
+    label: "Polity",
     width: "15em",
     permanent: true,
     sortBy: state => state.fullName || state.name,
@@ -103,7 +103,7 @@ const getChronicle = () => pack.states[0].diplomacy as unknown as string[][];
 function open(): void {
   if (customization) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2) {
-    tip("There should be at least 2 states to edit the diplomacy", false, "error");
+    tip("There should be at least 2 polities to edit the diplomacy", false, "error");
     return;
   }
   if (!selectedDiplomacyId || !pack.states[selectedDiplomacyId] || pack.states[selectedDiplomacyId].removed) {
@@ -133,26 +133,26 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="diplomacyBodySection" class="table"></div>
-      <div id="diplomacyFooter" class="totalLine"><div>States: <span id="diplomacyFooterStates">0</span></div></div>
-      <div class="info-line">Click on state name to see relations.<br />Click on relations name to change it</div>
+      <div id="diplomacyFooter" class="totalLine"><div>Polities: <span id="diplomacyFooterStates">0</span></div></div>
+      <div class="info-line">Click on polity name to see relations.<br />Click on relations name to change it</div>
       <div id="diplomacyBottom" style="margin-top: 0.1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button
           id="diplomacyEditStyle"
-          data-tip="Edit states (including diplomacy view) style in Style Editor"
+          data-tip="Edit polity style, including the diplomacy view, in Style Editor"
           class="icon-adjust"
         ></button>
         <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
         <button
           id="diplomacyReset"
-          data-tip="Reset diplomatical relations of selected state to Neutral"
+          data-tip="Reset the selected polity's diplomatic relations to Neutral"
           class="icon-eraser"
         ></button>
         <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
         <button id="diplomacyShowMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
         <button
           id="diplomacyExport"
-          data-tip="Save state relations matrix as a text file (.csv)"
+          data-tip="Save the polity relations matrix as a text file (.csv)"
           class="icon-download"
         ></button>
       </div>
@@ -363,13 +363,13 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
         <b>${subject.fullName}</b>
       </header>
 
-      <div class="info-line">Choose a relation, then select target states in the list or click them on the map. Apply to save.</div>
+      <div class="info-line">Choose a relation, then select target polities in the list or click them on the map. Apply to save.</div>
       <main style='display: flex; gap: 1em;'>
         <section style="display: flex; flex-direction: column; gap: .3em;">${relationsSelector}</section>
         <section style="display: flex; flex-direction: column; gap: .3em;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3em;">
-            <label style="font-weight: 500; font-size: 0.95em;">States:</label>
-            <button id="selectAllNoneBtn" type="button" style="padding: 0.3em 0.8em; cursor: pointer; font-size: 0.9em;" data-tip="Toggle selection of all states.">Select All / None</button>
+            <label style="font-weight: 500; font-size: 0.95em;">Polities:</label>
+            <button id="selectAllNoneBtn" type="button" style="padding: 0.3em 0.8em; cursor: pointer; font-size: 0.9em;" data-tip="Toggle selection of all polities.">Select All / None</button>
           </div>
           <div id="stateSelectionContainer" style="display: flex; flex-direction: column; gap: .3em;">${objectsSelector}</div>
         </section>

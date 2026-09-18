@@ -1054,7 +1054,7 @@ class CulturesGenerator {
         this.cells.culture = cultureIds;
 
         alertMessage.innerHTML = /* html */ `The climate is harsh and people cannot live in this world.<br />
-          No cultures, states and burgs will be created.<br />
+          No cultures, polities and settlements will be created.<br />
           Please consider changing climate settings in the World Configurator`;
 
         $("#alert").dialog({

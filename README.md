@@ -2,7 +2,9 @@
 
 An Obsidian-oriented fork of Azgaar’s Fantasy Map Generator. The app displays its version in the About tab and information popup. Desktop releases retain the earlier archival-fork installation and storage identifiers for compatibility.
 
-## Maintainer overview
+[Download Obsidian Fork 1.154.6](https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator/releases/tag/obsidian-v1.154.6) · [Changes and reasoning](docs/updates/obsidian-1.154.6.md)
+
+## Fork overview
 
 This fork adds Obsidian reference export, editable custom point layers, and relief rendering improvements. It is a fork for review, not an official upstream release. Upstream credits and licensing remain below.
 
@@ -24,6 +26,18 @@ The supplied upstream snapshot identifies itself as 1.153.0 in source and packag
 Journeys retain upstream slot 52. Slot 53 contains a labelled, versioned Obsidian extension for custom layers, the Archive world ID, and original legacy notes. `src/services/io/fork-data.ts` recognizes older fork saves and selects their real upstream migration baseline, 1.149.2. Original notes are retained because upstream cannot attach every old regiment note to an entity; Tools > Original notes backup downloads them.
 
 Test with copies of existing maps. New saves are not compatible with the older Obsidian fork. The integration keeps upstream settings, notes, journeys and UI changes alongside the fork features.
+
+### Windows fullscreen rendering (1.154.6)
+
+The Windows desktop app disables Chromium DirectComposition before creating its window. This avoids the focus-dependent rough text and edges reproduced in fullscreen on an RTX 4070 Laptop GPU with an ASUS VP278 external monitor. The same view was clear when unfocused or windowed; a diagnostic launch with only `--disable-direct-composition` also stayed clear in focused fullscreen.
+
+GPU compositing, rasterization, accelerated canvas and WebGL remain enabled, verified through Chromium's GPU diagnostics. This changes Windows presentation, not map data, relief detail or export rendering. Other operating systems keep their existing presentation path. When upgrading Electron, recheck focused/unfocused fullscreen, windowed mode and pan/zoom responsiveness before removing this workaround.
+
+### Fork terminology (1.154.5)
+
+The interface calls states **polities** and burgs **settlements**, including Layers, Tools, generation settings, search, editors and tooltips. Keep these labels when integrating upstream interface changes, especially when upstream moves templates into new modules. Check the Layers/Tools panels, search commands, Polities Editor and Settlements Overview before packaging a release.
+
+Internal `state`/`burg` keys, map serialization, CSV column headers and Archive export folder paths retain their upstream-compatible names. Political form names such as City-state, United States and Holy State remain valid names.
 
 ### Relief rules worth preserving
 

@@ -37,7 +37,7 @@ const TEMPLATE = /* html */ `
     <label for="loreYear">Year:</label>
     <input
       id="loreYear"
-      data-tip="Current year. Dates state history and battle reports"
+      data-tip="Current year. Dates polity history and battle reports"
       type="number"
       step="1"
     />

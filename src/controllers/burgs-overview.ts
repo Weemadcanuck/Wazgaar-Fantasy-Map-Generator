@@ -31,7 +31,7 @@ const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
   {
     key: "name",
-    label: "Burg",
+    label: "Settlement",
     width: "8em",
     permanent: true,
     sortBy: b => b.name || "",
@@ -51,7 +51,7 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "state",
-    label: "State",
+    label: "Polity",
     width: "8em",
     sortBy: b => pack.states[b.state!]?.name || "",
     sortType: "alpha"
@@ -92,7 +92,7 @@ const columns: EditorColumn<Burg>[] = [
     label: "Wealth",
     width: "6.5em",
     mobileHidden: true,
-    tip: "Click to sort by burg wealth (gross product per capita)",
+    tip: "Click to sort by settlement wealth (gross product per capita)",
     sortBy: b => rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)
   },
   {
@@ -134,7 +134,7 @@ function open(filters: Filters = {}): void {
   burgsTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Burgs Overview",
+    title: "Settlements Overview",
     resizable: false,
     close: closeBurgsOverview,
     width: "fit-content",
@@ -147,11 +147,11 @@ function renderDialog(): void {
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
-        <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
+        <label for="burgsSearch" data-tip="Filter by name, province, polity, culture, or group"
           >Search: <input id="burgsSearch" type="search"
         /></label>
         <label for="burgsFilterState"
-          >State:
+          >Polity:
           <select id="burgsFilterState"></select
         ></label>
         <label for="burgsFilterCulture"
@@ -160,8 +160,8 @@ function renderDialog(): void {
         ></label>
       </div>
       <div id="burgsFooter" class="totalLine">
-        <div data-tip="Burgs displayed" style="margin-left: 5px">
-          Burgs:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
+        <div data-tip="Settlements displayed" style="margin-left: 5px">
+          Settlements:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
         </div>
         <div data-tip="Average population" style="margin-left: 12px" data-col="population">
           Avg population:&nbsp;<span id="burgsFooterPopulation">0</span>
@@ -178,24 +178,24 @@ function renderDialog(): void {
       </div>
       <div id="burgsBottom" class="editorToolbar">
         <button id="burgsOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="burgsGroupsEditorButton" data-tip="Edit burg groups" class="icon-cog"></button>
-        <button id="burgsChart" data-tip="Show burgs bubble chart" class="icon-chart-area"></button>
+        <button id="burgsGroupsEditorButton" data-tip="Edit settlement groups" class="icon-cog"></button>
+        <button id="burgsChart" data-tip="Show settlements bubble chart" class="icon-chart-area"></button>
         <button
           id="regenerateBurgNames"
-          data-tip="Regenerate burg names based on assigned culture"
+          data-tip="Regenerate settlement names based on assigned culture"
           class="icon-retweet"
         ></button>
-        <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="addNewBurg" data-tip="Add a new settlement. Hold Shift to add multiple" class="icon-plus"></button>
         <button
           id="burgsExport"
-          data-tip="Save burgs-related data as a text file (.csv)"
+          data-tip="Save settlement-related data as a text file (.csv)"
           class="icon-download"
         ></button>
-        <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
-        <button id="burgsLockAll" data-tip="Lock or unlock all burgs" class="icon-lock"></button>
+        <button id="burgNamesImport" data-tip="Rename settlements in bulk" class="icon-upload"></button>
+        <button id="burgsLockAll" data-tip="Lock or unlock all settlements" class="icon-lock"></button>
         <button
           id="burgsRemoveAll"
-          data-tip="Remove all unlocked burgs except for capitals. To remove a capital remove its state first"
+          data-tip="Remove all unlocked settlements except capitals. To remove a capital, remove its polity first"
           class="icon-trash"
         ></button>
       </div>
@@ -354,14 +354,14 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-features="${features}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer" data-col="locate"></span>
-        <input data-tip="Burg name" class="burgName" value="${b.name}" data-col="name" disabled />
-        <input data-tip="Burg province" value="${province}" data-col="province" disabled />
-        <input data-tip="Burg state" value="${state}" data-col="state" disabled />
+        <input data-tip="Settlement name" class="burgName" value="${b.name}" data-col="name" disabled />
+        <input data-tip="Settlement province" value="${province}" data-col="province" disabled />
+        <input data-tip="Settlement polity" value="${state}" data-col="state" disabled />
         <input data-tip="Dominant culture" value="${culture}" data-col="culture" disabled />
-        <input data-tip="Burg group" value="${b.group}" data-col="group" disabled />
+        <input data-tip="Settlement group" value="${b.group}" data-col="group" disabled />
         <div data-col="population">
-          <span data-tip="Burg population" class="icon-male"></span>
-          <input data-tip="Burg population" value=${si(population)} disabled />
+          <span data-tip="Settlement population" class="icon-male"></span>
+          <input data-tip="Settlement population" value=${si(population)} disabled />
         </div>
         <div data-col="grossproduct">
           <span data-tip="Gross Product: local sale revenue minus purchased ingredient costs during the production.">🟡</span>
@@ -377,16 +377,16 @@ function renderBurgsPage(view: TableView<Burg>): void {
         </div>
         <div data-col="features">
           <span
-            data-tip="${b.capital ? " This burg is a state capital" : "This burg is a NOT state capital"}"
+            data-tip="${b.capital ? "This settlement is a polity capital" : "This settlement is not a polity capital"}"
             class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
-          <span data-tip="${b.port ? " This burg is a port" : "This burg is NOT a port"}"
+          <span data-tip="${b.port ? "This settlement is a port" : "This settlement is not a port"}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
-        <span data-col="edit" data-tip="Edit burg" class="icon-pencil"></span>
+        <span data-col="edit" data-tip="Edit settlement" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           b.lock ? "icon-lock" : "icon-lock-open inactive"
         }" onmouseover="showElementLockTip(event)"></span>
-        <span data-col="remove" data-tip="Remove burg" class="icon-trash-empty"></span>
+        <span data-col="remove" data-tip="Remove settlement" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -453,13 +453,13 @@ function openBurgEditor(this: HTMLElement): void {
 function triggerBurgRemove(this: HTMLElement): void {
   const burgId = +(this.closest(".states") as HTMLElement).dataset.id!;
   if (pack.burgs[burgId].capital) {
-    tip("You cannot remove the capital. Please change the state capital first", false, "error");
+    tip("You cannot remove the capital. Please change the polity capital first", false, "error");
     return;
   }
 
   confirmationDialog({
-    title: "Remove burg",
-    message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
+    title: "Remove settlement",
+    message: "Are you sure you want to remove the settlement? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
       Burgs.remove(burgId);
@@ -513,7 +513,7 @@ function showBurgsChart(): void {
     });
   const data: any[] = (states as any[]).concat(burgs);
   if (data.length < 2) {
-    tip("No burgs to show", false, "error");
+    tip("No settlements to show", false, "error");
     return;
   }
 
@@ -532,9 +532,9 @@ function showBurgsChart(): void {
 
   // prepare svg
   alertMessage.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
-      <option value="states" selected>Group by state</option>
+      <option value="states" selected>Group by polity</option>
       <option value="cultures">Group by culture</option>
-      <option value="parent">Group by province and state</option>
+      <option value="parent">Group by province and polity</option>
       <option value="provinces">Group by province</option>
     </select>`;
   alertMessage.innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
@@ -656,7 +656,7 @@ function showBurgsChart(): void {
   }
 
   $("#alert").dialog({
-    title: "Burgs bubble chart",
+    title: "Settlements bubble chart",
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
@@ -705,16 +705,16 @@ function downloadBurgsData(): void {
     data += "\n";
   });
 
-  const name = `${getFileName("Burgs")}.csv`;
+  const name = `${getFileName("Settlements")}.csv`;
   downloadFile(data, name);
 }
 
 function renameBurgsInBulk(): void {
-  alertMessage.innerHTML = /* html */ `Download burgs list as a text file, make changes and re-upload the file. Make sure the file is a plain text document with each
+  alertMessage.innerHTML = /* html */ `Download settlements list as a text file, make changes and re-upload the file. Make sure the file is a plain text document with each
     name on its own line (the dilimiter is CRLF). If you do not want to change the name, just leave it as is`;
 
   $("#alert").dialog({
-    title: "Burgs bulk renaming",
+    title: "Settlements bulk renaming",
     width: "22em",
     position: { my: "center", at: "center", of: "svg" },
     buttons: {
@@ -723,7 +723,7 @@ function renameBurgsInBulk(): void {
           .filter(b => b.i && !b.removed)
           .map(b => b.name)
           .join("\r\n");
-        const name = `${getFileName("Burg names")}.txt`;
+        const name = `${getFileName("Settlement names")}.txt`;
         downloadFile(data, name);
       },
       Upload: pickBurgNamesFile,
@@ -756,7 +756,7 @@ function importBurgNames(dataLoaded: string): void {
   }
 
   const change: { id: number; name: string }[] = [];
-  let message = `Burgs to be renamed as below:`;
+  let message = `Settlements to be renamed as below:`;
   message += `<table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
 
   const burgs = pack.burgs.filter(b => b.i && !b.removed);
@@ -781,7 +781,7 @@ function importBurgNames(dataLoaded: string): void {
   };
 
   confirmationDialog({
-    title: "Burgs bulk renaming",
+    title: "Settlements bulk renaming",
     message,
     confirm: "Rename",
     onConfirm
@@ -791,10 +791,10 @@ function importBurgNames(dataLoaded: string): void {
 function triggerAllBurgsRemove(): void {
   const number = pack.burgs.filter(b => b.i && !b.removed && !b.capital && !b.lock).length;
   confirmationDialog({
-    title: `Remove ${number} burgs`,
+    title: `Remove ${number} settlements`,
     message: `
-        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals?
-        <br><i>To remove a capital you have to remove its state first</i>`,
+        Are you sure you want to remove all <i>unlocked</i> settlements except for capitals?
+        <br><i>To remove a capital you have to remove its polity first</i>`,
     confirm: "Remove",
     onConfirm: () => {
       pack.burgs

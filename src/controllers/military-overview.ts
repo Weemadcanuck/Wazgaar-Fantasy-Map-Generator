@@ -61,7 +61,7 @@ function renderDialog(): void {
       </div>
       <div id="militaryFooter" class="totalLine">
         <div data-tip="Polities number" style="margin-left: 4px">
-          States:&nbsp;<span id="militaryFooterStates">0</span>
+          Polities:&nbsp;<span id="militaryFooterStates">0</span>
         </div>
         <div data-tip="Total military forces" style="margin-left: 14px" data-col="total">
           Total forces:&nbsp;<span id="militaryFooterForcesTotal">0</span>
@@ -144,7 +144,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
     label: capitalize(unit.name.replace(/_/g, " ")),
     width: "5em",
     mobileHidden: true,
-    tip: `State ${unit.name} units number. Click to sort`,
+    tip: `Polity ${unit.name} units number. Click to sort`,
     sortBy: row => row.forces[unit.name] || 0
   }));
 
@@ -173,7 +173,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       label: "Rate",
       width: "5em",
       sortBy: row => row.rate,
-      tip: "Military personnel rate (% of state population). Depends on war alert. Click to sort"
+      tip: "Military personnel rate (% of polity population). Depends on war alert. Click to sort"
     },
     {
       key: "alert",
@@ -667,7 +667,7 @@ function closeMilitaryOptions(): void {
 
 function militaryRecalculate(): void {
   ensureEl("alertMessage").innerHTML =
-    "Are you sure you want to recalculate military forces for all states?<br>Regiments for all states will be regenerated";
+    "Are you sure you want to recalculate military forces for all polities?<br>Regiments for all polities will be regenerated";
   $("#alert").dialog({
     resizable: false,
     title: "Recalculate military",

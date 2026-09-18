@@ -277,7 +277,7 @@ function toggleAdd(): void {
 function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   const state = filterState.stateId;
   if (state === -1) {
-    tip("Please select state from the list", false, "error");
+    tip("Please select polity from the list", false, "error");
     return;
   }
 

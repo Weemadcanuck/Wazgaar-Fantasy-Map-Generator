@@ -85,13 +85,13 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "editStatesButton",
-    name: "Open States Editor",
+    name: "Open Polities Editor",
     aliases: "countries kingdoms nations",
     run: () => Controllers.StatesEditor.open()
   },
   {
     id: "overviewBurgsButton",
-    name: "Open Burgs Overview",
+    name: "Open Settlements Overview",
     aliases: "settlements cities towns villages",
     run: () => Controllers.BurgsOverview.open()
   },
@@ -254,7 +254,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "burgGroups",
-    name: "Open Burg Groups Editor",
+    name: "Open Settlement Groups Editor",
     aliases: "settlements cities towns villages types",
     run: () => Controllers.BurgGroupEditor.open()
   },
@@ -290,7 +290,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "addBurgTool",
-    name: "Add Burg",
+    name: "Add Settlement",
     aliases: "add burgs settlement city town village",
     run: () => Controllers.BurgCreator.toggle()
   },
@@ -328,7 +328,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "showStatesChart",
-    name: "Show States Chart",
+    name: "Show Polities Chart",
     aliases: "countries kingdoms area population bubble",
     run: () => Controllers.StatesEditor.showChart()
   },
@@ -340,7 +340,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "showBurgsChart",
-    name: "Show Burgs Chart",
+    name: "Show Settlements Chart",
     aliases: "settlements cities population bubble",
     run: () => Controllers.BurgsOverview.showChart()
   },
@@ -364,7 +364,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "regenerateStates",
-    name: "Regenerate States",
+    name: "Regenerate Polities",
     aliases: "generate countries kingdoms",
     run: () => confirmRegeneration(regenerateStates)
   },
@@ -376,7 +376,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "regenerateBurgs",
-    name: "Regenerate Burgs",
+    name: "Regenerate Settlements",
     aliases: "generate settlements cities towns",
     run: () => confirmRegeneration(regenerateBurgs)
   },
@@ -406,7 +406,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "regenerateStateLabels",
-    name: "Regenerate State Labels",
+    name: "Regenerate Polity Labels",
     aliases: "generate text placement",
     run: () => confirmRegeneration(regenerateStateLabels)
   },
@@ -556,7 +556,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "exportCsvBurgs",
-    name: "Export Burgs as CSV",
+    name: "Export Settlements as CSV",
     aliases: "download table settlements cities towns",
     run: () => Controllers.BurgsOverview.exportCsv()
   },

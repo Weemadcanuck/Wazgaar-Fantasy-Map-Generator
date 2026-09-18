@@ -1,3 +1,13 @@
+# Obsidian Fork 1.154.6 - 2026-09-18
+
+- Restore Polities and Settlements across menus, search, editors and tooltips.
+- Fix focus-dependent fullscreen rendering artifacts on Windows while retaining GPU acceleration.
+- Establish the tested Obsidian baseline before deeper Archive integration.
+
+[Full fork changes and reasoning](../updates/obsidian-1.154.6.md).
+
+---
+
 _The current stable version is available [here](https://azgaar.github.io/Fantasy-Map-Generator)._
 
 Notable user-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document the noteworthy difference and communicate it clearly to end users.

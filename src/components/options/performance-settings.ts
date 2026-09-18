@@ -38,8 +38,8 @@ const SETTINGS: Setting[] = [
   },
   {
     key: "stateHalos",
-    label: "State halos",
-    tip: "Blurred glow along state borders. It is an SVG blur filter, which is costly on big maps",
+    label: "Polity halos",
+    tip: "Blurred glow along polity borders. It is an SVG blur filter, which is costly on big maps",
     choices: [
       { value: "true", label: "Shown" },
       { value: "false", label: "Hidden" }

@@ -59,7 +59,7 @@ const columns: EditorColumn<Good>[] = [
     width: "6em",
     sortBy: good => rn((production[good.i]?.burg ?? 0) + (production[good.i]?.cell ?? 0)),
     defaultSort: "desc",
-    tip: "Total units produced daily in cells (raw) and burgs (manufactured). Click to sort"
+    tip: "Total units produced daily in cells (raw) and settlements (manufactured). Click to sort"
   },
   {
     key: "stock",
@@ -67,7 +67,7 @@ const columns: EditorColumn<Good>[] = [
     width: "6em",
     sortBy: good => stockData[good.i]?.total ?? 0,
     marginLeft: ".7em",
-    tip: "Total units in stock across all markets and burg inventories. Click to sort"
+    tip: "Total units in stock across all markets and settlement inventories. Click to sort"
   },
   {
     key: "price",
@@ -215,9 +215,9 @@ function renderGoodsPage(view: TableView<Good>) {
       const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
       const goodProduction = production[good.i] || { burg: 0, cell: 0 };
       const produced = rn(goodProduction.burg + goodProduction.cell);
-      const producedTip = `Good daily production: ${produced}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒`;
+      const producedTip = `Good daily production: ${produced}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Settlements: ${rn(goodProduction.burg, 2)}⚒`;
       const stock = rn(stockData[good.i]?.total ?? 0);
-      const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;
+      const stockTip = `Total stock in all markets and settlement inventories: ${stock} units`;
 
       return /*html*/ `<div class="states goods" data-id=${good.i} data-produced="${produced}" data-stock="${stock}">
         <div data-col="display"><input type="checkbox" data-tip="Toggle this good on the Goods map" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
@@ -288,7 +288,7 @@ function openProducersDialog(goodId: number) {
     .sort((a, b) => b.units - a.units);
 
   if (!producers.length) {
-    alertMessage.innerHTML = `<i style="color:#888">No burgs produced ${good.name}.</i>`;
+    alertMessage.innerHTML = `<i style="color:#888">No settlements produced ${good.name}.</i>`;
   } else {
     const header = /*html*/ `
           <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
@@ -376,7 +376,7 @@ function getAllStockData(): Record<number, { total: number; sources: StockSource
       const roundedUnits = rn(units, 2);
       result[goodId].total += roundedUnits;
       result[goodId].sources.push({
-        name: burg.name || `Burg ${burg.i}`,
+        name: burg.name || `Settlement ${burg.i}`,
         type: "burg",
         x: burg.x ?? 0,
         y: burg.y ?? 0,
@@ -400,7 +400,7 @@ function openStockDialog(goodId: number) {
   const sources = data?.sources ?? [];
 
   if (!sources.length) {
-    alertMessage.innerHTML = `<i style="color:#888">No stock of ${good.name} found in any market or burg inventory.</i>`;
+    alertMessage.innerHTML = `<i style="color:#888">No stock of ${good.name} found in any market or settlement inventory.</i>`;
   } else {
     const header = /*html*/ `
       <div class="header" style="grid-template-columns: 1.6em 7em 4em;">

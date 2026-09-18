@@ -291,7 +291,7 @@ function createEmptyJourney(): void {
 function generateRandomJourney(): void {
   const journey = Journeys.addRandom();
   if (!journey) {
-    tip("Can't plot a journey: the map needs at least two burgs connected by land or sea", true, "error", 6000);
+    tip("Can't plot a journey: the map needs at least two settlements connected by land or sea", true, "error", 6000);
     return;
   }
 

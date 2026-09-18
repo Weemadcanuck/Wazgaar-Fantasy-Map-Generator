@@ -184,7 +184,7 @@ const quantizationMap: Record<string, Metric> = {
   },
   burgs_number: {
     label: "Settlements",
-    hint: "Number of burgs",
+    hint: "Number of settlements",
     quantize: cellId => (pack.cells.burg[cellId] ? 1 : 0),
     aggregate: values => sum(values),
     formatTicks: value => value,
@@ -333,8 +333,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   burgs_profit: {
-    label: "Burgs profit",
-    hint: "Burgs profit from trade and manufacturing",
+    label: "Settlements profit",
+    hint: "Settlements profit from trade and manufacturing",
     quantize: cellId => {
       const burgId = pack.cells.burg[cellId];
       return burgId ? pack.burgs[burgId].product || 0 : 0;

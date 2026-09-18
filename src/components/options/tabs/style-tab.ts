@@ -4,7 +4,7 @@ import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
   <p
-    data-tip="Select a style preset. State labels may required regeneration if font is changed"
+    data-tip="Select a style preset. Polity labels may require regeneration if the font is changed"
     style="display: inline-block"
   >
     Style preset:
@@ -37,8 +37,8 @@ const TEMPLATE = /* html */ `
   >
     <option value="biomes">Biomes</option>
     <option value="borders">Borders</option>
-    <option value="burgIcons">Burg Icons</option>
-    <option value="anchors">Burg Anchors</option>
+    <option value="burgIcons">Settlement Icons</option>
+    <option value="anchors">Settlement Anchors</option>
     <option value="cells">Cells</option>
     <option value="coastline">Coastline</option>
     <option value="coordinates">Coordinates</option>
@@ -47,7 +47,7 @@ const TEMPLATE = /* html */ `
     <option value="fogging">Fogging</option>
     <option value="goodsCells">Goods: production</option>
     <option value="goodsIcons">Goods: resources</option>
-    <option value="goodsBurgs">Goods: burg plates</option>
+    <option value="goodsBurgs">Goods: settlement plates</option>
     <option value="gridOverlay">Grid</option>
     <option value="terrs">Heightmap</option>
     <option value="ice">Ice</option>
@@ -69,7 +69,7 @@ const TEMPLATE = /* html */ `
     <option value="routes">Routes</option>
     <option value="ruler">Rulers</option>
     <option value="scaleBar">Scale Bar</option>
-    <option value="regions" selected>States</option>
+    <option value="regions" selected>Polities</option>
     <option value="temperature">Temperature</option>
     <option value="texture">Texture</option>
     <option value="tradeAnimation">Trade Animation</option>
@@ -522,10 +522,10 @@ const TEMPLATE = /* html */ `
       </tr>
     </tbody>
     <tbody id="styleAnchors">
-      <tr data-tip="Select the port icon for this burg group">
+      <tr data-tip="Select the port icon for this settlement group">
         <td colspan="2"><burg-icon-picker id="styleAnchorsIcon" anchors></burg-icon-picker></td>
       </tr>
-      <tr data-tip="Shift port icons relative to burg positions, in icon-size units">
+      <tr data-tip="Shift port icons relative to settlement positions, in icon-size units">
         <td>Icon shift</td>
         <td>
           <input id="styleAnchorsShiftX" type="number" step=".1" aria-label="Port icon horizontal shift" data-tip="Horizontal shift in icon-size units (positive moves right)" />
@@ -783,13 +783,13 @@ const TEMPLATE = /* html */ `
       </tr>
     </tbody>
     <tbody id="styleStates" style="display: block">
-      <tr data-tip="Set states fill opacity. 0: invisible, 1: solid">
+      <tr data-tip="Set polity fill opacity. 0: invisible, 1: solid">
         <td>Body opacity</td>
         <td>
           <slider-input id="styleStatesBodyOpacity" min="0" max="1" step="0.01"></slider-input>
         </td>
       </tr>
-      <tr data-tip="Select filter for states fill. Please note filters may cause performance issues!">
+      <tr data-tip="Select a filter for polity fill. Filters may affect performance">
         <td>Body filter</td>
         <td><select id="styleStatesBodyFilter" /></td>
       </tr>
@@ -798,13 +798,13 @@ const TEMPLATE = /* html */ `
           Halo is only rendered if "Rendering" option is set to "Best quality"!
         </td>
       </tr>
-      <tr data-tip="Set states halo effect width">
+      <tr data-tip="Set polity halo effect width">
         <td>Halo width</td>
         <td>
           <slider-input id="styleStatesHaloWidth" min="0" max="30" step="0.1"></slider-input>
         </td>
       </tr>
-      <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
+      <tr data-tip="Set polity halo effect opacity. 0: invisible, 1: solid">
         <td>Halo opacity</td>
         <td>
           <slider-input id="styleStatesHaloOpacity" min="0" max="1" step="0.01"></slider-input>
@@ -832,8 +832,8 @@ const TEMPLATE = /* html */ `
       </tr>
     </tbody>
     <tbody id="styleEmblems">
-      <tr data-tip="Set state emblems size multiplier">
-        <td>State size</td>
+      <tr data-tip="Set polity emblem size multiplier">
+        <td>Polity size</td>
         <td>
           <slider-input id="emblemsStateSizeInput" min="0" max="5" step=".01"></slider-input>
         </td>
@@ -844,8 +844,8 @@ const TEMPLATE = /* html */ `
           <slider-input id="emblemsProvinceSizeInput" min="0" max="5" step=".01"></slider-input>
         </td>
       </tr>
-      <tr data-tip="Set burg emblems size multiplier">
-        <td>Burg size</td>
+      <tr data-tip="Set settlement emblem size multiplier">
+        <td>Settlement size</td>
         <td>
           <slider-input id="emblemsBurgSizeInput" min="0" max="5" step=".01"></slider-input>
         </td>
@@ -872,7 +872,7 @@ const TEMPLATE = /* html */ `
       </tr>
     </tbody>
     <tbody id="styleGoodsBurgs" style="display: none">
-      <tr data-tip="Set burg production plate icon size in pixels. Plate and font scale together with it">
+      <tr data-tip="Set settlement production plate icon size in pixels. Plate and font scale together">
         <td>Plate size</td>
         <td>
           <slider-input id="styleGoodsBurgsSize" min="1" max="12" step=".5"></slider-input>

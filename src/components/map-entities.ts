@@ -94,8 +94,8 @@ const SEGMENT_PATTERN = /^segment(\d+)_\d+$/; // a journey segment carries its j
 class EntityLookup {
   private readonly types: Record<EntityType, EntityDefinition> = {
     state: {
-      label: "States",
-      kind: "State",
+      label: "Polities",
+      kind: "Polity",
       icon: "icon-crown",
       scale: 2,
       layers: ["states"],
@@ -134,8 +134,8 @@ class EntityLookup {
       context: ref => this.stateName(this.byId(pack.provinces, ref.id)?.state)
     },
     burg: {
-      label: "Burgs",
-      kind: "Burg",
+      label: "Settlements",
+      kind: "Settlement",
       icon: "icon-home",
       scale: 8,
       layers: ["burgIcons", "labels"],

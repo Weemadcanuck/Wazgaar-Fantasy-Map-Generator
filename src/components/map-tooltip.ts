@@ -108,7 +108,7 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
   if (burgElement) {
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];
-    if (!burg) return "Click to edit the Burg";
+    if (!burg) return "Click to edit the Settlement";
     const port = burg.port ? " port" : "";
     const population = si(
       (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate

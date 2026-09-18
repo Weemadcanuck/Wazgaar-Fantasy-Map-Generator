@@ -65,7 +65,7 @@ const columns: EditorColumn<Province>[] = [
   },
   {
     key: "state",
-    label: "State",
+    label: "Polity",
     width: "7em",
     permanent: true,
     sortBy: province => pack.states[province.state]?.name || "",
@@ -73,7 +73,7 @@ const columns: EditorColumn<Province>[] = [
   },
   {
     key: "burgs",
-    label: "Burgs",
+    label: "Settlements",
     width: "5em",
     mobileHidden: true,
     sortBy: province => province.burgs?.length || 0
@@ -125,8 +125,8 @@ function renderDialog(): void {
         <div data-tip="Provinces displayed" style="margin-left: 4px">
           Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
         </div>
-        <div data-tip="Total burgs number" style="margin-left: 12px" data-col="burgs">
-          Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
+        <div data-tip="Total settlements number" style="margin-left: 12px" data-col="burgs">
+          Settlements:&nbsp;<span id="provincesFooterBurgs">0</span>
         </div>
         <div data-tip="Average area" style="margin-left: 14px" data-col="area">
           Mean area:&nbsp;<span id="provincesFooterArea">0</span>
@@ -140,7 +140,7 @@ function renderDialog(): void {
         <button id="provincesEditStyle" data-tip="Edit provinces style in Style Editor" class="icon-adjust"></button>
         <button
           id="provincesRecolor"
-          data-tip="Recolor listed provinces based on state color"
+          data-tip="Recolor listed provinces from their polity color"
           class="icon-paint-roller"
         ></button>
         <button
@@ -157,7 +157,7 @@ function renderDialog(): void {
         <button id="provincesManually" data-tip="Manually re-assign provinces" class="icon-brush"></button>
         <button
           id="provincesRelease"
-          data-tip="Release all provinces. It will make all provinces with burgs independent"
+          data-tip="Release all provinces. Provinces with settlements become independent"
           class="icon-flag"
         ></button>
         <button
@@ -168,15 +168,15 @@ function renderDialog(): void {
         <button id="provincesMerge" data-tip="Merge several provinces into one" class="icon-layer-group"></button>
         <button
           id="provincesAnnex"
-          data-tip="Annex provinces: click the annexing province, then the provinces of the same state it absorbs. Hold Shift to keep annexing"
+          data-tip="Annex provinces: click the annexing province, then the provinces of the same polity it absorbs. Hold Shift to keep annexing"
           class="icon-crown"
         ></button>
         <button
           id="provincesRemoveAll"
-          data-tip="Remove all provinces. States will remain as they are"
+          data-tip="Remove all provinces. Polities will remain as they are"
           class="icon-trash"
         ></button>
-        <span>State: </span>
+        <span>Polity: </span>
         <select id="provincesFilterState"></select>
       </div>
     </div>`;
@@ -326,12 +326,12 @@ function renderProvincesPage(view: TableView<Province>): void {
       <input data-col="form" data-tip="Province form name. Click to change" class="name pointer" value="${p.formName}" readonly />
       <div data-col="capital">
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer ${p.burg ? "" : "placeholder"}"></span>
-        <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
+        <select data-tip="Province capital. Select from settlements in the polity. No capital means the province is governed from the polity capital" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
       </div>
       <input data-col="state" data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled>
       <div data-col="burgs">
-        <span data-tip="Click to overview province burgs" class="icon-dot-circled pointer"></span>
-        <span data-tip="Burgs count" class="provinceBurgs">${percentage ? `${rn(totals.burgs ? (p.burgs!.length / totals.burgs) * 100 : 0)}%` : p.burgs!.length}</span>
+        <span data-tip="Click to overview province settlements" class="icon-dot-circled pointer"></span>
+        <span data-tip="Settlements count" class="provinceBurgs">${percentage ? `${rn(totals.burgs ? (p.burgs!.length / totals.burgs) * 100 : 0)}%` : p.burgs!.length}</span>
       </div>
       <div data-col="area">
         <span data-tip="Province area" class="icon-map-o" style="padding-right: 4px"></span>
@@ -342,7 +342,7 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
       ${Notes.getIcon("this province")}
-      <span data-col="independence" data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
+      <span data-col="independence" data-tip="Declare province independence (turn non-capital province with settlements into a new polity)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
       <span data-col="locate" data-tip="Locate the province" class="icon-target"></span>
       <span data-col="focus" data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
       <span data-col="lock" data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"}"></span>
@@ -436,7 +436,7 @@ function capitalZoomIn(p: number): void {
 function triggerIndependencePromps(p: number): void {
   confirmationDialog({
     title: "Declare independence",
-    message: "Are you sure you want to declare province independence? <br>It will turn province into a new state",
+    message: "Are you sure you want to declare province independence? <br>It will turn province into a new polity",
     confirm: "Declare",
     onConfirm: () => {
       const result = declareProvinceIndependence(p);
@@ -453,11 +453,15 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const { name, burg: burgId, burgs: provinceBurgs } = province;
 
   if (provinceBurgs!.some(b => burgs[b].capital)) {
-    tip("Cannot declare independence of a province having capital burg. Please change capital first", false, "error");
+    tip(
+      "Cannot declare independence of a province having capital settlement. Please change capital first",
+      false,
+      "error"
+    );
     return;
   }
   if (!burgId) {
-    tip("Cannot declare independence of a province without burg", false, "error");
+    tip("Cannot declare independence of a province without settlement", false, "error");
     return;
   }
 
@@ -1063,8 +1067,8 @@ function triggerProvincesRelease(): void {
   confirmationDialog({
     title: "Release provinces",
     message: `Are you sure you want to release all provinces?
-        </br>It will turn all separable provinces into independent states.
-        </br>Capital province and provinces without any burgs will state as they are`,
+        </br>It will turn all separable provinces into independent polities.
+        </br>Capital province and provinces without any settlements will stay as they are`,
     confirm: "Release",
     onConfirm: () => {
       const oldStateIds: number[] = [];
@@ -1155,7 +1159,7 @@ function addProvince(this: SVGElement, event: any): void {
 
   const state = cells.state[center];
   if (!state) {
-    tip("You cannot create a province in neutral lands. Please assign this land to a state first", false, "error");
+    tip("You cannot create a province in neutral lands. Please assign this land to a polity first", false, "error");
     return;
   }
 
@@ -1291,7 +1295,7 @@ function closeProvincesEditor(): void {
 function openProvinceMergeDialog(): void {
   const selectedState = filterState.stateId;
   if (selectedState === -1) {
-    alertMessage.innerHTML = "Please select a specific state from the filter to merge provinces within that state.";
+    alertMessage.innerHTML = "Please select a specific polity from the filter to merge provinces within that polity.";
     $("#alert").dialog({
       title: "Merge Provinces",
       buttons: {
@@ -1304,7 +1308,7 @@ function openProvinceMergeDialog(): void {
   }
   const provincesToMerge = pack.provinces.filter(p => p.i && !p.removed && p.state === selectedState);
   if (provincesToMerge.length < 2) {
-    alertMessage.innerHTML = "Not enough provinces in the selected state to merge.";
+    alertMessage.innerHTML = "Not enough provinces in the selected polity to merge.";
     $("#alert").dialog({
       title: "Merge Provinces",
       buttons: {
@@ -1389,7 +1393,7 @@ function confirmProvincesMerge(provincesToMerge: number[], primaryProvinceId: nu
       <p>The following provinces will be <strong>removed</strong>: ${provincesToMerge
         .map(provinceId => `${provinceEmblem(provinceId)}${pack.provinces[provinceId].name}`)
         .join(", ")}.</p>
-      <p>Removed provinces data (burgs and cells) will be assigned to ${provinceEmblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
+      <p>Removed provinces data (settlements and cells) will be assigned to ${provinceEmblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
       <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
     confirm: "Merge",
     onConfirm: () => {
@@ -1409,7 +1413,7 @@ const provincesAnnex = createAnnexMode({
   rejectReason: (primaryId, provinceId) =>
     pack.provinces[provinceId].state === pack.provinces[primaryId].state
       ? undefined
-      : `${pack.provinces[provinceId].name} belongs to another state. Merge states first, or pick a province of ${pack.states[pack.provinces[primaryId].state].name}`,
+      : `${pack.provinces[provinceId].name} belongs to another polity. Merge polities first, or pick a province of ${pack.states[pack.provinces[primaryId].state].name}`,
   commit: (primaryProvinceId, provincesToMerge) => confirmProvincesMerge(provincesToMerge, primaryProvinceId)
 });
 

@@ -48,7 +48,7 @@ function open(ref?: EntityRef): void {
   } else {
     ensureEl("notesName").textContent = "";
     quill.root.dataset.placeholder =
-      "No notes yet. Click a burg, marker, state or other element on the map and add a note from its editor";
+      "No notes yet. Click a settlement, marker, polity or other element on the map and add a note from its editor";
     quill.disable();
   }
 

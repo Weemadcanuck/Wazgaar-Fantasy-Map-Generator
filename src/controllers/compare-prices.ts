@@ -21,7 +21,7 @@ const columns: EditorColumn<Market>[] = [
     label: "Market",
     width: "9em",
     permanent: true,
-    tip: "Market center burg name. Click to sort",
+    tip: "Market center settlement name. Click to sort",
     sortBy: market => Markets.getName(market),
     sortType: "alpha"
   },

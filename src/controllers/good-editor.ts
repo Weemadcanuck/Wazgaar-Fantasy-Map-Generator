@@ -296,7 +296,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
         <div class="ge-grid ge-grid--top">
           ${renderMultiplierRow("cultureType", "Culture Type")}
           ${renderMultiplierRow("culture", "Culture")}
-          ${renderMultiplierRow("state", "State")}
+          ${renderMultiplierRow("state", "Polity")}
           ${renderMultiplierRow("religion", "Religion")}
           ${renderMultiplierRow("biome", "Biome")}
           ${renderMultiplierRow("zone", "Zone")}
@@ -328,7 +328,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       recipeNote.style.display = recipesEmpty && !rawEmpty ? "" : "none";
 
       const rawNote = ensureEl("newGoodRawNote");
-      rawNote.textContent = "This good is manufactured-only: made from recipes in burgs.";
+      rawNote.textContent = "This good is manufactured-only: made from recipes in settlements.";
       rawNote.style.display = rawEmpty && !recipesEmpty ? "" : "none";
     };
 
@@ -499,7 +499,7 @@ type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biom
 function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
   if (dim === "cultureType") return id;
   if (dim === "culture") return pack.cultures[+id]?.name ?? `Culture ${id}`;
-  if (dim === "state") return pack.states[+id]?.name ?? `State ${id}`;
+  if (dim === "state") return pack.states[+id]?.name ?? `Polity ${id}`;
   if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
   if (dim === "zone") return pack.zones.find(z => z.i === +id)?.name ?? `Zone ${id}`;
   return pack.biomes[+id]?.name ?? `Biome ${id}`;
@@ -589,7 +589,7 @@ function openMultiplierPopup(
       entities = pack.states
         .filter(s => s.i && !s.removed)
         .map(s => ({ id: String(s.i), name: s.fullName || s.name, color: s.color }));
-      label = "State";
+      label = "Polity";
       break;
     case "religion":
       entities = pack.religions

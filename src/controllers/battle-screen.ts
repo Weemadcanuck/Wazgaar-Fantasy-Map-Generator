@@ -413,7 +413,7 @@ function renderDialog(): void {
     <div id="regimentSelectorScreen" class="dialog">
       <div id="regimentSelectorHeader" class="header" style="grid-template-columns: 9em 13em 4em 6em">
         <div data-tip="Click to sort by polity name" class="sortable alphabetically" data-sortby="state">
-          State&nbsp;
+          Polity&nbsp;
         </div>
         <div data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">
           Regiment&nbsp;

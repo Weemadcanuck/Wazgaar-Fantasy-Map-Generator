@@ -397,7 +397,8 @@ function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
   label.text = input;
   applyLabelChanges();
-  if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
+  if (label.type === "state")
+    tip("Use Polities Editor to change the actual polity name, not just a label", false, "warn");
   if (label.type === "province")
     tip("Use Provinces Editor to change the actual province name, not just a label", false, "warn");
 }

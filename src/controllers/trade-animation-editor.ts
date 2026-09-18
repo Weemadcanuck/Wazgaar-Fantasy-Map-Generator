@@ -7,7 +7,7 @@ const INPUTS = [
     type: "select",
     id: "tradeAnimDisplayType",
     label: "Trade type",
-    tip: "Which trade types to display: local (burg-market), global (market-market), or both",
+    tip: "Which trade types to display: local (settlement-market), global (market-market), or both",
     key: "displayType",
     default: DEFAULTS.displayType,
     selectOptions: ["local", "global", "both"]

@@ -54,7 +54,7 @@ function renderDialog(): void {
       </div>
       <div data-tip="Check to fit settlement styles (icon and label size) to the submap scale">
         <input type="checkbox" class="checkbox" id="submapRescaleBurgStyles" checked />
-        <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale burg styles</label>
+        <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale settlement styles</label>
       </div>
     </div>
   </div>`;

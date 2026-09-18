@@ -271,7 +271,7 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     search("Aldor");
     expect(rows()[0].querySelector(".icon-home")).not.toBeNull();
-    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe("Burg · Kingdom of Westreach");
+    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe("Settlement · Kingdom of Westreach");
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith("burgIcons", "labels");
     expect(mocks.zoom).toHaveBeenCalledWith(10, 20, 8, 1500);
@@ -354,7 +354,7 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     search("Aldor");
     expect(rows().filter(row => row.querySelector(".omnibar-name")?.textContent === "Aldor")).toHaveLength(2);
-    const label = rows().find(row => row.textContent?.includes("Label · Burg"))!;
+    const label = rows().find(row => row.textContent?.includes("Label · Settlement"))!;
     expect(label.querySelector(".icon-font")).not.toBeNull();
     label.click();
     expect(mocks.zoom).toHaveBeenCalledWith(50, 60, 8, 1500);
@@ -514,7 +514,7 @@ describe("Omnibar public behavior", () => {
     localStorage.setItem("fmg-omnibar-history", JSON.stringify(["gone", "addBurgTool", "addBurgTool", 1]));
     Omnibar.open();
     expect(rows()).toHaveLength(1);
-    expect(rows()[0].textContent).toContain("Add Burg");
+    expect(rows()[0].textContent).toContain("Add Settlement");
   });
 
   it("lists every command on a bare >, the recent ones first", () => {

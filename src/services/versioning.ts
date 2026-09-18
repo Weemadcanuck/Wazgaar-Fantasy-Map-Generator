@@ -20,11 +20,13 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.154.4";
+export const VERSION = "1.154.6";
 export const MAP_VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Fixed focus-dependent fullscreen rendering artifacts in the Windows desktop app",
+  "Restored Polities and Settlements terminology throughout the fork interface",
   "Global map search (press Space to open)",
   "New style presets: Ink, Cinderwood and Frostbite",
   "Heightmap hachures, coastal bands and shore ripples embellishments",
@@ -37,13 +39,13 @@ const latestPublicChanges = [
   "Dialogs: titlebar button to restore the default position, columns and sorting",
   "Heightmap Editor: 'Show drainage' overlay",
   "Heightmap: option to render contour lines",
-  "Ability to override a burg's treasury",
+  "Ability to override a settlement's treasury",
   "Dialogs: preserve position between sessions",
   "Options rework: map settings are stored with the map, preferences with the browser",
   "Map name and era moved to Set Lore dialog",
   "Notes: kept on the element they describe, and available for more element types",
   "Notes Editor: new rich text editor Quill2",
-  "Goods, Rivers, Routes, Markers, Markets and Burg icons rendering optimization",
+  "Goods, Rivers, Routes, Markers, Markets and Settlement icons rendering optimization",
   "Help assistant: ask questions about the Generator in the app"
 ];
 

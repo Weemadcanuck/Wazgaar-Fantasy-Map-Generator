@@ -331,7 +331,7 @@ function redrawDrainage(): void {
 }
 
 function showModeDialog(tool?: string): void {
-  alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
+  alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, settlements, polities etc) is based. So the best edit approach is to
     <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
     <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
     <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>

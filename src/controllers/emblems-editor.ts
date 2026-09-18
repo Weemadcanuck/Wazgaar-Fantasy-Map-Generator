@@ -38,7 +38,7 @@ async function openDefault(): Promise<void> {
   const type = firstState ? "state" : "burg";
   const element = firstState ?? firstBurg;
   if (!element?.coa) {
-    tip("No emblems to edit, please generate states and burgs first", false, "error");
+    tip("No emblems to edit, please generate polities and settlements first", false, "error");
     return;
   }
 
@@ -346,7 +346,7 @@ function updateEmblemData(): void {
   if (!el.coa) return;
   ensureEl("emblemImage").setAttribute("href", `#${currentId}`);
   let name = el.fullName || el.name;
-  if (currentType === "burg") name = `Burg of ${name}`;
+  if (currentType === "burg") name = `Settlement of ${name}`;
   ensureEl("emblemArmiger").innerText = name ?? "";
 
   const emblemShapeSelector = ensureEl<HTMLSelectElement>("emblemShapeSelector");
@@ -622,7 +622,7 @@ async function downloadGallery(): Promise<void> {
             })
             .join("");
           return provinceBurgs.length
-            ? `<div id="burgs_${province.i}">${back}<h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>`
+            ? `<div id="burgs_${province.i}">${back}<h2>${province.fullName} settlements</h2>${provinceBurgFigures}</div>`
             : "";
         })
         .join("");
@@ -636,14 +636,14 @@ async function downloadGallery(): Promise<void> {
         })
         .join("");
       if (stateBurgOutOfProvincesFigures)
-        stateBurgSections += `<div><h2>${state.fullName} burgs under direct control</h2>${stateBurgOutOfProvincesFigures}</div>`;
+        stateBurgSections += `<div><h2>${state.fullName} settlements under direct control</h2>${stateBurgOutOfProvincesFigures}</div>`;
       return stateBurgSections;
     })
     .join("");
 
   const neutralBurgs = validBurgs.filter(b => !b.state);
   const neutralsSection = neutralBurgs.length
-    ? `<div><h2>Independent burgs</h2>${neutralBurgs
+    ? `<div><h2>Independent settlements</h2>${neutralBurgs
         .map(burg => {
           const el = document.getElementById(`burgCOA${burg.i}`);
           if (!el) return "";

@@ -297,7 +297,7 @@ function applyMarketPaint(changes: ReadonlyMap<number, number>): void {
 function enterAddMarketMode(): void {
   customization = 16;
   ensureEl("marketsAdd").classList.add("pressed");
-  tip("Click on a burg on the map to create a new market there. Hold Shift to add multiple", true);
+  tip("Click on a settlement on the map to create a new market there. Hold Shift to add multiple", true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addMarketOnClick);
 }
 
@@ -315,7 +315,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   const burgId = pack.cells.burg[cellId];
   if (!burgId) {
-    tip("Click on a burg to create a new market — no burg found here", false, "error");
+    tip("Click on a settlement to create a new market — no settlement found here", false, "error");
     return;
   }
 
@@ -430,7 +430,7 @@ function getOwnerStateName(market: Market): string {
   const center = pack.burgs[market.centerBurgId];
   if (!center) return "Unknown";
   if (!center.state) return "Independent";
-  return pack.states[center.state]?.name || `State ${center.state}`;
+  return pack.states[center.state]?.name || `Polity ${center.state}`;
 }
 
 function regenerateMarkets() {

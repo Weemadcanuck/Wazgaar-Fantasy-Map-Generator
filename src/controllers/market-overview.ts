@@ -169,7 +169,7 @@ function getMarketGoods(): MarketGoodRow[] {
 
   const centerBurg = pack.burgs[market.centerBurgId] as Burg | undefined;
   if (!centerBurg || centerBurg.removed) {
-    tip("Invalid market. The selected market has no center burg", true, "error", 5000);
+    tip("Invalid market. The selected market has no center settlement", true, "error", 5000);
     return [];
   }
 
@@ -215,7 +215,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
   const totalUnits = view.all.reduce((sum, row) => sum + row.stock, 0);
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
     <div style="margin-left:5px">Cells: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
-    <div style="margin-left:12px">Burgs: ${burgs.length}</div>
+    <div style="margin-left:12px">Settlements: ${burgs.length}</div>
     <div data-col="stock" style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;
 
   renderEditorPagination(ensureEl("marketOverviewSummary"), view, marketOverviewTable.goto);
@@ -227,7 +227,7 @@ function toggleRelocateMarket(): void {
   button.classList.toggle("pressed");
   if (button.classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateMarketOnClick);
-    tip("Click on a burg on the map to relocate the market center", true);
+    tip("Click on a settlement on the map to relocate the market center", true);
   } else {
     clearMainTip();
     applyDefaultViewboxEvents();
@@ -245,17 +245,17 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   const burgId = pack.cells.burg[cellId];
   const burg = pack.burgs[burgId] as Burg | undefined;
   if (!burgId || !burg || burg.removed) {
-    tip("No valid burg in this cell. Click on a cell with a burg", false, "error");
+    tip("No valid settlement in this cell. Click on a cell with a settlement", false, "error");
     return;
   }
 
   if (burgId === market.centerBurgId) {
-    tip("This burg is already the center of this market", false, "error");
+    tip("This settlement is already the center of this market", false, "error");
     return;
   }
 
   if (pack.markets.some(m => m.centerBurgId === burgId)) {
-    tip("This burg is already a center of another market", false, "error");
+    tip("This settlement is already a center of another market", false, "error");
     return;
   }
 

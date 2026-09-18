@@ -9,6 +9,9 @@ import { DESKTOP_QUIT_CHANNEL } from "../src/types/desktop-ipc";
 import { ARCHIVAL_APP_HOST, ARCHIVAL_USER_DATA_DIRECTORY, RENDERER_CACHE_CONTROL } from "./app-identity";
 import { registerArchiveExportHandlers } from "./archive-export-ipc";
 
+// Avoid focus-dependent fullscreen artifacts on Windows while retaining GPU rendering.
+if (process.platform === "win32") app.commandLine.appendSwitch("disable-direct-composition");
+
 const SCHEME = "app";
 const HOST = ARCHIVAL_APP_HOST;
 const APP_URL = `${SCHEME}://${HOST}/index.html`;

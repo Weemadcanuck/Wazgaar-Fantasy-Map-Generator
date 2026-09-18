@@ -15,8 +15,8 @@ const TEMPLATE = /* html */ `
     <button id="editBiomesButton" data-tip="Click to open Biomes Editor" data-shortcut="Shift + B">
       Biomes
     </button>
-    <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
-      Burgs
+    <button id="overviewBurgsButton" data-tip="Click to open Settlements Overview" data-shortcut="Shift + T">
+      Settlements
     </button>
     <button
       id="editCoastlineSettings"
@@ -86,8 +86,8 @@ const TEMPLATE = /* html */ `
     <button id="overviewJourneysButton" data-tip="Click to open Journeys Overview" data-shortcut="Shift + J">
       Journeys
     </button>
-    <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
-      States
+    <button id="editStatesButton" data-tip="Click to open Polities Editor" data-shortcut="Shift + S">
+      Polities
     </button>
     <button id="editTradeAnimationButton" data-tip="Click to open Trade Animation Editor">
       Trade
@@ -100,9 +100,9 @@ const TEMPLATE = /* html */ `
   <div id="regenerateFeature" class="grid">
     <button
       id="regenerateBurgs"
-      data-tip="Click to regenerate all unlocked burgs and routes. States will remain as they are. Note: burgs are only generated in populated areas with culture assigned"
+      data-tip="Click to regenerate all unlocked settlements and routes. Polities will remain as they are. Note: settlements are only generated in populated areas with culture assigned"
     >
-      Burgs
+      Settlements
     </button>
     <button id="regenerateCultures" data-tip="Click to regenerate non-locked cultures">Cultures</button>
     <button
@@ -116,9 +116,9 @@ const TEMPLATE = /* html */ `
     <button id="regenerateIce" data-tip="Click to regenerate icebergs and glaciers">Ice</button>
     <button
       id="regenerateStateLabels"
-      data-tip="Click to update state labels placement based on current borders"
+      data-tip="Click to update polity label placement based on current borders"
     >
-      State Labels
+      Polity Labels
     </button>
     <button id="regenerateMarkers" data-tip="Click to regenerate unlocked markers">
       Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
@@ -143,7 +143,7 @@ const TEMPLATE = /* html */ `
     </button>
     <button
       id="regenerateProvinces"
-      data-tip="Click to regenerate non-locked provinces. States will remain as they are"
+      data-tip="Click to regenerate non-locked provinces. Polities will remain as they are"
     >
       Provinces
     </button>
@@ -160,9 +160,9 @@ const TEMPLATE = /* html */ `
     <button id="regenerateRoutes" data-tip="Click to regenerate all unlocked routes">Routes</button>
     <button
       id="regenerateStates"
-      data-tip="Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different"
+      data-tip="Click to regenerate non-locked polities. Emblems and military forces will be regenerated as well; settlements will remain, but capitals will be different"
     >
-      States
+      Polities
     </button>
     <button
       id="regenerateZones"
@@ -176,10 +176,10 @@ const TEMPLATE = /* html */ `
   <div id="addFeature" class="grid">
     <button
       id="addBurgTool"
-      data-tip="Click on map to place a burg. Hold Shift to add multiple"
+      data-tip="Click on map to place a settlement. Hold Shift to add multiple"
       data-shortcut="Shift + 1"
     >
-      Burg
+      Settlement
     </button>
     <button
       id="addLabel"

@@ -61,7 +61,7 @@ function renderDialog(): void {
     <p><b>Good:</b> <span id="infoGood">n/a</span></p>
     <p><b>Market:</b> <span id="infoMarket">n/a</span></p>
     <p><b>Cell Production:</b> <span id="infoCellProduction">n/a</span></p>
-    <p><b>Burg Production:</b> <span id="infoBurgProduction">n/a</span></p>
+    <p><b>Settlement Production:</b> <span id="infoBurgProduction">n/a</span></p>
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);

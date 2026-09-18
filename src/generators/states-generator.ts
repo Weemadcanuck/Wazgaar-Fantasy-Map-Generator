@@ -102,19 +102,20 @@ class StatesModule {
   private recreate(): { warning?: string; error?: string; states?: State[] } {
     Math.random = aleaPRNG(generateSeed());
     const statesCount = options.generation.states.limit;
-    if (!statesCount) return { error: "<i>States Number</i> option value is zero. No counties are generated" };
+    if (!statesCount) return { error: "<i>Polities Number</i> option value is zero. No counties are generated" };
 
     const validBurgs = pack.burgs.filter(burg => burg.i && !burg.removed);
-    if (!validBurgs.length) return { error: "There are no burgs to generate states. Please create burgs first" };
+    if (!validBurgs.length)
+      return { error: "There are no settlements to generate polities. Please create settlements first" };
 
     const warning =
       validBurgs.length < statesCount
-        ? `Not enough burgs to generate ${statesCount} states. Will generate only ${validBurgs.length} states`
+        ? `Not enough settlements to generate ${statesCount} polities. Will generate only ${validBurgs.length} polities`
         : undefined;
     const validStates = pack.states.filter(state => state.i && !state.removed);
     const lockedStates = validStates.filter(state => state.lock);
     if (validStates.length && lockedStates.length === validStates.length) {
-      return { error: "Unable to regenerate as all states are locked" };
+      return { error: "Unable to regenerate as all polities are locked" };
     }
 
     const lockedStateIds = lockedStates.map(state => state.i);
