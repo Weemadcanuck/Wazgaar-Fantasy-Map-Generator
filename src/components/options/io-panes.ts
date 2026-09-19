@@ -1,4 +1,4 @@
-// The Save, Export and Load dialogs behind the sticked menu, plus the tile-export screen
+// The Save, Export and Load dialogs, plus the tile-export screen
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";

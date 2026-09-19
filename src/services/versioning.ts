@@ -20,11 +20,12 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.154.6";
+export const VERSION = "1.154.8";
 export const MAP_VERSION = "1.153.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Moved map export into Tools alongside Obsidian export",
   "Fixed focus-dependent fullscreen rendering artifacts in the Windows desktop app",
   "Restored Polities and Settlements terminology throughout the fork interface",
   "Global map search (press Space to open)",

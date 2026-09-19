@@ -319,11 +319,16 @@ function start() {
         element: "#exportButton",
         onHighlightStarted: () => {
           closeDialogs();
+          ensureEl("toolsTab").click();
+          const exportButton = ensureEl("exportButton");
+          const section = exportButton.closest("details");
+          if (section) section.open = true;
+          exportButton.scrollIntoView({ block: "nearest" });
         },
         popover: {
           title: "Export",
           description:
-            "Click Export to open the export dialog where you can download the map as an SVG, PNG, or JPEG image, split it into tiles, or export the world data as JSON.",
+            "Under Tools → Export, click Map export to download the map as an SVG, PNG, or JPEG image, split it into tiles, or export the world data as JSON.",
           side: "top",
           onNextClick: () => {
             advanceTour(tour);

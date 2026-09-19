@@ -233,8 +233,9 @@ const TEMPLATE = /* html */ `
   </details>
   <details><summary>Export</summary>
     <div class="grid">
+      <button id="exportButton" data-tip="Select format to download image or export map data">Map export</button>
       <button id="forkArchiveExport">Obsidian export</button>
-      <button id="forkLegacyNotes" data-tip="Download the original notes retained during migration">Original notes backup</button>
+      <button id="forkLegacyNotes" data-tip="Download the original map notes preserved during migration">Notes backup</button>
     </div>
   </details>
 `;

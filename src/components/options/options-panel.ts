@@ -1,5 +1,5 @@
 // The collapsible panel on the right and the sticked menu below it
-import { showExportPane, showLoadPane, showSavePane } from "@/components/options/io-panes";
+import { showLoadPane, showSavePane } from "@/components/options/io-panes";
 import { changeViewMode } from "@/components/options/view-mode";
 import { clearMainTip } from "@/components/tooltips";
 import { resetZoom } from "@/components/zoom";
@@ -122,7 +122,6 @@ function initialize(): void {
     const id = (event.target as HTMLElement).id;
     if (id === "newMapButton") regeneratePrompt();
     else if (id === "saveButton") showSavePane();
-    else if (id === "exportButton") showExportPane();
     else if (id === "loadButton") void showLoadPane();
     else if (id === "zoomReset") resetZoom(1000);
     else if (id === "searchButton") Controllers.Omnibar.open();

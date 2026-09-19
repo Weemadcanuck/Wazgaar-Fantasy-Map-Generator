@@ -1,3 +1,13 @@
+# Obsidian Fork 1.154.8 - 2026-09-18
+
+- Group map and Obsidian exports under Tools > Export; remove the bottom Export button.
+- Shorten Original notes backup to Notes backup and clarify its tooltip.
+- Update the guided tour for the moved export button.
+
+[Release notes](../updates/obsidian-1.154.8.md).
+
+---
+
 # Obsidian Fork 1.154.6 - 2026-09-18
 
 - Restore Polities and Settlements across menus, search, editors and tooltips.

@@ -2,7 +2,7 @@
 
 An Obsidian-oriented fork of Azgaar’s Fantasy Map Generator. The app displays its version in the About tab and information popup. Desktop releases retain the earlier archival-fork installation and storage identifiers for compatibility.
 
-[Download Obsidian Fork 1.154.6](https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator/releases/tag/obsidian-v1.154.6) · [Changes and reasoning](docs/updates/obsidian-1.154.6.md)
+[Download Obsidian Fork 1.154.8](https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator/releases/tag/obsidian-v1.154.8) · [Changes and reasoning](docs/updates/obsidian-1.154.8.md)
 
 ## Fork overview
 
@@ -23,7 +23,7 @@ This fork adds Obsidian reference export, editable custom point layers, and reli
 
 The supplied upstream snapshot identifies itself as 1.153.0 in source and package metadata, despite its folder name. The fork app is 1.154.0; `.map` headers use the upstream format version, 1.153.0. Keep these version numbers separate.
 
-Journeys retain upstream slot 52. Slot 53 contains a labelled, versioned Obsidian extension for custom layers, the Archive world ID, and original legacy notes. `src/services/io/fork-data.ts` recognizes older fork saves and selects their real upstream migration baseline, 1.149.2. Original notes are retained because upstream cannot attach every old regiment note to an entity; Tools > Original notes backup downloads them.
+Journeys retain upstream slot 52. Slot 53 contains a labelled, versioned Obsidian extension for custom layers, the Archive world ID, and original legacy notes. `src/services/io/fork-data.ts` recognizes older fork saves and selects their real upstream migration baseline, 1.149.2. Original notes are retained because upstream cannot attach every old regiment note to an entity; Tools > Export > Notes backup downloads them.
 
 Test with copies of existing maps. New saves are not compatible with the older Obsidian fork. The integration keeps upstream settings, notes, journeys and UI changes alongside the fork features.
 
