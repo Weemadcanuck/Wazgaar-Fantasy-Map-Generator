@@ -29,5 +29,5 @@
     // "noUncheckedIndexedAccess": true, // TODO: turn on in the next version
   },
   "include": ["src"],
-  "exclude": ["src/e2e"]
+  "exclude": ["src/e2e", "src/**/*.test.ts"]
 }

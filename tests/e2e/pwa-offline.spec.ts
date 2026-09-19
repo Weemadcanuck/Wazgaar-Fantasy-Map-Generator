@@ -19,13 +19,16 @@ async function prepareOffline(page: Page) {
 // Register manually on localhost; only production builds include the asset manifest.
 test.describe("PWA offline", () => {
   test.beforeEach(async ({ page, context }) => {
-    const worker = await (await context.request.get("/Fantasy-Map-Generator/sw.js")).text();
+    await page.goto("./");
+    const response = await context.request.get(new URL("./sw.js", page.url()).href);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()["content-type"]).toMatch(/(?:javascript|ecmascript)/i);
+    const worker = await response.text();
     test.skip(
       worker.includes("self.__WB_MANIFEST"),
       "needs the built service worker (npm run build && npm run preview)"
     );
 
-    await page.goto("/");
     await waitForMap(page);
     await page.evaluate(async () => {
       await navigator.serviceWorker.register("./sw.js");
