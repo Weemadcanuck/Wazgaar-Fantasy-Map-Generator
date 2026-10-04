@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The invariants `options` exists to guarantee, and what a `.map` file carries of it.
 // See docs/architecture/configuration.md#invariants
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPointsNumber, POINTS_BY_DENSITY } from "@/data/graph-density";
 import type { MapData } from "./options-schema";
 import { Pins } from "./pins";
@@ -25,6 +25,7 @@ const defaults = (): MapData => Options.getDefaultOptions().map;
 const load = (file: string) => Options.applyLoaded(JSON.parse(file));
 
 beforeEach(boot);
+afterEach(() => Options.persist());
 
 it.each(["ancient", "fmgStyle_custom"])("keeps the %s style preset across generation and session reloads", preset => {
   options.map.style.preset = preset;

@@ -17,4 +17,6 @@ Validate dense relief in Pale, Ink, Cinderwood and Frostbite: cold loading, warm
 
 The initial local extraction passes 1,251 application tests and the desktop build. It is based on official upstream commit bf32ac7230654361eedfc25985b4ecc3473889b1. No map-format or application-version changes are required.
 
+The October 3, 2026 maintenance integration merges upstream `b944003c`, including ocean-pattern/brush fixes, filtered image and SVG export compatibility, citadel/market controls, state merging as provinces, and dependency/Nix updates. The renderer/map version remains `1.153.1`. The R&R testing branch carries the separate desktop identity and installer version; keep this source branch free of that packaging metadata.
+
 Tools > Record performance starts an opt-in, bounded capture after a countdown and downloads JSON. It is also searchable in the omnibar. No measurements run during ordinary use. Keep local test maps and experimental artifacts under the ignored `work/` folder.
