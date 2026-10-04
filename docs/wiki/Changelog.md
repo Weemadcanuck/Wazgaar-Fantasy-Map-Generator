@@ -5,6 +5,7 @@
 - Restore citadel controls and offer market removal from the settlement editor.
 - Allow merged polities to become provinces.
 - Update Electron and upstream dependency/Nix maintenance.
+- Approved after user testing on October 4, 2026, with faster performance reported.
 
 [Candidate notes and testing checklist](../updates/obsidian-1.154.9.md).
 

@@ -17,7 +17,9 @@ Download `azgaar-obsidian-fork-1.154.9-win-x64.exe` from the testing prerelease.
 
 1,308 application tests, 17 desktop tests and 52 script tests passed, with lint, version/asset checks and web/desktop compilation. Export tests now use a committed map fixture instead of an external Jotun JSON file; migration tests preserve section boundaries in Git-normalized fixtures. A fork-specific workflow verifies and packages Windows testing prereleases.
 
-Native Windows testing is still required. Check:
+Approved by the user on October 4, 2026 after testing both updated forks and reporting faster performance than the previous builds.
+
+Regression checklist:
 
 - Old-map loading and save/reload, including journeys, custom layers, world IDs and original notes.
 - Obsidian export into a test folder, with edited notes preserved on repeat export.
