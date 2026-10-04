@@ -1,0 +1,88 @@
+name: Build fork testing release
+
+on:
+  push:
+    tags: ["obsidian-v*", "rr-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify version and public assets
+        run: |
+          node scripts/sync-version.js --check
+          node scripts/stamp-assets.js --check
+      - name: Verify the fork tag matches the packaged version
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          node - <<'JS'
+          const fs = require("node:fs");
+          const pkg = require("./package.json");
+          const config = fs.readFileSync("electron-builder.yml", "utf8");
+          const rrVersion = config.match(/extraMetadata:\s*\n\s*version:\s*(\S+)/)?.[1];
+          const expected = pkg.name === "azgaar-obsidian-fork"
+            ? `obsidian-v${pkg.version}`
+            : pkg.name === "azgaar-rr-testing" && rrVersion ? `rr-v${rrVersion}` : null;
+          if (process.env.TAG !== expected) throw new Error(`Tag does not match fork package: ${expected}`);
+          JS
+      - name: Run application and script tests
+        run: |
+          npm test -- --run
+          npm run test:scripts
+      - name: Run Obsidian desktop tests
+        shell: bash
+        run: |
+          if node -e 'process.exit(require("./package.json").scripts["test:electron"] ? 0 : 1)'; then
+            npm run test:electron -- --run
+          fi
+      - name: Check source formatting and types through the web build
+        run: |
+          npx --no-install biome check src electron
+          npm run build
+      - name: Build Windows x64 installer
+        run: npm run electron -- dist --win --x64 --publish never
+      - name: Write installer checksums
+        shell: bash
+        run: |
+          cd release
+          sha256sum *.exe > SHA256SUMS.txt
+      - name: Preserve test installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ github.ref_name }}-windows-x64
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/SHA256SUMS.txt
+      - name: Publish testing prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          case "$TAG" in
+            obsidian-v*) TITLE="Obsidian Fork ${TAG#obsidian-v} — testing"; NOTES="docs/updates/obsidian-${TAG#obsidian-v}.md" ;;
+            rr-v*) TITLE="R&R ${TAG#rr-v} — testing"; NOTES="docs/rr-testing.md" ;;
+            *) exit 1 ;;
+          esac
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Existing release preserved: $TAG"
+          else
+            gh release create "$TAG" release/*.exe release/SHA256SUMS.txt --verify-tag --title "$TITLE" --prerelease --latest=false --notes-file "$NOTES"
+          fi

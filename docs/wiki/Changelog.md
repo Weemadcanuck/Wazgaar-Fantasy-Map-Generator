@@ -1,3 +1,12 @@
+# R&R testing 1.153.1-rr.3 - 2026-10-03
+
+- Integrate upstream maintenance through `b944003c`: filtered image/SVG exports, citadel and market fixes, state merging as provinces, Electron and dependency updates.
+- Preserve the separate R&R profile and relief/coastal rendering.
+
+[Candidate notes and testing checklist](../rr-testing.md).
+
+---
+
 _The current stable version is available [here](https://azgaar.github.io/Fantasy-Map-Generator)._
 
 Notable user-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document the noteworthy difference and communicate it clearly to end users.
@@ -45,6 +54,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Legends: empty legends no longer redraw as an "undefined" row
 - Fog of war: the cover spans the full map, including areas outside the viewport
 - Memory: closing editors releases their listeners, detached elements and retained map references
+- States Editor: merging states can keep each merged state as a province of the ruling state by _[barrulus](https://github.com/barrulus)_
 
 **[1.152.1](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.152.1) - 2026-09-11**:
 

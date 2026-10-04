@@ -12,6 +12,8 @@ import { VERSION } from "@/services/versioning";
 import { downloadFile } from "@/utils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 
+vi.hoisted(() => localStorage.setItem("version", "999.0.0"));
+
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
   localStorage.clear();
