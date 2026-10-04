@@ -2,6 +2,7 @@
 
 - Integrate upstream maintenance through `b944003c`: filtered image/SVG exports, citadel and market fixes, state merging as provinces, Electron and dependency updates.
 - Preserve the separate R&R profile and relief/coastal rendering.
+- Approved after user testing on October 4, 2026, with faster performance reported.
 
 [Candidate notes and testing checklist](../rr-testing.md).
 
