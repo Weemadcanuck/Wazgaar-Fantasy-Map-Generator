@@ -1,13 +1,13 @@
-# Obsidian Fork 1.154.9 testing candidate - 2026-10-03
+# Obsidian Fork 1.154.9 - 2026-10-04
 
 - Repair legacy ocean patterns and improve assignment brush tracking.
 - Fix zoomed-out filtered image exports and SVG compatibility with external editors.
 - Restore citadel controls and offer market removal from the settlement editor.
 - Allow merged polities to become provinces.
 - Update Electron and upstream dependency/Nix maintenance.
-- Approved after user testing on October 4, 2026, with faster performance reported.
+- Approved as the fork's main release after user testing, with faster performance reported.
 
-[Candidate notes and testing checklist](../updates/obsidian-1.154.9.md).
+[Release notes and regression checklist](../updates/obsidian-1.154.9.md).
 
 ---
 

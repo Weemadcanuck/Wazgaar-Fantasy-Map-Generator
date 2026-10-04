@@ -1,0 +1,61 @@
+name: Promote tested Obsidian release
+
+on:
+  push:
+    tags: ["obsidian-stable-v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: obsidian-release-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Verify the approved tag and tested source
+        env:
+          PROMOTION_TAG: ${{ github.ref_name }}
+        run: |
+          node - <<'JS'
+          const pkg = require("./package.json");
+          if (pkg.name !== "azgaar-obsidian-fork" || !/^\d+\.\d+\.\d+$/.test(pkg.version)) {
+            throw new Error("Expected a stable Obsidian fork version");
+          }
+          if (process.env.PROMOTION_TAG !== `obsidian-stable-v${pkg.version}`) {
+            throw new Error("Promotion tag does not match the fork version");
+          }
+          JS
+          VERSION=$(node -p 'require("./package.json").version')
+          git diff --exit-code "obsidian-v$VERSION" HEAD -- . ':!README.md' ':!docs' ':!.github'
+      - name: Promote the existing tested installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          RELEASE_TAG="obsidian-v$VERSION"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/obsidian-release.json"
+          node - "$RUNNER_TEMP/obsidian-release.json" "$VERSION" <<'JS'
+          const fs = require("node:fs");
+          const release = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+          const version = process.argv[3];
+          if (release.draft || release.tag_name !== `obsidian-v${version}`) {
+            throw new Error("Expected the published testing release");
+          }
+          for (const name of [`azgaar-obsidian-fork-${version}-win-x64.exe`, "SHA256SUMS.txt"]) {
+            if (!release.assets.some(asset => asset.name === name && asset.size > 0)) {
+              throw new Error(`Missing tested release asset: ${name}`);
+            }
+          }
+          JS
+          gh release edit "$RELEASE_TAG" --prerelease=false --latest \
+            --title "Obsidian Fork $VERSION" --notes-file "docs/updates/obsidian-$VERSION.md"

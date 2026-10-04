@@ -2,9 +2,9 @@
 
 An Obsidian-oriented fork of Azgaar’s Fantasy Map Generator. The app displays its version in the About tab and information popup. Desktop releases retain the earlier archival-fork installation and storage identifiers for compatibility.
 
-[Download Obsidian Fork 1.154.8](https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator/releases/tag/obsidian-v1.154.8) · [Changes and reasoning](docs/updates/obsidian-1.154.8.md)
+[Download Obsidian Fork 1.154.9](https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator/releases/tag/obsidian-v1.154.9) · [Release notes](docs/updates/obsidian-1.154.9.md)
 
-[Obsidian Fork 1.154.9 testing candidate](docs/updates/obsidian-1.154.9.md) integrates upstream maintenance through `b944003c`, including SVG export fixes and Electron 43.5.0. Native Windows testing is pending.
+Obsidian Fork 1.154.9 is the main release, approved after user testing on October 4, 2026 with faster performance reported. It integrates upstream maintenance through `b944003c`, including SVG export fixes and Electron 43.5.0.
 
 ## Fork overview
 
@@ -99,7 +99,7 @@ The larger cache reduces eviction pressure; it does not claim to speed up first-
 
 Integration verification: 1,279 application tests, 17 desktop tests and 52 script tests passed, along with lint, version/asset checks and web/desktop builds. An isolated Electron session loaded and resaved the supplied Jotun map, then reloaded it: all 12,032 relief icons, the custom layer, world ID and 226 original notes matched the source exactly. Installed performance and visual export checks remain for user validation.
 
-Relief was manually checked for warm navigation, mixed coverage, editing, save/reload, SVG/PNG exports, and off/on reuse. Large-map cold loading remains a known cost. The completely empty save/reload case is unit-tested; the supplied sparse manual fixture still had 50 icons. Those manual checks apply to the previous stable fork. The integration candidate requires a fresh installed-app check. Automated migration checks cover legacy fork data and coexistence of journeys and custom layers. Playwright and other operating systems were not exercised in this review.
+Relief was manually checked for warm navigation, mixed coverage, editing, save/reload, SVG/PNG exports, and off/on reuse. Large-map cold loading remains a known cost. The completely empty save/reload case is unit-tested; the supplied sparse manual fixture still had 50 icons. The 1.154.9 Windows build was tested and approved by the user on October 4, 2026, with faster performance reported. Automated migration checks cover legacy fork data and coexistence of journeys and custom layers. Playwright and other operating systems were not exercised in this review.
 
 Obsidian export is one-way generated reference output, not bidirectional vault synchronization. Removed notes remain on disk for review. Writes are atomic per file, not a transaction across the folder; a disk failure can leave partial output before the manifest is committed. See `docs/architecture/archive-integration.md` for ownership and identity rules.
 

@@ -1,4 +1,4 @@
-# Obsidian Fork 1.154.9 testing candidate
+# Obsidian Fork 1.154.9
 
 Maintenance update based on upstream `b944003c` (October 3, 2026). The app remains on the upstream 1.153 map format; the forthcoming upstream 1.154.0 rework is still unmerged.
 
@@ -11,13 +11,13 @@ Maintenance update based on upstream `b944003c` (October 3, 2026). The app remai
 
 The existing Obsidian export, custom layers, relief/coastal caches, desktop profile, fullscreen workaround and Polities/Settlements terminology are retained. Map headers remain `1.153.0`; the fork extension schema is unchanged.
 
-Download `azgaar-obsidian-fork-1.154.9-win-x64.exe` from the testing prerelease. Close the app before installing. Updates are manual; the installer is unsigned and `SHA256SUMS.txt` provides its checksum. Keep copies of your maps for testing.
+Download `azgaar-obsidian-fork-1.154.9-win-x64.exe` from the [main release](https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator/releases/tag/obsidian-v1.154.9). Close the app before installing. Updates are manual; the installer is unsigned and `SHA256SUMS.txt` provides its checksum. Keep backups of your maps.
 
 ## Validation
 
-1,308 application tests, 17 desktop tests and 52 script tests passed, with lint, version/asset checks and web/desktop compilation. Export tests now use a committed map fixture instead of an external Jotun JSON file; migration tests preserve section boundaries in Git-normalized fixtures. A fork-specific workflow verifies and packages Windows testing prereleases.
+1,308 application tests, 17 desktop tests and 52 script tests passed, with lint, version/asset checks and web/desktop compilation. Export tests now use a committed map fixture instead of an external Jotun JSON file; migration tests preserve section boundaries in Git-normalized fixtures. The fork-specific workflow verified and packaged the Windows x64 installer.
 
-Approved by the user on October 4, 2026 after testing both updated forks and reporting faster performance than the previous builds.
+Approved as the fork's main release on October 4, 2026 after user testing, with faster performance reported than the previous build. The tested installer and checksum are preserved during promotion.
 
 Regression checklist:
 
