@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import jotunFixture from "../../../../../Jotun Full.json";
+import { readMapFixture } from "../../../tests/fixtures/read-map";
 import {
   type ArchiveWorldSnapshot,
   buildArchiveExportPlan,
@@ -8,45 +8,61 @@ import {
 } from "./archive-export";
 import { ARCHIVE_FULL_SNAPSHOT_OPTIONS } from "./archive-export-profile";
 
-const loadJotun = () => jotunFixture as unknown as ArchiveWorldSnapshot;
+function loadFixture(): ArchiveWorldSnapshot {
+  const sections = readMapFixture("1.139.4.map");
+  return {
+    info: { mapName: "Repository fixture", version: "1.139.4" },
+    pack: {
+      states: JSON.parse(sections[14]),
+      provinces: JSON.parse(sections[30]),
+      burgs: JSON.parse(sections[15]),
+      cultures: JSON.parse(sections[13]),
+      religions: JSON.parse(sections[29]),
+      cells: sections[27].split(",").map((province, i) => ({ i, province: Number(province) }))
+    }
+  };
+}
 
 describe("Archive export", () => {
-  it("exports the active Jotun reference entities", () => {
-    const plan = buildArchiveExportPlan(loadJotun(), { worldId: "jotun-test" });
+  it("exports the active repository fixture reference entities", () => {
+    const plan = buildArchiveExportPlan(loadFixture(), { worldId: "fixture-test" });
     const paths = plan.files.map(file => file.path);
 
-    expect(paths.filter(path => path.startsWith("States/"))).toHaveLength(16);
-    expect(paths.filter(path => path.startsWith("Provinces/"))).toHaveLength(31);
-    expect(paths.filter(path => path.startsWith("Burgs/"))).toHaveLength(131);
-    expect(paths.filter(path => path.startsWith("Cultures/"))).toHaveLength(18);
-    expect(paths.filter(path => path.startsWith("Religions/"))).toHaveLength(15);
+    expect(paths.filter(path => path.startsWith("States/"))).toHaveLength(21);
+    expect(paths.filter(path => path.startsWith("Provinces/"))).toHaveLength(286);
+    expect(paths.filter(path => path.startsWith("Burgs/"))).toHaveLength(888);
+    expect(paths.filter(path => path.startsWith("Cultures/"))).toHaveLength(14);
+    expect(paths.filter(path => path.startsWith("Religions/"))).toHaveLength(16);
   });
 
-  it("disambiguates the Jotun state and culture named Azar", () => {
-    const plan = buildArchiveExportPlan(loadJotun(), { worldId: "jotun-test" });
+  it("disambiguates a state and culture with the same name", () => {
+    const snapshot = loadFixture();
+    snapshot.pack.states[1].name = "Azar";
+    snapshot.pack.cultures[1].name = "Azar";
+    const plan = buildArchiveExportPlan(snapshot, { worldId: "fixture-test" });
 
-    expect(plan.manifest.entities["jotun-test:state:8"]?.path).toBe("States/Azar (Azgaar State).md");
-    expect(plan.manifest.entities["jotun-test:culture:14"]?.path).toBe("Cultures/Azar (Azgaar Culture).md");
+    expect(plan.manifest.entities["fixture-test:state:1"]?.path).toBe("States/Azar (Azgaar State).md");
+    expect(plan.manifest.entities["fixture-test:culture:1"]?.path).toBe("Cultures/Azar (Azgaar Culture).md");
   });
 
   it("resolves burg provinces from full JSON cell rows", () => {
-    const plan = buildArchiveExportPlan(loadJotun(), { worldId: "jotun-test" });
-    const drelgard = plan.files.find(file => file.entityKey === "jotun-test:burg:1");
+    const plan = buildArchiveExportPlan(loadFixture(), { worldId: "fixture-test" });
+    const settlement = plan.files.find(file => file.entityKey === "fixture-test:burg:1");
 
-    expect(drelgard?.content.includes("[[Eld (Azgaar Province)|Eld]]")).toBe(true);
+    expect(settlement?.content.includes("[[Whide (Azgaar Province)|Whide]]")).toBe(true);
   });
 
   it("is byte-deterministic for the same snapshot and profile", () => {
-    const snapshot = loadJotun();
-    const first = buildArchiveExportPlan(snapshot, { worldId: "jotun-test" });
-    const second = buildArchiveExportPlan(snapshot, { worldId: "jotun-test" });
+    const snapshot = loadFixture();
+    const first = buildArchiveExportPlan(snapshot, { worldId: "fixture-test" });
+    const second = buildArchiveExportPlan(snapshot, { worldId: "fixture-test" });
 
     expect(second.files).toEqual(first.files);
   });
 
   it("does not expose Archive-disallowed state simulation fields", () => {
-    const plan = buildArchiveExportPlan(loadJotun(), { worldId: "jotun-test" });
-    const state = plan.files.find(file => file.entityKey === "jotun-test:state:1");
+    const plan = buildArchiveExportPlan(loadFixture(), { worldId: "fixture-test" });
+    const state = plan.files.find(file => file.entityKey === "fixture-test:state:1");
 
     expect(state?.content).not.toMatch(/population|military|alert|expansionism|diplomacy/i);
     expect(state?.content.includes("not automatic Archive canon")).toBe(true);

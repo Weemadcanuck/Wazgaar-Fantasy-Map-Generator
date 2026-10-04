@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
@@ -10,7 +9,10 @@ import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { downloadFile } from "@/utils";
+import { readMapFixture } from "../../../tests/fixtures/read-map";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
+
+vi.hoisted(() => localStorage.setItem("version", "999.0.0"));
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -25,7 +27,7 @@ beforeEach(() => {
 });
 
 it.each([18, 180])("keeps legacy custom labels after saving and reloading a font size of %s", async fontSize => {
-  const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
+  const data = readMapFixture("1.139.4.map");
   migrateLegacySettings("1.139.4", data);
   Options.applyLoaded(JSON.parse(data[1]));
   document.body.innerHTML = data[5];
@@ -562,6 +564,39 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
 
     expect(pack.features[3].subtype).toBe("my_lakes");
     expect(JSON.parse(data[48]).lakes.groups).toBeUndefined();
+  });
+});
+
+describe("v1.61 ocean pattern migration", () => {
+  it("writes an empty href for a map that had no pattern", async () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><rect></rect></pattern></defs><g id="viewbox"></g></svg>`;
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({ isOlder: b === "1.61.0", isNewer: false, isEqual: false }));
+    try {
+      await resolveVersionConflicts("1.60.0", []);
+    } finally {
+      compare.mockRestore();
+    }
+
+    const image = document.getElementById("oceanicPattern")!;
+    expect(image.getAttribute("href")).toBe("");
+    expect(image.getAttribute("width")).toBe("100");
+  });
+
+  it.each([
+    ['width="100"', ""],
+    ["./images/pattern3.png", "./images/pattern3.png"]
+  ])("v1.153.2 heals the stored pattern %s to %s", async (pattern, expected) => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><image id="oceanicPattern" href="${pattern}"></image></pattern></defs><g id="viewbox"></g></svg>`;
+    const record = structuredClone(Styles.defaults) as { ocean: { options: { pattern: string } } };
+    record.ocean.options.pattern = pattern;
+    const data: string[] = [];
+    data[48] = JSON.stringify(record);
+
+    await resolveVersionConflicts("1.153.1", data);
+
+    expect(JSON.parse(data[48]).ocean.options.pattern).toBe(expected);
+    expect(document.getElementById("oceanicPattern")!.getAttribute("href")).toBe(expected);
   });
 });
 

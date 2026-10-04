@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { readFileSync } from "node:fs";
 import { beforeEach, expect, it, vi } from "vitest";
 import { Layers } from "@/components/layers";
 import { Coordinates } from "@/generators/coordinates";
@@ -7,6 +6,7 @@ import { GenerationPipeline } from "@/generators/generation-pipeline";
 import "@/generators/grid-generator";
 import { migrateLegacySettings } from "@/services/io/auto-update";
 import { safeParseJSON } from "@/utils/stringUtils";
+import { readMapFixture } from "../../tests/fixtures/read-map";
 import { Pins } from "./pins";
 
 beforeEach(() => {
@@ -18,7 +18,7 @@ beforeEach(() => {
 });
 
 function legacyFile() {
-  return readFileSync("tests/fixtures/1.143.1.map", "utf8").split("\r\n");
+  return readMapFixture("1.143.1.map");
 }
 
 it("converts the pipe settings still written by master 1.151.2", () => {
@@ -91,7 +91,7 @@ it("migrates definition sets before validating them", () => {
 });
 
 it("preserves legacy burg groups with comma-separated biome filters through a reload", () => {
-  const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
+  const data = readMapFixture("1.139.4.map");
   migrateLegacySettings("1.139.4", data);
   Options.applyLoaded(JSON.parse(data[1]));
   const groups = structuredClone(options.map.burgs.groups);

@@ -1,7 +1,7 @@
 {
   "name": "azgaar-obsidian-fork",
   "productName": "Azgaar Obsidian Fork",
-  "version": "1.154.8",
+  "version": "1.154.9",
   "description": "Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.",
   "homepage": "https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator#readme",
   "bugs": {
@@ -45,7 +45,7 @@
     "@types/three": "^0.184.1",
     "@vitest/browser": "^4.1.11",
     "@vitest/browser-playwright": "^4.1.11",
-    "electron": "^43.4.1",
+    "electron": "^43.5.0",
     "electron-builder": "^26.15.3",
     "electron-updater": "^6.8.9",
     "jsdom": "^29.1.1",

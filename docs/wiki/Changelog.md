@@ -1,3 +1,15 @@
+# Obsidian Fork 1.154.9 testing candidate - 2026-10-03
+
+- Repair legacy ocean patterns and improve assignment brush tracking.
+- Fix zoomed-out filtered image exports and SVG compatibility with external editors.
+- Restore citadel controls and offer market removal from the settlement editor.
+- Allow merged polities to become provinces.
+- Update Electron and upstream dependency/Nix maintenance.
+
+[Candidate notes and testing checklist](../updates/obsidian-1.154.9.md).
+
+---
+
 # Obsidian Fork 1.154.8 - 2026-09-18
 
 - Group map and Obsidian exports under Tools > Export; remove the bottom Export button.
@@ -61,6 +73,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Legends: empty legends no longer redraw as an "undefined" row
 - Fog of war: the cover spans the full map, including areas outside the viewport
 - Memory: closing editors releases their listeners, detached elements and retained map references
+- States Editor: merging states can keep each merged state as a province of the ruling state by _[barrulus](https://github.com/barrulus)_
 
 **[1.152.1](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.152.1) - 2026-09-11**:
 

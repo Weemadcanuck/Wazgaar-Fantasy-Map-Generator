@@ -4,6 +4,8 @@ An Obsidian-oriented fork of Azgaar’s Fantasy Map Generator. The app displays 
 
 [Download Obsidian Fork 1.154.8](https://github.com/Weemadcanuck/Wazgaar-Fantasy-Map-Generator/releases/tag/obsidian-v1.154.8) · [Changes and reasoning](docs/updates/obsidian-1.154.8.md)
 
+[Obsidian Fork 1.154.9 testing candidate](docs/updates/obsidian-1.154.9.md) integrates upstream maintenance through `b944003c`, including SVG export fixes and Electron 43.5.0. Native Windows testing is pending.
+
 ## Fork overview
 
 This fork adds Obsidian reference export, editable custom point layers, and relief rendering improvements. It is a fork for review, not an official upstream release. Upstream credits and licensing remain below.
